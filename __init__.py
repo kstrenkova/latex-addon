@@ -10,7 +10,6 @@ bl_info = {
     "category": "Object",
 }
 
-
 if "bpy" in locals():
     import importlib
     importlib.reload(analyser)
@@ -21,9 +20,7 @@ else:
     from . import analyser
     from . import generator
     from . import ui
-    from . import unicode_db 
-    
-import bpy     
+    from . import unicode_db
 
 
 # register

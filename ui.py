@@ -17,44 +17,44 @@ from bpy.props import (StringProperty,
                        
 from mathutils import Vector  # vertices   
 
-# function from analyser
-from .analyser import * 
-                       
+# functions from analyser
+from .analyser import *      
+
 
 # custom properties
 class Custom_PT(bpy.types.PropertyGroup):
     
-    latex_text : bpy.props.StringProperty(name="Latex text", default="")
+    latex_text: bpy.props.StringProperty(name="Latex text", default="") # type: ignore
     
-    font_path : StringProperty(
+    font_path: StringProperty(
         name = "Font",
         description="Choose a font:",
         default="",
         maxlen=1024,
         subtype='FILE_PATH'
-    )
+    ) # type: ignore
     
-    text_scale : bpy.props.FloatProperty(
+    text_scale: bpy.props.FloatProperty(
         name="Scale:",
         default=1.0,
         min=0.01
-    )
+    ) # type: ignore
     
-    text_thickness : bpy.props.FloatProperty(
+    text_thickness: bpy.props.FloatProperty(
         name="Thickness:",
         default=0.0,
         min=0.0
-    )
+    ) # type: ignore
     
-    text_location : bpy.props.FloatVectorProperty(
+    text_location: bpy.props.FloatVectorProperty(
         name="Location",
         subtype='XYZ'
-    )
+    ) # type: ignore
     
-    text_rotation : bpy.props.FloatVectorProperty(
+    text_rotation: bpy.props.FloatVectorProperty(
         name="Rotation",
         subtype='EULER'
-    )
+    ) # type: ignore
 
 
 # main addon panel

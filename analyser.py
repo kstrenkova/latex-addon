@@ -1060,4 +1060,3 @@ class SyntaxAnalyser(LexicalAnalyser):
             obj.select_set(True)
 
         return True
-   

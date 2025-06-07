@@ -4,7 +4,6 @@
 # ---------------------------------------------------------------------------
 
 import bpy
-import math
 from bpy_extras.object_utils import object_data_add  # add sqrt symbol
 
 from bpy.props import (StringProperty,
@@ -19,7 +18,7 @@ from bpy.props import (StringProperty,
 from mathutils import Vector  # vertices
 
 # unicode characters database
-from .unicode_db import unicode_chars                             
+from .unicode_db import unicode_chars
 
 
 # function generates text in given font
@@ -744,6 +743,4 @@ def gen_matrix_center(param, collection, xy_size, bracket):
     # center matrix into row
     for obj in bpy.data.collections[collection].all_objects:
         obj.location.y -= center_loc            
-            
-    
-          
+
