@@ -69,7 +69,7 @@ math_ll_table = {
     # <COMMAND> -> command
     ('COMMAND', 'sum'): ['sum', '#ACTION_SUM'],
     ('COMMAND', 'prod'): ['prod', '#ACTION_PROD'],
-    ('COMMAND', '_SPACE_COMMAND'): [ '#ACTION_SPACE'],
+    ('COMMAND', '_SPACE_COMMAND'): ['#ACTION_SPACE'],
     ('COMMAND', 'int'): ['int', '#ACTION_INTEGRAL'],
 
     # --- BLOCK ---
@@ -89,24 +89,17 @@ math_ll_table = {
     # <SQRT> -> [ <MORE_TERM> ] { <MORE_TERM> }
     ('SQRT', '['): [
         '[', 'MORE_TERM', ']',
-        '{',
-        '#ACTION_SQRT_INIT',
-        'MORE_TERM',
-        '}',
-        '#ACTION_SQRT_CREATE',
+        '{', '#ACTION_SQRT_INIT', 'MORE_TERM', '}', '#ACTION_SQRT_CREATE',
     ],
     # <SQRT> -> { <MORE_TERM> }
-    ('SQRT', '{'): [
-        '{',
-        '#ACTION_SQRT_INIT',
-        'MORE_TERM',
-        '}',
-        '#ACTION_SQRT_CREATE',
-    ],
+    ('SQRT', '{'): [ '{', '#ACTION_SQRT_INIT', 'MORE_TERM', '}', '#ACTION_SQRT_CREATE' ],
 
     # --- FRAC ---
     # <FRAC> -> { <MORE_TERM> } { <MORE_TERM> }
-    ('FRAC', '{'):                ['{', 'MORE_TERM', '}', '{', 'MORE_TERM', '}'],
+    ('FRAC', '{'): [
+        '{', '#ACTION_FRAC_INIT', 'MORE_TERM', '}', '#ACTION_FRAC_UP',
+        '{', 'MORE_TERM', '}', '#ACTION_FRAC_DOWN'
+    ],
 
     # --- MATRIX ---
     # TODO

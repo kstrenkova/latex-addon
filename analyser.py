@@ -49,6 +49,17 @@ class Sum:
         self.up_collection = up_collection 
         self.down_collection = down_collection
         self.array = array
+
+
+# class for fraction
+class FractionState:
+    def __init__(self, parent_coll, init_params):
+        self.parent_coll = parent_coll
+        self.init_params = init_params
+        self.ncoll = None
+        self.dcoll = None
+        self.nwidth = 0
+        self.dwidth = 0
         
         
 # class for matrix        
@@ -212,7 +223,7 @@ class SyntaxAnalyser(LexicalAnalyser):
     
     # function returns if sequence of tokens is a matrix figure
     # { text }
-    def is_matrix_figure(self, mode, parent_collection, xy_size):
+    def is_matrix_figure(self, mode, parent_coll, xy_size):
         # {
         token = self.get_token()
         if token.type == "OPEN_BRACKET":
@@ -234,20 +245,20 @@ class SyntaxAnalyser(LexicalAnalyser):
                         gen_matrix_pos(self.context, self.matrix.obj_array, self.parameters)
                         
                         # get matrix parameters
-                        xy_size = gen_matrix_param(self.context, self.parameters, parent_collection, xy_size)
+                        xy_size = gen_matrix_param(self.context, self.parameters, parent_coll, xy_size)
                         
                         if not bracket_type[0] == '':
                             # generate left bracket of matrix
                             gen_text(self.context, bracket_type[0], self.font[1])
-                            gen_brackets(self.context, self.parameters, parent_collection, self.base_collection, xy_size, True)
-                            xy_size = gen_matrix_param(self.context, self.parameters, parent_collection, xy_size)
+                            gen_brackets(self.context, self.parameters, parent_coll, self.base_collection, xy_size, True)
+                            xy_size = gen_matrix_param(self.context, self.parameters, parent_coll, xy_size)
                             
                             # generate right bracket of matrix
                             gen_text(self.context, bracket_type[1], self.font[1])
-                            gen_brackets(self.context, self.parameters, parent_collection, self.base_collection, xy_size, False)
+                            gen_brackets(self.context, self.parameters, parent_coll, self.base_collection, xy_size, False)
                         
                         # center matrix into row
-                        gen_matrix_center(self.parameters, parent_collection, xy_size, bracket_type[0])
+                        gen_matrix_center(self.parameters, parent_coll, xy_size, bracket_type[0])
                         
                         # clear matrix array
                         self.parameters.line = 0.0
@@ -265,7 +276,7 @@ class SyntaxAnalyser(LexicalAnalyser):
     #          -> <COMMAND> <MATRIX>
     #          -> & <MATRIX>
     #          -> epsilon
-    def sa_matrix(self, tmp_param, parent_collection):
+    def sa_matrix(self, tmp_param, parent_coll):
         token = self.get_token()
 
         if self.is_const(token) or self.is_block(token) or self.is_command(token) or token.type == "AMPERSAND":
@@ -274,7 +285,7 @@ class SyntaxAnalyser(LexicalAnalyser):
                 # enter (\\)
                 if token.type == "ENTER":
                     # matrix cell collection
-                    self.current_collection = gen_new_collection(self.context, "MatrixCellCollection", parent_collection)
+                    self.current_collection = gen_new_collection(self.context, "MatrixCellCollection", parent_coll)
                     
                     # add new array that represents row
                     self.matrix.obj_array.append([])
@@ -289,7 +300,7 @@ class SyntaxAnalyser(LexicalAnalyser):
             
                 if self.sa_const():  
                     # <MATRIX>
-                    if self.sa_matrix(tmp_param, parent_collection):
+                    if self.sa_matrix(tmp_param, parent_coll):
                         return True
 
             # <BLOCK>
@@ -297,7 +308,7 @@ class SyntaxAnalyser(LexicalAnalyser):
                 self.return_token(token)
                 if self.sa_block():
                     # <MATRIX>
-                    if self.sa_matrix(tmp_param, parent_collection):
+                    if self.sa_matrix(tmp_param, parent_coll):
                         return True
 
             # <COMMAND>
@@ -305,17 +316,17 @@ class SyntaxAnalyser(LexicalAnalyser):
                 self.return_token(token)
                 if self.sa_command():
                     # <MATRIX>
-                    if self.sa_matrix(tmp_param, parent_collection):
+                    if self.sa_matrix(tmp_param, parent_coll):
                         return True
 
             # &
             elif token.type == "AMPERSAND":
                 # matrix cell collection
-                self.current_collection = gen_new_collection(self.context, "MatrixCellCollection", parent_collection)
+                self.current_collection = gen_new_collection(self.context, "MatrixCellCollection", parent_coll)
                 
                 # add collection to row
                 self.matrix.obj_array[self.matrix.row_num].append(self.current_collection)
-                if self.sa_matrix(tmp_param, parent_collection):
+                if self.sa_matrix(tmp_param, parent_coll):
                     # <MATRIX>
                     return True  
 
@@ -362,7 +373,7 @@ class SyntaxAnalyser(LexicalAnalyser):
             tmp_param = self.parameters.create_copy()
             
             # saving parent collection to bind children collections to
-            parent_collection = self.current_collection
+            parent_coll = self.current_collection
             
             sqrt_width = 0.855927586555481  # width of square root symbol
             
@@ -375,7 +386,7 @@ class SyntaxAnalyser(LexicalAnalyser):
             
             # square root collection
             sqrt_coll = bpy.data.collections.new("SqrtCollection")
-            bpy.data.collections[parent_collection].children.link(sqrt_coll)
+            bpy.data.collections[parent_coll].children.link(sqrt_coll)
             self.current_collection = sqrt_coll.name
             
             # <MORE_TERM>
@@ -400,105 +411,19 @@ class SyntaxAnalyser(LexicalAnalyser):
                     
                     # generating sqrt symbol
                     gen_sqrt_sym(self.context)
-                    gen_collection(self.context, parent_collection, self.base_collection)  # symbol into collection
+                    gen_collection(self.context, parent_coll, self.base_collection)  # symbol into collection
                     
                     # move sqrt symbol
                     gen_sqrt_move(self.context, tmp_param, sqrt_param, use_param)
                     
                     # join collection into parent collection
-                    gen_join_collections(self.context, sqrt_coll, parent_collection)
-                    self.current_collection = parent_collection  # set current collection
+                    gen_join_collections(self.context, sqrt_coll, parent_coll)
+                    self.current_collection = parent_coll  # set current collection
                     
                     return True
                 else:
                     print("Error, missing closing bracket to command!")
 
-        return False            
-    
-    # <FRAC> -> { <MORE_TERM> } { <MORE_TERM> }
-    def sa_frac(self):
-        # increasing level of fraction
-        self.levels.frac += 1
-        self.parameters.width += 0.1 * self.parameters.scale  # space before fraction
-        
-        # saving parent collection to bind children collections to
-        parent_collection = self.current_collection
-        
-        # saving current parameters
-        gen_calculate(self.parameters, self.text_scale, self.levels)
-        tmp_param = self.parameters.create_copy()
-        
-        # numerator collection
-        num_coll = bpy.data.collections.new("NumeratorCollection")
-        bpy.data.collections[parent_collection].children.link(num_coll)
-        self.current_collection = num_coll.name
-        
-        # { <MORE_TERM> }
-        if self.is_frac_figure():
-            # initiate numerator width
-            num_width = 0
-                
-            # gets the furthest x position
-            if len(bpy.data.collections[self.current_collection].all_objects):    
-                num_width = gen_group_width(self.context, self.current_collection)    
-            
-            # move numerator objects
-            gen_calculate(self.parameters, self.text_scale, self.levels)
-            gen_frac_num(self.context, self.parameters, num_coll.name)
-            
-            # denominator collection
-            den_coll = bpy.data.collections.new("DenominatorCollection")
-            bpy.data.collections[parent_collection].children.link(den_coll)
-            self.current_collection = den_coll.name
-            
-            # reloading last width
-            self.parameters.width = tmp_param.width
-        
-            # { <MORE_TERM> }
-            if self.is_frac_figure():
-                # initiate denominator width
-                den_width = 0   
-                    
-                # gets the furthest x position
-                if len(bpy.data.collections[self.current_collection].all_objects):    
-                    den_width = gen_group_width(self.context, self.current_collection)
-                
-                # move denominator objects
-                gen_calculate(self.parameters, self.text_scale, self.levels)
-                gen_frac_den(self.context, self.parameters, den_coll.name) 
-                
-                # finding longer text width
-                if den_width > num_width:
-                    line_length = den_width
-                    center_coll = num_coll.name
-                else:
-                    line_length = num_width
-                    center_coll = den_coll.name 
-                
-                # generating fraction line    
-                gen_frac_line(self.context, tmp_param, line_length)    
-                
-                # center numerator and denominator
-                gen_center(self.context, num_width, den_width, center_coll)
-                gen_collection(self.context, den_coll.name, self.base_collection)
-                
-                # join numerator and denominator collections
-                gen_join_collections(self.context, den_coll, num_coll.name)
-                
-                # join denominator collection into parent collection
-                gen_join_collections(self.context, num_coll, parent_collection)
-                self.current_collection = parent_collection  # set current collection
-                
-                # set back line width
-                self.parameters.width = line_length + 0.2 * self.parameters.scale  # space
-                
-                # decreasing level of fraction
-                self.levels.frac -= 1                 
-                    
-                return True
-            else:         
-                return False
-                           
         return False
     
     # <SUM> -> index_exponent
@@ -523,16 +448,16 @@ class SyntaxAnalyser(LexicalAnalyser):
             self.sum.bool = True  # index and exponent for sum
             
             # saving parent collection to bind children collections to
-            parent_collection = self.current_collection
+            parent_coll = self.current_collection
             
             # collection for upper indexes
             up_coll = bpy.data.collections.new("SumUpCollection")
-            bpy.data.collections[parent_collection].children.link(up_coll)
+            bpy.data.collections[parent_coll].children.link(up_coll)
             self.sum.up_collection = up_coll.name
 
             # collection for upper indexes
             down_coll = bpy.data.collections.new("SumDownCollection")
-            bpy.data.collections[parent_collection].children.link(down_coll)
+            bpy.data.collections[parent_coll].children.link(down_coll)
             self.sum.down_collection = down_coll.name
             
             if token.type == "UNDERSCORE":
@@ -551,9 +476,9 @@ class SyntaxAnalyser(LexicalAnalyser):
                 self.parameters.width = gen_fin_sum(self.context, self.sum, up_coll.name, down_coll.name) + space
                 
                 # join denominator collection into parent collection
-                gen_join_collections(self.context, up_coll, parent_collection)
-                gen_join_collections(self.context, down_coll, parent_collection)
-                self.current_collection = parent_collection  # set current collection
+                gen_join_collections(self.context, up_coll, parent_coll)
+                gen_join_collections(self.context, down_coll, parent_coll)
+                self.current_collection = parent_coll  # set current collection
                 
                 # clear variables for sum
                 self.sum.bool = False 
@@ -566,7 +491,7 @@ class SyntaxAnalyser(LexicalAnalyser):
     
     # function finds the wrong use of exponents and indexes
     #          generates index + exponent
-    def is_both_ei(self, mode, brackets, saved_width, parent_collection, exp_ix_coll):
+    def is_both_ei(self, mode, brackets, saved_width, parent_coll, exp_ix_coll):
         
         token = self.get_token()  # get next token
 
@@ -626,8 +551,8 @@ class SyntaxAnalyser(LexicalAnalyser):
             self.levels.ei_array.pop()
                 
         # join collection into parent collection
-        gen_join_collections(self.context, exp_ix_coll, parent_collection)
-        self.current_collection = parent_collection  # set current collection
+        gen_join_collections(self.context, exp_ix_coll, parent_coll)
+        self.current_collection = parent_coll  # set current collection
             
         return True    
         
@@ -638,12 +563,12 @@ class SyntaxAnalyser(LexicalAnalyser):
     #            -> command (special group of commands)
     def sa_after_ei(self, mode):
         # saving parent collection to bind children collections to
-        parent_collection = self.current_collection
+        parent_coll = self.current_collection
         
         # exponent or index collection
         exp_ix_coll = bpy.data.collections.new("ExponentIndexCollection")
               
-        bpy.data.collections[parent_collection].children.link(exp_ix_coll)
+        bpy.data.collections[parent_coll].children.link(exp_ix_coll)
         self.current_collection = exp_ix_coll.name
         
         # {
@@ -655,7 +580,7 @@ class SyntaxAnalyser(LexicalAnalyser):
                 # }
                 token = self.get_token()
                 if token.type == "CLOSE_BRACKET":
-                    return self.is_both_ei(mode, True, tmp_width, parent_collection, exp_ix_coll)
+                    return self.is_both_ei(mode, True, tmp_width, parent_coll, exp_ix_coll)
                 else:
                     print("Error, missing closing bracket to command!")
 
@@ -666,7 +591,7 @@ class SyntaxAnalyser(LexicalAnalyser):
             gen_text(self.context, token.value, self.font[0])
             gen_collection(self.context, self.current_collection, self.base_collection)
         
-            return self.is_both_ei(mode, False, self.parameters.width, parent_collection, exp_ix_coll)
+            return self.is_both_ei(mode, False, self.parameters.width, parent_coll, exp_ix_coll)
         
         # command (special group of commands)
         elif token.type == "COMMAND":
@@ -674,7 +599,7 @@ class SyntaxAnalyser(LexicalAnalyser):
             gen_math_sym(self.context, token.value,  self.font[1])
             gen_collection(self.context, self.current_collection, self.base_collection)   
         
-            return self.is_both_ei(mode, False, self.parameters.width, parent_collection, exp_ix_coll)
+            return self.is_both_ei(mode, False, self.parameters.width, parent_coll, exp_ix_coll)
         
         return False
 
@@ -780,7 +705,7 @@ class SyntaxAnalyser(LexicalAnalyser):
         if token.type == "COMMAND" and token.value == "begin":
             
             # saving parent collection to bind children collections to
-            parent_collection = self.current_collection
+            parent_coll = self.current_collection
             
             # saving current parameters
             gen_calculate(self.parameters, self.text_scale, self.levels)
@@ -790,7 +715,7 @@ class SyntaxAnalyser(LexicalAnalyser):
             
             # matrix collection
             mx_coll = bpy.data.collections.new("MatrixBodyCollection")
-            bpy.data.collections[parent_collection].children.link(mx_coll)
+            bpy.data.collections[parent_coll].children.link(mx_coll)
             
             # first matrix cell collection
             self.current_collection = gen_new_collection(self.context, "MatrixCellCollection", mx_coll.name)
@@ -820,8 +745,8 @@ class SyntaxAnalyser(LexicalAnalyser):
                                     bpy.data.collections.remove(collection)
                                
                             # join matrix collection into parent collection
-                            gen_join_collections(self.context, mx_coll, parent_collection)
-                            self.current_collection = parent_collection  # set current collection
+                            gen_join_collections(self.context, mx_coll, parent_coll)
+                            self.current_collection = parent_coll  # set current collection
                             
                             return True
         # sa_block()                
@@ -907,7 +832,7 @@ class SyntaxAnalyser(LexicalAnalyser):
         elif action == '#ACTION_SQRT_CREATE':
             print(f"STATE STACK: {self.state_stack}")
             sqrt_collection = self.state_stack.pop()
-            parent_collection = self.state_stack.pop()
+            parent_coll = self.state_stack.pop()
             copied_param = self.state_stack.pop()
 
             use_param = False
@@ -926,14 +851,97 @@ class SyntaxAnalyser(LexicalAnalyser):
 
             # generating sqrt symbol
             gen_sqrt_sym(self.context)
-            gen_collection(self.context, parent_collection, self.base_collection)  # symbol into collection
+            gen_collection(self.context, parent_coll, self.base_collection)  # symbol into collection
 
             # move sqrt symbol
             gen_sqrt_move(self.context, copied_param, sqrt_param, use_param)
 
             # join collection into parent collection
-            gen_join_collections(self.context, sqrt_collection, parent_collection)
-            self.current_collection = parent_collection  # set current collection
+            gen_join_collections(self.context, sqrt_collection, parent_coll)
+            self.current_collection = parent_coll  # set current collection
+            return True
+
+        # <FRAC> actions
+        elif action == '#ACTION_FRAC_INIT':
+            # increasing level of fraction
+            self.levels.frac += 1
+            self.parameters.width += 0.1 * self.parameters.scale  # space before fraction
+
+            gen_calculate(self.parameters, self.text_scale, self.levels)
+
+            parent_coll = bpy.data.collections[self.current_collection]
+            fs = FractionState(parent_coll, self.parameters.create_copy())
+
+            # numerator collection
+            ncoll = bpy.data.collections.new("NumeratorCollection")
+            bpy.data.collections[self.current_collection].children.link(ncoll)
+            fs.ncoll = ncoll
+
+            self.state_stack.append(fs)
+
+            self.current_collection = ncoll.name
+            return True
+
+        elif action == '#ACTION_FRAC_UP':
+            fs = self.state_stack[-1]
+
+            # gets the furthest x position
+            if len(bpy.data.collections[self.current_collection].all_objects):
+                fs.nwidth = gen_group_width(self.context, self.current_collection)
+
+            # move numerator objects
+            gen_calculate(self.parameters, self.text_scale, self.levels)
+            gen_frac_num(self.context, self.parameters, fs.ncoll.name)
+
+            # denominator collection
+            dcoll = bpy.data.collections.new("DenominatorCollection")
+            fs.parent_coll.children.link(dcoll)
+            fs.dcoll = dcoll
+
+            self.current_collection = dcoll.name
+
+            # reloading last width
+            self.parameters.width = fs.init_params.width
+            return True
+
+        elif action == '#ACTION_FRAC_DOWN':
+            fs = self.state_stack.pop()
+
+            # gets the furthest x position
+            if len(bpy.data.collections[self.current_collection].all_objects):
+                fs.dwidth = gen_group_width(self.context, self.current_collection)
+
+            # move denominator objects
+            gen_calculate(self.parameters, self.text_scale, self.levels)
+            gen_frac_den(self.context, self.parameters, fs.dcoll.name)
+
+            # finding longer text width
+            if fs.dwidth > fs.nwidth:
+                line_length = fs.dwidth
+                center_coll = fs.ncoll.name
+            else:
+                line_length = fs.nwidth
+                center_coll = fs.dcoll.name
+
+            # generating fraction line
+            gen_frac_line(self.context, fs.init_params, line_length)
+
+            # center numerator and denominator
+            gen_center(self.context, fs.nwidth, fs.dwidth, center_coll)
+            gen_collection(self.context, fs.dcoll.name, self.base_collection)
+
+            # join numerator and denominator collections
+            gen_join_collections(self.context, fs.dcoll, fs.ncoll.name)
+
+            # join denominator collection into parent collection
+            gen_join_collections(self.context, fs.ncoll, fs.parent_coll.name)
+            self.current_collection = fs.parent_coll  # set current collection
+
+            # set back line width
+            self.parameters.width = line_length + 0.2 * self.parameters.scale  # space
+
+            # decreasing level of fraction
+            self.levels.frac -= 1
             return True
 
         else:
@@ -1005,8 +1013,9 @@ class SyntaxAnalyser(LexicalAnalyser):
                 print(f"Token type: '{token.type}'")
                 print(f"Token value: '{token.value}'")
                 # TODO clean lookup
+                # TODO ANGLE_BRACKETS OUTSIDE OF SQRT
                 lookup_key = token.value if token.type == "COMMAND" or token.type == "CLOSE_BRACKET" or token.type == "OPEN_BRACKET" else token.type
-                if self.parsing_context == "SQRT" and token.type == "_TEXT" and token.value in ['[',']']:
+                if self.parsing_context == "SQRT" and token.type == "ANGLE_BRACKETS" and token.value in ['[',']']:
                     lookup_key = token.value
                 if token.type == "_SPACE_COMMAND":
                     lookup_key = token.type
