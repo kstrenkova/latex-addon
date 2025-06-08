@@ -4,12 +4,12 @@
 # ---------------------------------------------------------------------------
 
 import bpy
-import addon_utils
 import os.path
 
 # functions from generator
 from .generator import *
 from .ll_table import *
+from .characters_db import space_sizes, special_chars
 
 
 # class for tokens
@@ -62,90 +62,94 @@ class Matrix:
 class LexicalAnalyser:
     def __init__(self, latex_text):
         self.text = latex_text
+        self.position = 0
 
     # function gets the next token
     def get_token(self):
         state = "STATE_START"
-        tmp_string = ""
+        string_value = ""
 
-        token = Token("UNKNOWN", "")
-
-        while True:
-            # end of input text
-            if state == "STATE_START" and self.text == '':
-                token.type = "END"
-                return token
-            elif self.text == '':
-                c = "END"
-            else:
-                c = self.get_char(self.text[0])  # get first character
+        while self.position < len(self.text):
+            c = self.text[self.position]
+            c_type = self.get_char(self.text[self.position])
 
             # choose the next state
             if state == "STATE_START":
-                if c == "BACKSLASH":
+                if c_type == "BACKSLASH":
                     state = "STATE_COMMAND"
-                    self.text = self.text[1:]  # erase read character
-                elif c == "OTHER" or c == "COMMAND_SPACES":
-                    state = "STATE_TEXT"
-                elif c == "WHITESPACE":
-                    self.text = self.text[1:]  # erase read character
+                    self.position += 1
+
+                    # special case for space, e.g. a \ b
+                    if self.position < len(self.text) and self.text[self.position] == ' ':
+                        self.position += 1
+                        return Token("_SPACE_COMMAND", ' ')
+
                     continue
-                elif c == "ANGLE_BRACKETS":
-                    token.type = "_TEXT"
-                    token.value = self.text[0]
-                    self.text = self.text[1:]  # erase read character
-                    return token
+
+                elif c_type == "WHITESPACE":
+                    self.position += 1
+                    continue
+
+                elif c_type == "OTHER":
+                    state = "STATE_TEXT"
+                    string_value += c
+                    self.position += 1
+                    continue
+
                 else:
-                    token.type = c
-                    token.value = self.text[0]
-                    self.text = self.text[1:]  # erase read character
-                    return token
+                    self.position += 1
+                    return Token(c_type, c)
 
             # COMMANDS
             elif state == "STATE_COMMAND":
-                if self.is_special_char(c):
-                    token.type = "_SPECIAL_CHAR"
-                    token.value = self.text[0]
-                    self.text = self.text[1:]  # erase read character
-                    return token
-                elif c == "BACKSLASH":
-                    token.type = "ENTER"
-                    token.value = "\\"
-                    self.text = self.text[1:]  # erase read character
-                    return token
-                elif c == "COMMAND_SPACES":
-                    token.type = "COMMAND"
-                    token.value = self.text[0]
-                    self.text = self.text[1:]  # erase read character
-                    return token
-                elif c == "OTHER":
+                if c_type in special_chars:
+                    self.position += 1
+                    return Token("SPECIAL_CHAR", c)
+                elif c_type == "BACKSLASH":
+                    self.position += 1
+                    return Token("ENTER", "\\")
+                elif c_type == "OTHER" and c in space_sizes:
+                    self.position += 1
+                    return Token("_SPACE_COMMAND", c)
+                elif c_type == "OTHER":
                     state = "STATE_COMMAND_NAME"
                 else:
-                    token.type = "COMMAND"
-                    token.value = " "
-                    self.text = self.text[1:]  # erase read character
-                    return token
+                    self.position += 1
+                    return Token(c_type, c)
 
-            # NAME OF THE COMMAND
+            # COMMAND NAME
             elif state == "STATE_COMMAND_NAME":
-                if c == "OTHER" and self.text[0].isalpha():
-                    tmp_string = tmp_string + self.text[0]
-                    self.text = self.text[1:]  # erase read character
+                if c_type == "OTHER" and c.isalpha():
+                    string_value += c
+                    self.position += 1
                 else:
-                    token.type = "COMMAND"
-                    token.value = tmp_string
-                    return token
+                    if string_value in space_sizes:
+                        return Token("_SPACE_COMMAND", string_value)
+                    else:
+                        return Token("COMMAND", string_value)
 
-            # _TEXT
+            # TEXT
             elif state == "STATE_TEXT":
-                if c != "OTHER" and c != "COMMAND_SPACES":
-                    token.type = "_TEXT"
-                    token.value = tmp_string
-                    return token
+                if c_type != "OTHER":
+                    return Token("_TEXT", string_value)
                 else:
-                    tmp_string = tmp_string + self.text[0]
-                    self.text = self.text[1:]
-                        
+                    string_value += c
+                    self.position += 1
+
+        # TODO
+        # characters in buffer
+        if string_value != "":
+            if state == "STATE_COMMAND":
+                if string_value in space_sizes:
+                    return Token("_SPACE_COMMAND", string_value)
+                else:
+                    return Token("COMMAND", string_value)
+            elif state == "STATE_TEXT":
+                return Token("_TEXT", string_value)
+        
+        # end token
+        return Token("END", "")
+                   
     # end of get_token()
 
     @staticmethod
@@ -159,10 +163,6 @@ class LexicalAnalyser:
             ('^', "CARET"),
             ('_', "UNDERSCORE"),
             ('&', "AMPERSAND"),
-            ('!', "COMMAND_SPACES"),
-            (';', "COMMAND_SPACES"),
-            (':', "COMMAND_SPACES"),
-            (',', "COMMAND_SPACES"),
             ('[', "ANGLE_BRACKETS"),
             (']', "ANGLE_BRACKETS"),
             (' ', "WHITESPACE"),
@@ -176,29 +176,18 @@ class LexicalAnalyser:
  
         return "OTHER"
 
-    @staticmethod
-    # function returns if character is a special character or not
-    def is_special_char(char):
-        
-        special_char = [
-            "OPEN_BRACKET",
-            "CLOSE_BRACKET",
-            "AMPERSAND",
-            "UNDERSCORE"
-        ]
-        
-        # return if character is special character
-        if char in special_char:
-            return True
-        
-        return False
-
     # function returns token to latex string
     def return_token(self, token):
-        if token.type == "COMMAND" or token.type == "_SPECIAL_CHAR" or token.type == "ENTER":
-            self.text = '\\' + token.value + self.text
-        else:
-            self.text = token.value + self.text
+        self.position -= len(token.value)
+
+        # check if the token had a backslash before
+        if self.position > 0:
+            c = self.text[self.position - 1]
+            if c == '\\':
+                self.position -= 1
+
+        # TODO
+        # print(f"DEBUG: Returned token ('{token.type}', '{token.value}'). New position is {self.position}.")
 
 
 class SyntaxAnalyser(LexicalAnalyser):
@@ -220,93 +209,6 @@ class SyntaxAnalyser(LexicalAnalyser):
         self.parameters = Parameters(text_scale, 0.0, 0.0, 0.0)
         self.levels = Levels([], False, 0, False)
         self.matrix = Matrix([[]], 0)
-
-    @staticmethod
-    # function returns if character is a type of space
-    def is_space(char):
-        # all types of spaces
-        all_spaces = [
-            '!', ',', ':', ';', ' ', "quad", "qquad"
-        ]
-        
-        if char in all_spaces:
-            return True
-        
-        return False
-    
-    @staticmethod
-    # function returns space size
-    def get_space_size(char, scale):
-        
-        space_sizes = [
-            ('!', -0.1),
-            (',', 0.15),
-            (':', 0.2),
-            (';', 0.25),
-            (' ', 0.3),
-            ("quad", 0.6),
-            ("qquad", 1.2)
-        ]
-        
-        # return space size
-        for item in space_sizes:
-            if char == item[0]:
-                return item[1] * scale
-            
-        return 0.0        
-    
-    @staticmethod
-    # function returns bracket type
-    def get_mx_brackets(value):
-        
-        brackets = [
-            ("bmatrix", ('[', ']')),
-            ("Bmatrix", ('{', '}')),
-            ("pmatrix", ('(', ')')),
-            ("vmatrix", ('|', '|')),
-            ("Vmatrix", ('||', '||'))
-        ]
-        
-        # return type of brackets
-        for item in brackets:
-            if value == item[0]:
-                return item[1]
-        
-        return ('', '')
-
-    @staticmethod
-    # function returns if token is <CONST>
-    def is_const(token):
-        all_types = [
-            "_TEXT", "_SPECIAL_CHAR", "UNDERSCORE", "CARET", "ENTER"
-        ]
-        # <CONST>
-        if token.type in all_types:
-            return True
-
-        return False
-
-    @staticmethod
-    # function returns if token is <COMMAND>
-    def is_command(token):
-        # <COMMAND>
-        if token.type == "OPEN_BRACKET":
-            return True
-
-        elif token.type == "COMMAND":
-            if token.value != "end":
-                return True
-
-        return False
-
-    @staticmethod
-    # function returns if token is <BLOCK>
-    def is_block(token):
-        # <BLOCK>
-        if token.type == "COMMAND" and token.value == "begin":
-            return True
-
-        return False
     
     # function returns if sequence of tokens is a matrix figure
     # { text }
@@ -511,24 +413,7 @@ class SyntaxAnalyser(LexicalAnalyser):
                 else:
                     print("Error, missing closing bracket to command!")
 
-        return False
-    
-    # function returns if sequence of tokens is a fraction figure
-    # { <MORE_TERM >}
-    def is_frac_figure(self):
-        # {
-        token = self.get_token()
-        if token.type == "OPEN_BRACKET":
-            # <MORE_TERM>
-            if self.sa_more_term():
-                # }
-                token = self.get_token()
-                if token.type == "CLOSE_BRACKET":
-                    return True
-                else:
-                    print("Error, missing closing bracket to command!")
-                
-        return False               
+        return False            
     
     # <FRAC> -> { <MORE_TERM> } { <MORE_TERM> }
     def sa_frac(self):
@@ -866,14 +751,7 @@ class SyntaxAnalyser(LexicalAnalyser):
             elif token.value == "sum" or token.value == "prod":
                  # <SUM>
                  if self.sa_sum(token.value):
-                     return True     
-        
-            # command spaces    
-            elif self.is_space(token.value):
-                # get space size and add it to text width
-                space = self.get_space_size(token.value, self.parameters.scale)
-                self.parameters.width += space
-                return True                        
+                     return True                     
 
             # command
             else:
@@ -949,115 +827,6 @@ class SyntaxAnalyser(LexicalAnalyser):
         # sa_block()                
         return False
 
-    # <TERM> -> <CONST>
-    #        -> <COMMAND>
-    #        -> <BLOCK>
-    def sa_term(self):
-        token = self.get_token()
-
-        # <CONST>
-        if self.is_const(token):
-            self.return_token(token)
-            if not self.sa_const():
-                return False
-
-        # <BLOCK>
-        elif self.is_block(token):
-            self.return_token(token)
-            if not self.sa_block():
-                return False
-
-        # <COMMAND>
-        elif self.is_command(token):
-            self.return_token(token)
-            if not self.sa_command():
-                return False
-
-        # no corresponding terminals
-        else:
-            print("Error, no corresponding terminals - use of not supported symbol!")
-            return False
-
-        return True
-
-    # <MORE_TERM> -> <TERM> <MORE_TERM>
-    #             -> epsilon
-    def sa_more_term(self):
-        token = self.get_token()
-
-        # special sqrt ]
-        if self.sqrt and token.type == "_TEXT" and token.value == "]":
-            self.return_token(token)
-            return True
-
-        elif self.is_const(token) or self.is_command(token) or self.is_block(token):
-            self.return_token(token)
-            if not self.sa_term():  # <TERM>
-                return False
-
-            return self.sa_more_term()  # <MORE_TERM>
-
-        else:
-            # epsilon
-            self.return_token(token)
-
-        return True
-
-    # taking tokens and checking their order
-    # <PROG> -> <TERM> <MORE_TERM>
-    def sa_prog(self):
-        # creating base collection
-        collection = bpy.data.collections.new("MathematicalEqCollection")
-        bpy.context.scene.collection.children.link(collection)
-
-        # set active collection
-        layer_collection = bpy.context.view_layer.layer_collection
-        # iterate through layer collection
-        for layer in layer_collection.children:
-            if layer.name == collection.name:
-                bpy.context.view_layer.active_layer_collection = layer
-        
-        self.base_collection = collection.name  # set base collection
-        self.current_collection = collection.name  # set current collection
-
-        # chosen default font
-        if self.font_path == "":
-            self.font.append("")
-        else:
-            default_font = bpy.data.fonts.load(self.font_path)
-            self.font.append(default_font)
-
-        # find path to addon
-        addon_name = "Mathematical Equation Generator"
-        for mod in addon_utils.modules():
-            if mod.bl_info['name'] == addon_name:
-                dir_path = os.path.dirname(mod.__file__)
-                # create path to unicode font
-                file_path = dir_path + "\\fonts\\Kelvinch-Roman.otf"
-                
-        # unicode font for mathematical symbols
-        unicode_font = bpy.data.fonts.load(file_path)
-        self.font.append(unicode_font)
-        
-        if not self.sa_term():  # <TERM>
-            return False
-
-        if not self.sa_more_term():  # <MORE_TERM>
-            return False
-
-        token = self.get_token()
-        
-        if token.type != "END":
-            print("Error, not all tokens have been read!")
-            print("Value of last token: " + token.value)
-            return False
-        
-        # select all objects in base collection
-        for obj in bpy.data.collections[collection.name].all_objects:  
-            obj.select_set(True)
-
-        return True
-
     def execute_action(self, action, token):
         # Context actions
         if action == '#ACTION_SQRT_CONTEXT':
@@ -1072,15 +841,17 @@ class SyntaxAnalyser(LexicalAnalyser):
 
         # <CONST> actions
         if action == '#ACTION_GENERATE_TEXT':
+            token = self.get_token()
             gen_text(self.context, token.value, self.font[0])
             gen_calculate(self.parameters, self.text_scale, self.levels)
             gen_position(self.parameters, True)
             gen_collection(self.context, self.current_collection, self.base_collection)
-            self.get_token()
             return True
 
+        # <COMMAND> actions
         if action == '#ACTION_SPACE':
-            space = self.get_space_size(token.value, self.parameters.scale)
+            token = self.get_token()
+            space = space_sizes[token.value] * self.parameters.scale
             self.parameters.width += space
             return True
 
@@ -1091,8 +862,6 @@ class SyntaxAnalyser(LexicalAnalyser):
             return self.sa_sum("prod")
 
         elif action == '#ACTION_INTEGRAL':
-            if not gen_math_sym(self.context, token.value, self.font[1]):
-                return False
             gen_calculate(self.parameters, self.text_scale, self.levels)
             gen_position(self.parameters, True)
 
@@ -1110,6 +879,7 @@ class SyntaxAnalyser(LexicalAnalyser):
             gen_collection(self.context, self.current_collection, self.base_collection)
             return True
 
+        # <SQRT> actions
         elif action == '#ACTION_SQRT_INIT':
             # saving parameters
             gen_calculate(self.parameters, self.text_scale, self.levels)
@@ -1164,7 +934,6 @@ class SyntaxAnalyser(LexicalAnalyser):
             # join collection into parent collection
             gen_join_collections(self.context, sqrt_collection, parent_collection)
             self.current_collection = parent_collection  # set current collection
-            self.get_token()
             return True
 
         else:
@@ -1234,9 +1003,13 @@ class SyntaxAnalyser(LexicalAnalyser):
             # non-terminal
             else:
                 print(f"Token type: '{token.type}'")
+                print(f"Token value: '{token.value}'")
+                # TODO clean lookup
                 lookup_key = token.value if token.type == "COMMAND" or token.type == "CLOSE_BRACKET" or token.type == "OPEN_BRACKET" else token.type
                 if self.parsing_context == "SQRT" and token.type == "_TEXT" and token.value in ['[',']']:
                     lookup_key = token.value
+                if token.type == "_SPACE_COMMAND":
+                    lookup_key = token.type
                 rule_rhs = math_ll_table.get((top_of_stack, lookup_key))
 
                 if rule_rhs:

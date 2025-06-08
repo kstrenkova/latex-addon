@@ -18,15 +18,16 @@ math_ll_table = {
 
     # --- TERM ---
     # <TERM> -> <CONST>
-    ('TERM', '_TEXT'):             ['CONST'],
-    ('TERM', '_SPECIAL_CHAR'):  ['CONST'],
-    ('TERM', 'enter'):            ['CONST'],
+    ('TERM', '_TEXT'):            ['CONST'],
+    ('TERM', '_SPECIAL_CHAR'):    ['CONST'],
+    ('TERM', '_ENTER'):            ['CONST'],
     ('TERM', 'index_exponent'):   ['CONST'],
     # <TERM> -> <COMMAND>
     ('TERM', '{'):                ['COMMAND'],
     ('TERM', 'sqrt'):             ['COMMAND'],
     ('TERM', 'frac'):             ['COMMAND'],
     ('TERM', 'command'):          ['COMMAND'],
+    ('TERM', '_SPACE_COMMAND'):   ['COMMAND'],
     # <TERM -> <BLOCK>
     ('TERM', 'begin'):            ['BLOCK'],
 
@@ -40,6 +41,7 @@ math_ll_table = {
     ('MORE_TERM', 'sqrt'):             ['TERM', 'MORE_TERM'],
     ('MORE_TERM', 'frac'):             ['TERM', 'MORE_TERM'],
     ('MORE_TERM', 'command'):          ['TERM', 'MORE_TERM'],
+    ('MORE_TERM', '_SPACE_COMMAND'):   ['TERM', 'MORE_TERM'],
     ('MORE_TERM', 'begin'):            ['TERM', 'MORE_TERM'],
     # <MORE_TERM> -> epsilon
     ('MORE_TERM', '}'):                ['epsilon'],
@@ -53,7 +55,7 @@ math_ll_table = {
     # <CONST> -> special_char
     ('CONST', '_SPECIAL_CHAR'):     ['#ACTION_GENERATE_TEXT'],
     # <CONST> -> enter
-    ('CONST', 'enter'):            ['enter'],
+    ('CONST', '_ENTER'):            ['enter'],
     # <CONST> -> index_exponent <AFTER_EI>
     ('CONST', 'index_exponent'):   ['index_exponent', 'AFTER_EI'],
 
@@ -67,8 +69,7 @@ math_ll_table = {
     # <COMMAND> -> command
     ('COMMAND', 'sum'): ['sum', '#ACTION_SUM'],
     ('COMMAND', 'prod'): ['prod', '#ACTION_PROD'],
-    ('COMMAND', 'quad'): ['quad', '#ACTION_SPACE'],
-    ('COMMAND', 'qquad'): ['qquad', '#ACTION_SPACE'],
+    ('COMMAND', '_SPACE_COMMAND'): [ '#ACTION_SPACE'],
     ('COMMAND', 'int'): ['int', '#ACTION_INTEGRAL'],
 
     # --- BLOCK ---

@@ -100,7 +100,6 @@ class WM_OT_AddText(bpy.types.Operator):
         # create class for analysis 
         syntax = SyntaxAnalyser(cus_pt.latex_text, context, cus_pt.text_scale, cus_pt.font_path)
 
-        #if not syntax.sa_prog():
         if not syntax.parse():
             warn_msg = 'Mathematical equation was not fully generated. Check system console for more info on this matter.'
             self.report({'WARNING'}, warn_msg)

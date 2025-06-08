@@ -1,7 +1,33 @@
 # ---------------------------------------------------------------------------
-# File name   : unicode_db.py
+# File name   : characters_db.py
 # Created By  : Katarina Strenkova
 # ---------------------------------------------------------------------------
+
+space_sizes = {
+    '!': -0.1,
+    ',': 0.15,
+    ':': 0.2,
+    ';': 0.25,
+    ' ': 0.3,
+    "quad": 0.6,
+    "qquad": 1.2
+}
+
+matrix_brackets = {
+    "matrix":  ('', ''),
+    "bmatrix": ('[', ']'),
+    "Bmatrix": ('{', '}'),
+    "pmatrix": ('(', ')'),
+    "vmatrix": ('|', '|'),
+    "Vmatrix": ('||', '||')
+}
+
+special_chars = [
+    "OPEN_BRACKET",
+    "CLOSE_BRACKET",
+    "AMPERSAND",
+    "UNDERSCORE"
+]
 
 unicode_chars = [
     # lower case greek alphabet

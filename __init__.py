@@ -14,13 +14,13 @@ if "bpy" in locals():
     import importlib
     importlib.reload(analyser)
     importlib.reload(generator)
-    importlib.reload(unicode_db)
+    importlib.reload(characters_db)
     importlib.reload(ui)
 else:
     from . import analyser
     from . import generator
     from . import ui
-    from . import unicode_db
+    from . import characters_db
 
 
 # register

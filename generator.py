@@ -8,8 +8,8 @@ from bpy_extras.object_utils import object_data_add  # add sqrt symbol
                        
 from mathutils import Vector  # vertices
 
-# unicode characters database
-from .unicode_db import unicode_chars
+# characters database
+from .characters_db import unicode_chars
 
 
 # function generates text in given font
