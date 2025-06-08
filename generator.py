@@ -5,15 +5,6 @@
 
 import bpy
 from bpy_extras.object_utils import object_data_add  # add sqrt symbol
-
-from bpy.props import (StringProperty,
-                       BoolProperty,
-                       IntProperty,
-                       FloatProperty,
-                       FloatVectorProperty,
-                       EnumProperty,
-                       PointerProperty,
-                       )
                        
 from mathutils import Vector  # vertices
 
@@ -742,5 +733,4 @@ def gen_matrix_center(param, collection, xy_size, bracket):
      
     # center matrix into row
     for obj in bpy.data.collections[collection].all_objects:
-        obj.location.y -= center_loc            
-
+        obj.location.y -= center_loc

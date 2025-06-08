@@ -9,6 +9,7 @@ import os.path
 
 # functions from generator
 from .generator import *
+from .ll_table import *
 
 
 # class for tokens
@@ -90,7 +91,7 @@ class LexicalAnalyser:
                     self.text = self.text[1:]  # erase read character
                     continue
                 elif c == "ANGLE_BRACKETS":
-                    token.type = "TEXT"
+                    token.type = "_TEXT"
                     token.value = self.text[0]
                     self.text = self.text[1:]  # erase read character
                     return token
@@ -103,7 +104,7 @@ class LexicalAnalyser:
             # COMMANDS
             elif state == "STATE_COMMAND":
                 if self.is_special_char(c):
-                    token.type = "SPECIAL_CHAR"
+                    token.type = "_SPECIAL_CHAR"
                     token.value = self.text[0]
                     self.text = self.text[1:]  # erase read character
                     return token
@@ -135,10 +136,10 @@ class LexicalAnalyser:
                     token.value = tmp_string
                     return token
 
-            # TEXT
+            # _TEXT
             elif state == "STATE_TEXT":
                 if c != "OTHER" and c != "COMMAND_SPACES":
-                    token.type = "TEXT"
+                    token.type = "_TEXT"
                     token.value = tmp_string
                     return token
                 else:
@@ -194,7 +195,7 @@ class LexicalAnalyser:
 
     # function returns token to latex string
     def return_token(self, token):
-        if token.type == "COMMAND" or token.type == "SPECIAL_CHAR" or token.type == "ENTER":
+        if token.type == "COMMAND" or token.type == "_SPECIAL_CHAR" or token.type == "ENTER":
             self.text = '\\' + token.value + self.text
         else:
             self.text = token.value + self.text
@@ -203,6 +204,10 @@ class LexicalAnalyser:
 class SyntaxAnalyser(LexicalAnalyser):
     def __init__(self, latex_text, context, text_scale, font_path):
         super().__init__(latex_text)
+
+        self.stack = ['$', 'PROG']
+        self.state_stack = []
+        self.parsing_context = "DEFAULT"
 
         self.context = context
         self.text_scale = text_scale
@@ -273,7 +278,7 @@ class SyntaxAnalyser(LexicalAnalyser):
     # function returns if token is <CONST>
     def is_const(token):
         all_types = [
-            "TEXT", "SPECIAL_CHAR", "UNDERSCORE", "CARET", "ENTER"
+            "_TEXT", "_SPECIAL_CHAR", "UNDERSCORE", "CARET", "ENTER"
         ]
         # <CONST>
         if token.type in all_types:
@@ -314,7 +319,7 @@ class SyntaxAnalyser(LexicalAnalyser):
                 "bmatrix", "Bmatrix", "matrix", "pmatrix", "Pmatrix", "vmatrix", "Vmatrix"
             ]
             token = self.get_token()
-            if token.type == "TEXT" and token.value in all_matrix:
+            if token.type == "_TEXT" and token.value in all_matrix:
                 # gets the bracket symbol
                 bracket_type = self.get_mx_brackets(token.value)
                 # }
@@ -353,24 +358,17 @@ class SyntaxAnalyser(LexicalAnalyser):
 
         return False
 
-    # <MATRIX> -> <COMMAND> <MORE_MATRIX>
-    #          -> <CONST> <MORE_MATRIX>
-    #          -> & <MORE_MATRIX>
+    # <MATRIX> -> <CONST> <MATRIX>
+    #          -> <BLOCK> <MATRIX>
+    #          -> <COMMAND> <MATRIX>
+    #          -> & <MATRIX>
     #          -> epsilon
     def sa_matrix(self, tmp_param, parent_collection):
         token = self.get_token()
 
-        if self.is_command(token) or self.is_const(token) or token.type == "AMPERSAND":
-            # <COMMAND>
-            if self.is_command(token):
-                self.return_token(token)
-                if self.sa_command():
-                    # <MORE_MATRIX>
-                    if self.sa_more_matrix(tmp_param, parent_collection):
-                        return True
-
+        if self.is_const(token) or self.is_block(token) or self.is_command(token) or token.type == "AMPERSAND":
             # <CONST>
-            elif self.is_const(token):
+            if self.is_const(token):
                 # enter (\\)
                 if token.type == "ENTER":
                     # matrix cell collection
@@ -388,8 +386,24 @@ class SyntaxAnalyser(LexicalAnalyser):
                 self.return_token(token)  # return token
             
                 if self.sa_const():  
-                    # <MORE_MATRIX>
-                    if self.sa_more_matrix(tmp_param, parent_collection):
+                    # <MATRIX>
+                    if self.sa_matrix(tmp_param, parent_collection):
+                        return True
+
+            # <BLOCK>
+            elif self.is_block(token):
+                self.return_token(token)
+                if self.sa_block():
+                    # <MATRIX>
+                    if self.sa_matrix(tmp_param, parent_collection):
+                        return True
+
+            # <COMMAND>
+            elif self.is_command(token):
+                self.return_token(token)
+                if self.sa_command():
+                    # <MATRIX>
+                    if self.sa_matrix(tmp_param, parent_collection):
                         return True
 
             # &
@@ -399,8 +413,8 @@ class SyntaxAnalyser(LexicalAnalyser):
                 
                 # add collection to row
                 self.matrix.obj_array[self.matrix.row_num].append(self.current_collection)
-                if self.sa_more_matrix(tmp_param, parent_collection):
-                    # <MORE_MATRIX>
+                if self.sa_matrix(tmp_param, parent_collection):
+                    # <MATRIX>
                     return True  
 
         else:
@@ -409,23 +423,6 @@ class SyntaxAnalyser(LexicalAnalyser):
             return True
 
         return False
-    
-    # <MORE_MATRIX> -> <MATRIX> <MORE_MATRIX>
-    #               -> epsilon
-    def sa_more_matrix(self, tmp_param, parent_collection):
-        token = self.get_token()
-        if self.is_command(token) or self.is_const(token) or token.type == "AMPERSAND":
-            self.return_token(token)
-            if not self.sa_matrix(tmp_param, parent_collection):  # <MATRIX>
-                return False
-
-            return self.sa_more_matrix(tmp_param, parent_collection)  # <MORE_MATRIX>
-
-        else:
-            # epsilon
-            self.return_token(token)
-
-        return True
 
     # <SQRT> -> [ <MORE_TERM> ] { <MORE_TERM> }
     #        -> { <MORE_TERM> }
@@ -435,7 +432,7 @@ class SyntaxAnalyser(LexicalAnalyser):
         token = self.get_token()
 
         # [
-        if token.type == "TEXT" and token.value == "[":
+        if token.type == "_TEXT" and token.value == "[":
             # creating square root multipliers
             self.levels.ei_array.append("exp")
             self.parameters.width += 0.1  # space before multipliers
@@ -444,7 +441,7 @@ class SyntaxAnalyser(LexicalAnalyser):
             if self.sa_more_term():
                 # ]
                 token = self.get_token()
-                if token.type == "TEXT" and token.value == "]":
+                if token.type == "_TEXT" and token.value == "]":
                     self.sqrt = False
                     self.levels.ei_array.pop()
                     gen_calculate(self.parameters, self.text_scale, self.levels)
@@ -779,7 +776,7 @@ class SyntaxAnalyser(LexicalAnalyser):
 
         # text
         # special_symbols
-        elif token.type == "TEXT" or token.type == "SPECIAL_CHAR":
+        elif token.type == "_TEXT" or token.type == "_SPECIAL_CHAR":
             # generate text
             gen_text(self.context, token.value, self.font[0])
             gen_collection(self.context, self.current_collection, self.base_collection)
@@ -804,7 +801,7 @@ class SyntaxAnalyser(LexicalAnalyser):
         token = self.get_token()
 
         # text + special_symbols
-        if token.type == "TEXT" or token.type == "SPECIAL_CHAR":
+        if token.type == "_TEXT" or token.type == "_SPECIAL_CHAR":
             gen_text(self.context, token.value, self.font[0])
             gen_calculate(self.parameters, self.text_scale, self.levels)
             gen_position(self.parameters, True)
@@ -938,7 +935,7 @@ class SyntaxAnalyser(LexicalAnalyser):
                                 if "MatrixCellCollection" in collection.name:
                                     # join all objects into one parent collection
                                     for obj in collection.all_objects:
-                                        bpy.data.collections[mx_coll.name].objects.link(obj) 
+                                        bpy.data.collections[mx_coll.name].objects.link(obj)
                                         collection.objects.unlink(obj)   
                             
                                     # remove matrix cell collection
@@ -989,7 +986,7 @@ class SyntaxAnalyser(LexicalAnalyser):
         token = self.get_token()
 
         # special sqrt ]
-        if self.sqrt and token.type == "TEXT" and token.value == "]":
+        if self.sqrt and token.type == "_TEXT" and token.value == "]":
             self.return_token(token)
             return True
 
@@ -1012,7 +1009,7 @@ class SyntaxAnalyser(LexicalAnalyser):
         # creating base collection
         collection = bpy.data.collections.new("MathematicalEqCollection")
         bpy.context.scene.collection.children.link(collection)
-        
+
         # set active collection
         layer_collection = bpy.context.view_layer.layer_collection
         # iterate through layer collection
@@ -1022,14 +1019,14 @@ class SyntaxAnalyser(LexicalAnalyser):
         
         self.base_collection = collection.name  # set base collection
         self.current_collection = collection.name  # set current collection
-        
+
         # chosen default font
         if self.font_path == "":
             self.font.append("")
         else:
             default_font = bpy.data.fonts.load(self.font_path)
             self.font.append(default_font)
-        
+
         # find path to addon
         addon_name = "Mathematical Equation Generator"
         for mod in addon_utils.modules():
@@ -1060,3 +1057,212 @@ class SyntaxAnalyser(LexicalAnalyser):
             obj.select_set(True)
 
         return True
+
+    def execute_action(self, action, token):
+        # Context actions
+        if action == '#ACTION_SQRT_CONTEXT':
+            print("Context change: Entering SQRT")
+            self.parsing_context = 'SQRT'
+            return True
+
+        elif action == '#ACTION_RESET_CONTEXT':
+            print(f"Context change: Leaving {self.parsing_context}")
+            self.parsing_context = 'DEFAULT'
+            return True
+
+        # <CONST> actions
+        if action == '#ACTION_GENERATE_TEXT':
+            gen_text(self.context, token.value, self.font[0])
+            gen_calculate(self.parameters, self.text_scale, self.levels)
+            gen_position(self.parameters, True)
+            gen_collection(self.context, self.current_collection, self.base_collection)
+            self.get_token()
+            return True
+
+        if action == '#ACTION_SPACE':
+            space = self.get_space_size(token.value, self.parameters.scale)
+            self.parameters.width += space
+            return True
+
+        elif action == '#ACTION_SUM':
+            return self.sa_sum("sum")
+
+        elif action == '#ACTION_PROD':
+            return self.sa_sum("prod")
+
+        elif action == '#ACTION_INTEGRAL':
+            if not gen_math_sym(self.context, token.value, self.font[1]):
+                return False
+            gen_calculate(self.parameters, self.text_scale, self.levels)
+            gen_position(self.parameters, True)
+
+            # move prod and integral symbol
+            self.context.active_object.location.y -= 0.3 * self.parameters.scale
+            self.parameters.width -= 0.2 * self.parameters.scale
+            gen_collection(self.context, self.current_collection, self.base_collection)
+            return True
+
+        elif action == '#ACTION_MATH_SYMBOL':
+            if not gen_math_sym(self.context, token.value, self.font[1]):
+                return False
+            gen_calculate(self.parameters, self.text_scale, self.levels)
+            gen_position(self.parameters, True)
+            gen_collection(self.context, self.current_collection, self.base_collection)
+            return True
+
+        elif action == '#ACTION_SQRT_INIT':
+            # saving parameters
+            gen_calculate(self.parameters, self.text_scale, self.levels)
+            self.state_stack.append(self.parameters.create_copy())
+            self.state_stack.append(self.current_collection)
+            print(f"STATE STACK: {self.state_stack}")
+
+            sqrt_width = 0.855927586555481  # width of square root symbol
+
+            # mode 'single' doesn't have multipliers
+            #if mode == "single":
+            self.parameters.width += sqrt_width * self.parameters.scale
+            # else:
+            #     tmp_param.width -= (sqrt_width - 0.4) * self.parameters.scale
+            #     self.parameters.width += 0.4 * self.parameters.scale
+
+            # square root collection
+            sqrt_collection = bpy.data.collections.new("SqrtCollection")
+            bpy.data.collections[self.current_collection].children.link(sqrt_collection)
+            self.state_stack.append(sqrt_collection)
+            self.current_collection = sqrt_collection.name
+            print(f"STATE STACK: {self.state_stack}")
+            return True
+
+        elif action == '#ACTION_SQRT_CREATE':
+            print(f"STATE STACK: {self.state_stack}")
+            sqrt_collection = self.state_stack.pop()
+            parent_collection = self.state_stack.pop()
+            copied_param = self.state_stack.pop()
+
+            use_param = False
+            sqrt_param = {
+                "x_pos": 0,
+                "y_min": 0,
+                "y_max": 0
+            }
+
+            # gets parameters of text under square root
+            if len(sqrt_collection.all_objects):
+                use_param = True
+                sqrt_param['x_pos'] = gen_group_width(self.context, self.current_collection)
+                sqrt_param['y_min'] = gen_min_y(self.context, self.current_collection)
+                sqrt_param['y_max'] = gen_group_height(self.context, self.current_collection)
+
+            # generating sqrt symbol
+            gen_sqrt_sym(self.context)
+            gen_collection(self.context, parent_collection, self.base_collection)  # symbol into collection
+
+            # move sqrt symbol
+            gen_sqrt_move(self.context, copied_param, sqrt_param, use_param)
+
+            # join collection into parent collection
+            gen_join_collections(self.context, sqrt_collection, parent_collection)
+            self.current_collection = parent_collection  # set current collection
+            self.get_token()
+            return True
+
+        else:
+            print(f"Unknown action: '{action}'")
+            return False
+
+    # main function for parsing process
+    def parse(self):
+        try:
+            # creating base collection
+            collection = bpy.data.collections.new("MathematicalEqCollection")
+            bpy.context.scene.collection.children.link(collection)
+
+            # set active collection
+            layer_collection = bpy.context.view_layer.layer_collection
+            for layer in layer_collection.children:
+                if layer.name == collection.name:
+                    bpy.context.view_layer.active_layer_collection = layer
+
+            self.base_collection = collection.name
+            self.current_collection = collection.name
+
+            # chosen default font
+            if self.font_path != "":
+                self.font.append(bpy.data.fonts.load(self.font_path))
+
+            # unicode font for mathematical symbols (simplified path handling)
+            font_file = os.path.join(os.path.dirname(__file__), "fonts", "Kelvinch-Roman.otf")
+            self.font.append(bpy.data.fonts.load(font_file))
+
+        except Exception as e:
+            print(f"Error during initialization: {e}")
+            return False
+
+        parsing_success = True
+
+        # parsing loop
+        while self.stack:
+            top_of_stack = self.stack[-1]
+            token = self.peek_token()
+            print(f"STACK: {self.stack}")
+
+            # successful parsing
+            if top_of_stack == '$' and token.type == 'END':
+                print("Success!")
+                self.stack.pop()
+                break
+
+            # actions
+            elif top_of_stack.startswith('#'):
+                action = self.stack.pop()
+                print(f"CT {token.value}")
+                if not self.execute_action(action, token):
+                    print(f"Action error: {action}")
+                    return False
+
+            # terminal
+            elif self.is_terminal(top_of_stack):
+                if top_of_stack == token.value:
+                    self.stack.pop()
+                    self.get_token()
+                else:
+                    print(f"Syntax Error: Expected '{top_of_stack}' but got '{token.value}'")
+                    parsing_success = False
+                    break
+
+            # non-terminal
+            else:
+                print(f"Token type: '{token.type}'")
+                lookup_key = token.value if token.type == "COMMAND" or token.type == "CLOSE_BRACKET" or token.type == "OPEN_BRACKET" else token.type
+                if self.parsing_context == "SQRT" and token.type == "_TEXT" and token.value in ['[',']']:
+                    lookup_key = token.value
+                rule_rhs = math_ll_table.get((top_of_stack, lookup_key))
+
+                if rule_rhs:
+                    self.stack.pop()
+                    if rule_rhs != ['epsilon']:
+                        for symbol in reversed(rule_rhs):
+                            self.stack.append(symbol)
+                else:
+                    print(f"Syntax Error: No rule for ({top_of_stack}, {lookup_key}, {rule_rhs})")
+                    parsing_success = False
+                    break
+
+        if not parsing_success or self.stack:
+            print("Error, not all tokens have been read!")
+            return False
+
+        # select all objects in base collection
+        for obj in bpy.data.collections[collection.name].all_objects:
+            obj.select_set(True)
+
+        return True
+
+    def is_terminal(self, symbol):
+        return not (symbol.isupper() and symbol != '$')
+
+    def peek_token(self):
+        token = self.get_token()
+        self.return_token(token)
+        return token
