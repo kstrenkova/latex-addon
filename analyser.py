@@ -9,7 +9,7 @@ import os.path
 # functions from generator
 from .generator import *
 from .ll_table import *
-from .characters_db import space_sizes, special_chars
+from .characters_db import space_sizes, special_chars, unicode_chars
 
 
 # class for tokens
@@ -213,7 +213,6 @@ class SyntaxAnalyser(LexicalAnalyser):
         self.text_scale = text_scale
         self.font_path = font_path
         self.font = []  # default_font, unicode_font
-        self.sqrt = False
         self.sum = Sum(False, "", "", "", [])
         self.base_collection = ""
         self.current_collection = ""
@@ -336,103 +335,14 @@ class SyntaxAnalyser(LexicalAnalyser):
             return True
 
         return False
-
-    # <SQRT> -> [ <MORE_TERM> ] { <MORE_TERM> }
-    #        -> { <MORE_TERM> }
-    def sa_sqrt(self, mode):
-        
-        self.sqrt = True  # inside sqrt
-        token = self.get_token()
-
-        # [
-        if token.type == "_TEXT" and token.value == "[":
-            # creating square root multipliers
-            self.levels.ei_array.append("exp")
-            self.parameters.width += 0.1  # space before multipliers
-            
-            # <MORE_TERM>
-            if self.sa_more_term():
-                # ]
-                token = self.get_token()
-                if token.type == "_TEXT" and token.value == "]":
-                    self.sqrt = False
-                    self.levels.ei_array.pop()
-                    gen_calculate(self.parameters, self.text_scale, self.levels)
-                    
-                    # {
-                    token = self.get_token()
-                    if token.type == "OPEN_BRACKET":
-                        self.return_token(token)
-                        # { <MORE_TERM> }
-                        return self.sa_sqrt("multiple")
-
-        # {
-        elif token.type == "OPEN_BRACKET":
-            # saving parameters
-            gen_calculate(self.parameters, self.text_scale, self.levels)
-            tmp_param = self.parameters.create_copy()
-            
-            # saving parent collection to bind children collections to
-            parent_coll = self.current_collection
-            
-            sqrt_width = 0.855927586555481  # width of square root symbol
-            
-            # mode 'single' doesn't have multipliers
-            if mode == "single":
-                self.parameters.width += sqrt_width * self.parameters.scale
-            else:    
-                tmp_param.width -= (sqrt_width - 0.4) * self.parameters.scale
-                self.parameters.width += 0.4 * self.parameters.scale
-            
-            # square root collection
-            sqrt_coll = bpy.data.collections.new("SqrtCollection")
-            bpy.data.collections[parent_coll].children.link(sqrt_coll)
-            self.current_collection = sqrt_coll.name
-            
-            # <MORE_TERM>
-            if self.sa_more_term():
-                # }
-                token = self.get_token()
-                if token.type == "CLOSE_BRACKET":
-                    # bool to determine moving of sqrt symbol
-                    use_param = False
-                    sqrt_param = {
-                        "x_pos": 0,
-                        "y_min": 0,
-                        "y_max": 0
-                    }
-
-                    # gets parameters of text under square root
-                    if len(bpy.data.collections[self.current_collection].all_objects): 
-                        use_param = True
-                        sqrt_param['x_pos'] = gen_group_width(self.context, self.current_collection)
-                        sqrt_param['y_min'] = gen_min_y(self.context, self.current_collection)
-                        sqrt_param['y_max'] = gen_group_height(self.context, self.current_collection)   
-                    
-                    # generating sqrt symbol
-                    gen_sqrt_sym(self.context)
-                    gen_collection(self.context, parent_coll, self.base_collection)  # symbol into collection
-                    
-                    # move sqrt symbol
-                    gen_sqrt_move(self.context, tmp_param, sqrt_param, use_param)
-                    
-                    # join collection into parent collection
-                    gen_join_collections(self.context, sqrt_coll, parent_coll)
-                    self.current_collection = parent_coll  # set current collection
-                    
-                    return True
-                else:
-                    print("Error, missing closing bracket to command!")
-
-        return False
     
     # <SUM> -> index_exponent
     #       -> epsilon
     def sa_sum(self, symbol):
 
         # generate sum symbol
-        if not gen_math_sym(self.context, symbol, self.font[1]):
-            return False
+        if symbol in unicode_chars:
+            gen_text(self.context, unicode_chars[symbol], self.font[1])
                     
         gen_calculate(self.parameters, self.text_scale, self.levels)
         self.parameters.height -= 0.4 * self.parameters.scale  # move lower
@@ -596,7 +506,8 @@ class SyntaxAnalyser(LexicalAnalyser):
         # command (special group of commands)
         elif token.type == "COMMAND":
             # generate mathematic symbol
-            gen_math_sym(self.context, token.value,  self.font[1])
+            if token.value in unicode_chars:
+                gen_text(self.context, unicode_chars[token.value], self.font[1])
             gen_collection(self.context, self.current_collection, self.base_collection)   
         
             return self.is_both_ei(mode, False, self.parameters.width, parent_coll, exp_ix_coll)
@@ -665,12 +576,6 @@ class SyntaxAnalyser(LexicalAnalyser):
                 # <SQRT>
                 if self.sa_sqrt("single"):
                     return True
-            
-            # frac
-            elif token.value == "frac":
-                # <FRAC>
-                if self.sa_frac():
-                    return True 
                 
             # sum
             elif token.value == "sum" or token.value == "prod":
@@ -681,8 +586,8 @@ class SyntaxAnalyser(LexicalAnalyser):
             # command
             else:
                 # mathematic symbols
-                if not gen_math_sym(self.context, token.value, self.font[1]):
-                    return False
+                if token.value in unicode_chars:
+                    gen_text(self.context, unicode_chars[token.value], self.font[1])
                 
                 gen_calculate(self.parameters, self.text_scale, self.levels)
                 gen_position(self.parameters, True)
@@ -797,8 +702,10 @@ class SyntaxAnalyser(LexicalAnalyser):
             return True
 
         elif action == '#ACTION_MATH_SYMBOL':
-            if not gen_math_sym(self.context, token.value, self.font[1]):
-                return False
+            token = self.get_token()
+            if token.value in unicode_chars:
+                gen_text(self.context, unicode_chars[token.value], self.font[1])
+
             gen_calculate(self.parameters, self.text_scale, self.levels)
             gen_position(self.parameters, True)
             gen_collection(self.context, self.current_collection, self.base_collection)
@@ -1019,6 +926,8 @@ class SyntaxAnalyser(LexicalAnalyser):
                     lookup_key = token.value
                 if token.type == "_SPACE_COMMAND":
                     lookup_key = token.type
+                if token.type == "COMMAND" and token.value in unicode_chars:
+                    lookup_key = "_MATH_SYMBOL"
                 rule_rhs = math_ll_table.get((top_of_stack, lookup_key))
 
                 if rule_rhs:

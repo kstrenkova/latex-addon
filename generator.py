@@ -78,40 +78,22 @@ def gen_collection(context, collection, base_collection):
     
 
 # function creates new collection    
-def gen_new_collection(context, coll_name, parent_collection):
+def gen_new_collection(context, coll_name, parent_coll):
     # add new collection
     collection = bpy.data.collections.new(coll_name)
-    bpy.data.collections[parent_collection].children.link(collection)
+    bpy.data.collections[parent_coll].children.link(collection)
     return collection.name      
 
 
 # function joins collections into parent collection and removes child collection
-def gen_join_collections(context, collection, parent_collection):
+def gen_join_collections(context, collection, parent_coll):
     # join all objects into one parent collection
     for obj in bpy.data.collections[collection.name].all_objects:
-        bpy.data.collections[parent_collection].objects.link(obj)
+        bpy.data.collections[parent_coll].objects.link(obj)
         bpy.data.collections[collection.name].objects.unlink(obj)
         
     # remove child collection
-    bpy.data.collections.remove(collection)    
-    
-
-# function generates given mathematic symbol
-def gen_math_sym(context, command_name, font):
-
-    # find unicode representation of character
-    for char in unicode_chars:
-        if char[0] == command_name:
-            text = char[1]
-            # generate mathematical symbol    
-            gen_text(context, text, font)
-
-            return True
-        
-    # command is not in unicode database
-    print("Error, command '" + command_name + "' is not in unicode database!")
-    print("It's a possible misspelling or this command is not implemented in this version of addon.")
-    return False
+    bpy.data.collections.remove(collection)
 
 
 # function generates square root symbol

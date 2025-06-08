@@ -28,6 +28,7 @@ math_ll_table = {
     ('TERM', 'frac'):             ['COMMAND'],
     ('TERM', 'command'):          ['COMMAND'],
     ('TERM', '_SPACE_COMMAND'):   ['COMMAND'],
+    ('TERM', '_MATH_SYMBOL'):     ['COMMAND'],
     # <TERM -> <BLOCK>
     ('TERM', 'begin'):            ['BLOCK'],
 
@@ -42,6 +43,7 @@ math_ll_table = {
     ('MORE_TERM', 'frac'):             ['TERM', 'MORE_TERM'],
     ('MORE_TERM', 'command'):          ['TERM', 'MORE_TERM'],
     ('MORE_TERM', '_SPACE_COMMAND'):   ['TERM', 'MORE_TERM'],
+    ('MORE_TERM', '_MATH_SYMBOL'):     ['TERM', 'MORE_TERM'],
     ('MORE_TERM', 'begin'):            ['TERM', 'MORE_TERM'],
     # <MORE_TERM> -> epsilon
     ('MORE_TERM', '}'):                ['epsilon'],
@@ -70,6 +72,7 @@ math_ll_table = {
     ('COMMAND', 'sum'): ['sum', '#ACTION_SUM'],
     ('COMMAND', 'prod'): ['prod', '#ACTION_PROD'],
     ('COMMAND', '_SPACE_COMMAND'): ['#ACTION_SPACE'],
+    ('COMMAND', '_MATH_SYMBOL'):   ['#ACTION_MATH_SYMBOL'],
     ('COMMAND', 'int'): ['int', '#ACTION_INTEGRAL'],
 
     # --- BLOCK ---
