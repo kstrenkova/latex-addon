@@ -492,7 +492,7 @@ class SyntaxAnalyser(LexicalAnalyser):
                         # { text }
                         if self.is_matrix_figure("end", mx_coll.name, xy_size):
                             # set width of parameters
-                            self.parameters.width = gen_group_width(self.context, mx_coll.name) + 0.25
+                            self.parameters.width = gen_group_width(mx_coll.name) + 0.25
                              
                             # link objects to matrix collection
                             for collection in bpy.data.collections:
@@ -582,8 +582,7 @@ class SyntaxAnalyser(LexicalAnalyser):
             token = self.get_token()
             eis = ExpIxState(self.current_collection, self.parameters.create_copy())
             eis.mode = 'exp' if token.type == '_CARET' else 'ix'
-            eis.width = gen_group_width(self.context, self.current_collection)
-            print(f"CUrrent collection name: {self.current_collection}")
+            eis.width = gen_group_width(self.current_collection)
 
             # exponent or index collection
             eicoll = bpy.data.collections.new("ExponentIndexCollection")
@@ -612,13 +611,13 @@ class SyntaxAnalyser(LexicalAnalyser):
                         self.current_collection = self.sum.up_collection
 
                 # return width for the second index or exponent
-                self.parameters.width -= eis.width
+                self.parameters.width = eis.init_params.width
 
             elif self.levels.exp_ix == True:
                 self.levels.exp_ix = False
 
                 # calculate final width
-                sec_width = gen_group_width(self.context, self.current_collection)
+                sec_width = gen_group_width(self.current_collection)
                 fin_width = max(eis.width, sec_width)
 
                 self.parameters.width = fin_width + 0.1 * self.parameters.scale
@@ -677,7 +676,7 @@ class SyntaxAnalyser(LexicalAnalyser):
             # gets parameters of text under square root
             if len(sqrt_collection.all_objects):
                 use_param = True
-                sqrt_param['x_pos'] = gen_group_width(self.context, self.current_collection)
+                sqrt_param['x_pos'] = gen_group_width(self.current_collection)
                 sqrt_param['y_min'] = gen_min_y(self.context, self.current_collection)
                 sqrt_param['y_max'] = gen_group_height(self.context, self.current_collection)
 
@@ -719,7 +718,7 @@ class SyntaxAnalyser(LexicalAnalyser):
 
             # gets the furthest x position
             if len(bpy.data.collections[self.current_collection].all_objects):
-                fs.nwidth = gen_group_width(self.context, self.current_collection)
+                fs.nwidth = gen_group_width(self.current_collection)
 
             # move numerator objects
             gen_calculate(self.parameters, self.text_scale, self.levels)
@@ -741,7 +740,7 @@ class SyntaxAnalyser(LexicalAnalyser):
 
             # gets the furthest x position
             if len(bpy.data.collections[self.current_collection].all_objects):
-                fs.dwidth = gen_group_width(self.context, self.current_collection)
+                fs.dwidth = gen_group_width(self.current_collection)
 
             # move denominator objects
             gen_calculate(self.parameters, self.text_scale, self.levels)

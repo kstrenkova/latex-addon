@@ -328,7 +328,7 @@ def gen_move_sum(context, param, collection, sum):
             obj.location.y += bbox[0].y - max_y - 0.25 * param.scale
     
     # center text above sum symbol
-    exp_ix_width = gen_group_width(context, collection)        
+    exp_ix_width = gen_group_width(collection)        
     gen_center_sum(context, sum, collection, exp_ix_width, bbox[4].x)  # sum width        
             
             
@@ -357,8 +357,8 @@ def gen_fin_sum(context, sum, up_collection, down_collection):
     bbox = [sum_symbol.matrix_world @ Vector(corner) for corner in sum_symbol.bound_box]
     
     # find biggest width
-    up_width = gen_group_width(context, up_collection)
-    down_width = gen_group_width(context, down_collection)
+    up_width = gen_group_width(up_collection)
+    down_width = gen_group_width(down_collection)
     fin_width = max(up_width, down_width, bbox[4].x)  # sum symbol width
     diff = fin_width - bbox[4].x
     
@@ -420,7 +420,7 @@ def gen_center(context, obj1, obj2, collection):
     
 
 # function returns the furthest x position
-def gen_group_width(context, collection):
+def gen_group_width(collection):
     
     bpy.ops.object.select_all(action='DESELECT') # deselect all objects
     is_init = False  # set initialisation flag
@@ -545,7 +545,7 @@ def gen_matrix_x(context, obj_array, param, max_cell_x):
                 cell_width = 0
             else:    
                 collection = row[i]
-                cell_width = gen_group_width(context, collection)
+                cell_width = gen_group_width(collection)
                 
             max_width = max(max_width, cell_width)         
         
@@ -571,7 +571,7 @@ def gen_matrix_x(context, obj_array, param, max_cell_x):
             # center objects in row
             if len(row) > i:    
                 collection = row[i]
-                cell_width = gen_group_width(context, collection)
+                cell_width = gen_group_width(collection)
                 gen_center(context, cell_width, max_width, collection)
                      
         i += 1  # next collumn
@@ -660,7 +660,7 @@ def gen_matrix_param(context, param, collection, xy_size):
         # get x_min
         x_min = xy_size.pop()
         # get matrix width 
-        matrix_width = gen_group_width(context, collection) + bracket_width - x_min
+        matrix_width = gen_group_width(collection) + bracket_width - x_min
         xy_size.append(matrix_width)
     
     return xy_size
