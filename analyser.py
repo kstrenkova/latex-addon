@@ -51,6 +51,15 @@ class Sum:
         self.array = array
 
 
+# class for index and exponent
+class ExpIxState:
+    def __init__(self, parent_coll, init_params):
+        self.parent_coll = parent_coll
+        self.init_params = init_params
+        self.eicoll = None
+        self.mode = ''
+        self.width = 0
+
 # class for fraction
 class FractionState:
     def __init__(self, parent_coll, init_params):
@@ -171,8 +180,8 @@ class LexicalAnalyser:
             ('\\', "BACKSLASH"),
             ('{', "OPEN_BRACKET"),
             ('}', "CLOSE_BRACKET"),
-            ('^', "CARET"),
-            ('_', "UNDERSCORE"),
+            ('^', "_CARET"),
+            ('_', "_UNDERSCORE"),
             ('&', "AMPERSAND"),
             ('[', "ANGLE_BRACKETS"),
             (']', "ANGLE_BRACKETS"),
@@ -398,159 +407,6 @@ class SyntaxAnalyser(LexicalAnalyser):
             # epsilon
             self.return_token(token) 
             return True
-    
-    # function finds the wrong use of exponents and indexes
-    #          generates index + exponent
-    def is_both_ei(self, mode, brackets, saved_width, parent_coll, exp_ix_coll):
-        
-        token = self.get_token()  # get next token
-
-        # multiple uses of exponent + index
-        if self.levels.exp_ix and (token.type == "UNDERSCORE" or token.type == "CARET"):
-            print("Error, use of both index and exponent is only permitted once!")
-            return False
-                    
-        # exponent + index
-        elif (mode == "CARET" and token.type == "UNDERSCORE") \
-            or (mode == "UNDERSCORE" and token.type == "CARET"):
-            
-            self.return_token(token)
-            self.levels.exp_ix = True  # is inside cyclus
-            
-            # special sum exponent or index
-            if self.sum.bool:
-                if token.type == "UNDERSCORE":
-                    self.current_collection = self.sum.down_collection
-                else:
-                    self.current_collection = self.sum.up_collection
-                    
-            # move when its not already moved
-            if not brackets:
-                gen_calculate(self.parameters, self.text_scale, self.levels)
-                gen_position(self.parameters, False)
-            self.levels.ei_array.pop()
-            
-            # save first text width    
-            first_width = gen_group_width(self.context, self.current_collection)
-  
-            if brackets:
-                self.parameters.width = saved_width
-            
-            # call const function
-            if not self.sa_const():
-                return False
-            
-            self.levels.exp_ix = False  # is out of cyclus
-            
-            # calculate final width
-            sec_width = gen_group_width(self.context, self.current_collection)
-            fin_width = max(first_width, sec_width)    
-            
-            self.parameters.width = fin_width + 0.1 * self.parameters.scale
-            
-        elif token.type == "UNDERSCORE" or token.type == "CARET":
-            print("Error, use brackets to correctly make multiple exponents or indexes!")
-            return False
-        
-        else:
-            self.return_token(token) 
-            # move when its not already moved
-            if not brackets:
-                gen_calculate(self.parameters, self.text_scale, self.levels)
-                gen_position(self.parameters, not self.levels.exp_ix)
-            self.levels.ei_array.pop()
-                
-        # join collection into parent collection
-        gen_join_collections(self.context, exp_ix_coll, parent_coll)
-        self.current_collection = parent_coll  # set current collection
-            
-        return True    
-        
-
-    # <AFTER_EI> -> { <MORE_TERM> }
-    #            -> text
-    #            -> special_symbols
-    #            -> command (special group of commands)
-    def sa_after_ei(self, mode):
-        # saving parent collection to bind children collections to
-        parent_coll = self.current_collection
-        
-        # exponent or index collection
-        exp_ix_coll = bpy.data.collections.new("ExponentIndexCollection")
-              
-        bpy.data.collections[parent_coll].children.link(exp_ix_coll)
-        self.current_collection = exp_ix_coll.name
-        
-        # {
-        token = self.get_token()
-        if token.type == "OPEN_BRACKET":
-            tmp_width = self.parameters.width
-            # <MORE_TERM>
-            if self.sa_more_term():
-                # }
-                token = self.get_token()
-                if token.type == "CLOSE_BRACKET":
-                    return self.is_both_ei(mode, True, tmp_width, parent_coll, exp_ix_coll)
-                else:
-                    print("Error, missing closing bracket to command!")
-
-        # text
-        # special_symbols
-        elif token.type == "_TEXT" or token.type == "_SPECIAL_CHAR":
-            # generate text
-            gen_text(self.context, token.value, self.font[0])
-            gen_collection(self.context, self.current_collection, self.base_collection)
-        
-            return self.is_both_ei(mode, False, self.parameters.width, parent_coll, exp_ix_coll)
-        
-        # command (special group of commands)
-        elif token.type == "COMMAND":
-            # generate mathematic symbol
-            if token.value in unicode_chars:
-                gen_text(self.context, unicode_chars[token.value], self.font[1])
-            gen_collection(self.context, self.current_collection, self.base_collection)   
-        
-            return self.is_both_ei(mode, False, self.parameters.width, parent_coll, exp_ix_coll)
-        
-        return False
-
-    # <CONST> -> text
-    #         -> special_symbols
-    #         -> enter
-    #         -> index_exponent <IN_BRACKETS>
-    def sa_const(self):
-        token = self.get_token()
-
-        # text + special_symbols
-        if token.type == "_TEXT" or token.type == "_SPECIAL_CHAR":
-            gen_text(self.context, token.value, self.font[0])
-            gen_calculate(self.parameters, self.text_scale, self.levels)
-            gen_position(self.parameters, True)
-            gen_collection(self.context, self.current_collection, self.base_collection)
-            
-            return True
-        
-        # enter
-        elif token.type == "ENTER":
-            # skip if not in matrix
-            return True
-
-        # index_exponent
-        elif token.type == "UNDERSCORE":
-            self.levels.ei_array.append("ix")
-            gen_calculate(self.parameters, self.text_scale, self.levels)
-            # <IN_BRACKETS>
-            if self.sa_after_ei("UNDERSCORE"):
-                return True
-
-        elif token.type == "CARET":
-            self.levels.ei_array.append("exp")
-            gen_calculate(self.parameters, self.text_scale, self.levels)
-            # <IN_BRACKETS>
-            if self.sa_after_ei("CARET"):
-                return True
-
-        return False
 
     # <COMMAND> -> { <MORE_TERM> }
     #           -> sqrt <SQRT>
@@ -678,6 +534,16 @@ class SyntaxAnalyser(LexicalAnalyser):
             gen_collection(self.context, self.current_collection, self.base_collection)
             return True
 
+        elif action == '#ACTION_LEVEL_DOWN':
+            self.levels.ei_array.append("ix")
+            gen_calculate(self.parameters, self.text_scale, self.levels)
+            return True
+
+        elif action == '#ACTION_LEVEL_UP':
+            self.levels.ei_array.append("exp")
+            gen_calculate(self.parameters, self.text_scale, self.levels)
+            return True
+
         # <COMMAND> actions
         if action == '#ACTION_SPACE':
             token = self.get_token()
@@ -709,6 +575,65 @@ class SyntaxAnalyser(LexicalAnalyser):
             gen_calculate(self.parameters, self.text_scale, self.levels)
             gen_position(self.parameters, True)
             gen_collection(self.context, self.current_collection, self.base_collection)
+            return True
+
+        # <AFTER_EI> actions
+        elif action == '#ACTION_EI_INIT':
+            token = self.get_token()
+            eis = ExpIxState(self.current_collection, self.parameters.create_copy())
+            eis.mode = 'exp' if token.type == '_CARET' else 'ix'
+            eis.width = gen_group_width(self.context, self.current_collection)
+            print(f"CUrrent collection name: {self.current_collection}")
+
+            # exponent or index collection
+            eicoll = bpy.data.collections.new("ExponentIndexCollection")
+            bpy.data.collections[self.current_collection].children.link(eicoll)
+            eis.eicoll = eicoll
+
+            self.state_stack.append(eis)
+
+            self.current_collection = eicoll.name
+            return True
+
+        elif action == '#ACTION_EI_BOTH':
+            token = self.peek_token()
+            eis = self.state_stack.pop()
+
+            # exponent + index
+            if (eis.mode == "exp" and token.type == "_UNDERSCORE") \
+                or (eis.mode == "ix" and token.type == "_CARET"):
+                self.levels.exp_ix = True
+
+                # special sum exponent or index
+                if self.sum.bool:
+                    if token.type == "_UNDERSCORE":
+                        self.current_collection = self.sum.down_collection
+                    else:
+                        self.current_collection = self.sum.up_collection
+
+                # return width for the second index or exponent
+                self.parameters.width -= eis.width
+
+            elif self.levels.exp_ix == True:
+                self.levels.exp_ix = False
+
+                # calculate final width
+                sec_width = gen_group_width(self.context, self.current_collection)
+                fin_width = max(eis.width, sec_width)
+
+                self.parameters.width = fin_width + 0.1 * self.parameters.scale
+
+            elif token.type == "_UNDERSCORE" or token.type == "_CARET":
+                print("Error, use brackets to correctly make multiple exponents or indexes!")
+                return False
+
+            print(f"EI ARRAY: {self.levels.ei_array}")
+            self.levels.ei_array.pop()
+
+            # join collection into parent collection
+            gen_join_collections(self.context, eis.eicoll, eis.parent_coll)
+            self.current_collection = eis.parent_coll  # set current collection
+   
             return True
 
         # <SQRT> actions
@@ -928,15 +853,15 @@ class SyntaxAnalyser(LexicalAnalyser):
                     lookup_key = token.type
                 if token.type == "COMMAND" and token.value in unicode_chars:
                     lookup_key = "_MATH_SYMBOL"
-                rule_rhs = math_ll_table.get((top_of_stack, lookup_key))
+                rule = math_ll_table.get((top_of_stack, lookup_key))
 
-                if rule_rhs:
+                if rule:
                     self.stack.pop()
-                    if rule_rhs != ['epsilon']:
-                        for symbol in reversed(rule_rhs):
+                    if rule != ['epsilon']:
+                        for symbol in reversed(rule):
                             self.stack.append(symbol)
                 else:
-                    print(f"Syntax Error: No rule for ({top_of_stack}, {lookup_key}, {rule_rhs})")
+                    print(f"Syntax Error: No rule for ({top_of_stack}, {lookup_key}, {rule})")
                     parsing_success = False
                     break
 

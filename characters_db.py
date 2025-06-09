@@ -14,19 +14,19 @@ space_sizes = {
 }
 
 matrix_brackets = {
-    "matrix":  ('', ''),
-    "bmatrix": ('[', ']'),
-    "Bmatrix": ('{', '}'),
-    "pmatrix": ('(', ')'),
-    "vmatrix": ('|', '|'),
-    "Vmatrix": ('||', '||')
+    'matrix':  ('', ''),
+    'bmatrix': ('[', ']'),
+    'Bmatrix': ('{', '}'),
+    'pmatrix': ('(', ')'),
+    'vmatrix': ('|', '|'),
+    'Vmatrix': ('||', '||')
 }
 
 special_chars = [
-    "OPEN_BRACKET",
-    "CLOSE_BRACKET",
-    "AMPERSAND",
-    "UNDERSCORE"
+    'OPEN_BRACKET',
+    'CLOSE_BRACKET',
+    'AMPERSAND',
+    '_UNDERSCORE'
 ]
 
 unicode_chars = {
