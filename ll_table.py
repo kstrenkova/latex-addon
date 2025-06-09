@@ -95,7 +95,11 @@ math_ll_table = {
 
     # --- BLOCK ---
     # <BLOCK> -> begin { text } <MATRIX> end { text }
-    ('BLOCK', 'begin'):           ['begin', '{', 'text', '}', 'MATRIX', 'end', '{', 'text', '}'],
+    ('BLOCK', 'begin'): [
+        'begin', '#ACTION_MATRIX_INIT', '{', 'matrix', '}',
+        'MATRIX',
+        'end', '#ACTION_MATRIX_CREATE', '{', 'matrix', '}'
+    ],
 
     # --- AFTER_EI ---
     # <AFTER_EI> -> text
@@ -127,14 +131,13 @@ math_ll_table = {
 
     # --- MATRIX ---
     # TODO
-    ('MATRIX', 'text'):             ['CONST', 'MATRIX'],
-    ('MATRIX', 'special_symbols'):  ['CONST', 'MATRIX'],
-    ('MATRIX', 'enter'):            ['CONST', 'MATRIX'],
-    ('MATRIX', 'index_exponent'):   ['CONST', 'MATRIX'],
+    ('MATRIX', '_TEXT'):            ['CONST', 'MATRIX'],
+    ('MATRIX', '_SPECIAL_CHAR'):    ['CONST', 'MATRIX'],
+    ('MATRIX', '_ENTER'):           ['#ACTION_MATRIX_NEW_ROW', 'MATRIX'],
     ('MATRIX', '{'):                ['COMMAND', 'MATRIX'],
     ('MATRIX', 'sqrt'):             ['COMMAND', 'MATRIX'],
     ('MATRIX', 'frac'):             ['COMMAND', 'MATRIX'],
     ('MATRIX', 'command'):          ['COMMAND', 'MATRIX'],
-    ('MATRIX', '&'):                ['&', 'MATRIX'],
+    ('MATRIX', '_AMPERSAND'):       ['#ACTION_MATRIX_NEW_CELL', 'MATRIX'],
     ('MATRIX', 'end'):              ['epsilon'],
 }

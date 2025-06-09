@@ -644,10 +644,10 @@ def gen_matrix_y(context, obj_array, param, max_cell_x):
  
  
 # function calculates position of matrix brackets 
-def gen_matrix_param(context, param, collection, xy_size):
+def gen_matrix_param(context, left, collection, xy_size):
     
     # left bracket
-    if len(xy_size) == 1:
+    if left:
         # get matrix height
         min_y = gen_min_y(context, collection)
         max_y = gen_group_height(context, collection)

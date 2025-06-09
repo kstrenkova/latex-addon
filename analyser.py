@@ -9,7 +9,7 @@ import os.path
 # functions from generator
 from .generator import *
 from .ll_table import *
-from .characters_db import space_sizes, special_chars, unicode_chars
+from .characters_db import space_sizes, special_chars, unicode_chars, matrix_brackets
 
 
 # class for tokens
@@ -69,13 +69,23 @@ class FractionState:
         self.dcoll = None
         self.nwidth = 0
         self.dwidth = 0
-        
-        
+
+
+# class for matrix
+class MatrixState:
+    def __init__(self, parent_coll, init_params):
+        self.parent_coll = parent_coll
+        self.init_params = init_params
+        self.xy_size = []
+        self.mx_coll = None
+
+
 # class for matrix        
 class Matrix:
     def __init__(self, obj_array, row_num):
         self.obj_array = obj_array
         self.row_num = row_num
+        self.brackets = 'matrix'
 
 
 # class for lexical analyser
@@ -127,7 +137,7 @@ class LexicalAnalyser:
                     return Token("SPECIAL_CHAR", c)
                 elif c_type == "BACKSLASH":
                     self.position += 1
-                    return Token("ENTER", "\\")
+                    return Token("_ENTER", "\\")
                 elif c_type == "OTHER" and c in space_sizes:
                     self.position += 1
                     return Token("_SPACE_COMMAND", c)
@@ -182,7 +192,7 @@ class LexicalAnalyser:
             ('}', "CLOSE_BRACKET"),
             ('^', "_CARET"),
             ('_', "_UNDERSCORE"),
-            ('&', "AMPERSAND"),
+            ('&', "_AMPERSAND"),
             ('[', "ANGLE_BRACKETS"),
             (']', "ANGLE_BRACKETS"),
             (' ', "WHITESPACE"),
@@ -228,122 +238,6 @@ class SyntaxAnalyser(LexicalAnalyser):
         self.parameters = Parameters(text_scale, 0.0, 0.0, 0.0)
         self.levels = Levels([], False, 0, False)
         self.matrix = Matrix([[]], 0)
-    
-    # function returns if sequence of tokens is a matrix figure
-    # { text }
-    def is_matrix_figure(self, mode, parent_coll, xy_size):
-        # {
-        token = self.get_token()
-        if token.type == "OPEN_BRACKET":
-            # text
-            all_matrix = [
-                "bmatrix", "Bmatrix", "matrix", "pmatrix", "Pmatrix", "vmatrix", "Vmatrix"
-            ]
-            token = self.get_token()
-            if token.type == "_TEXT" and token.value in all_matrix:
-                # gets the bracket symbol
-                bracket_type = self.get_mx_brackets(token.value)
-                # }
-                token = self.get_token()
-                if token.type == "CLOSE_BRACKET":
-                         
-                    # at the end of matrix
-                    if mode == "end":
-                        # position matrix
-                        gen_matrix_pos(self.context, self.matrix.obj_array, self.parameters)
-                        
-                        # get matrix parameters
-                        xy_size = gen_matrix_param(self.context, self.parameters, parent_coll, xy_size)
-                        
-                        if not bracket_type[0] == '':
-                            # generate left bracket of matrix
-                            gen_text(self.context, bracket_type[0], self.font[1])
-                            gen_brackets(self.context, self.parameters, parent_coll, self.base_collection, xy_size, True)
-                            xy_size = gen_matrix_param(self.context, self.parameters, parent_coll, xy_size)
-                            
-                            # generate right bracket of matrix
-                            gen_text(self.context, bracket_type[1], self.font[1])
-                            gen_brackets(self.context, self.parameters, parent_coll, self.base_collection, xy_size, False)
-                        
-                        # center matrix into row
-                        gen_matrix_center(self.parameters, parent_coll, xy_size, bracket_type[0])
-                        
-                        # clear matrix array
-                        self.parameters.line = 0.0
-                        self.matrix.obj_array = [[]]
-                        self.matrix.row_num = 0
-                    
-                    return True
-                else:
-                    print("Error, missing closing bracket to command!")
-
-        return False
-
-    # <MATRIX> -> <CONST> <MATRIX>
-    #          -> <BLOCK> <MATRIX>
-    #          -> <COMMAND> <MATRIX>
-    #          -> & <MATRIX>
-    #          -> epsilon
-    def sa_matrix(self, tmp_param, parent_coll):
-        token = self.get_token()
-
-        if self.is_const(token) or self.is_block(token) or self.is_command(token) or token.type == "AMPERSAND":
-            # <CONST>
-            if self.is_const(token):
-                # enter (\\)
-                if token.type == "ENTER":
-                    # matrix cell collection
-                    self.current_collection = gen_new_collection(self.context, "MatrixCellCollection", parent_coll)
-                    
-                    # add new array that represents row
-                    self.matrix.obj_array.append([])
-                    self.matrix.row_num += 1
-                    self.matrix.obj_array[self.matrix.row_num].append(self.current_collection)
-                    
-                    # set width to start and height lower
-                    self.parameters.width = tmp_param.width
-                    self.parameters.line -= 1.0 * self.text_scale
-                      
-                self.return_token(token)  # return token
-            
-                if self.sa_const():  
-                    # <MATRIX>
-                    if self.sa_matrix(tmp_param, parent_coll):
-                        return True
-
-            # <BLOCK>
-            elif self.is_block(token):
-                self.return_token(token)
-                if self.sa_block():
-                    # <MATRIX>
-                    if self.sa_matrix(tmp_param, parent_coll):
-                        return True
-
-            # <COMMAND>
-            elif self.is_command(token):
-                self.return_token(token)
-                if self.sa_command():
-                    # <MATRIX>
-                    if self.sa_matrix(tmp_param, parent_coll):
-                        return True
-
-            # &
-            elif token.type == "AMPERSAND":
-                # matrix cell collection
-                self.current_collection = gen_new_collection(self.context, "MatrixCellCollection", parent_coll)
-                
-                # add collection to row
-                self.matrix.obj_array[self.matrix.row_num].append(self.current_collection)
-                if self.sa_matrix(tmp_param, parent_coll):
-                    # <MATRIX>
-                    return True  
-
-        else:
-            # epsilon
-            self.return_token(token)
-            return True
-
-        return False
     
     # <SUM> -> index_exponent
     #       -> epsilon
@@ -413,28 +307,10 @@ class SyntaxAnalyser(LexicalAnalyser):
     #           -> frac <FRAC>
     #           -> command <COMM_ARG>
     def sa_command(self):
-        # {
-        token = self.get_token()
-        if token.type == "OPEN_BRACKET":
-            # <MORE_TERM>
-            if self.sa_more_term():
-                # }
-                token = self.get_token()
-                if token.type == "CLOSE_BRACKET":
-                    return True
-                else:
-                    print("Error, missing closing bracket to command")
-
         # COMMAND type
-        elif token.type == "COMMAND":
-            # sqrt
-            if token.value == "sqrt":
-                # <SQRT>
-                if self.sa_sqrt("single"):
-                    return True
-                
+        if token.type == "COMMAND":
             # sum
-            elif token.value == "sum" or token.value == "prod":
+            if token.value == "sum" or token.value == "prod":
                  # <SUM>
                  if self.sa_sum(token.value):
                      return True                     
@@ -456,61 +332,6 @@ class SyntaxAnalyser(LexicalAnalyser):
                 gen_collection(self.context, self.current_collection, self.base_collection)
                 return True
 
-        return False
-
-    # <BLOCK> -> begin { text } <MATRIX> end { text }
-    def sa_block(self):
-        
-        # begin
-        token = self.get_token()
-        if token.type == "COMMAND" and token.value == "begin":
-            
-            # saving parent collection to bind children collections to
-            parent_coll = self.current_collection
-            
-            # saving current parameters
-            gen_calculate(self.parameters, self.text_scale, self.levels)
-            tmp_param = self.parameters.create_copy()
-            
-            xy_size = [tmp_param.width]  # array for matrix parameters
-            
-            # matrix collection
-            mx_coll = bpy.data.collections.new("MatrixBodyCollection")
-            bpy.data.collections[parent_coll].children.link(mx_coll)
-            
-            # first matrix cell collection
-            self.current_collection = gen_new_collection(self.context, "MatrixCellCollection", mx_coll.name)
-            self.matrix.obj_array[self.matrix.row_num].append(self.current_collection)
-            
-            # { text }
-            if self.is_matrix_figure("begin", mx_coll.name, xy_size):
-                # <MATRIX>
-                if self.sa_matrix(tmp_param, mx_coll.name):
-                    # end
-                    token = self.get_token()
-                    if token.type == "COMMAND" and token.value == "end":
-                        # { text }
-                        if self.is_matrix_figure("end", mx_coll.name, xy_size):
-                            # set width of parameters
-                            self.parameters.width = gen_group_width(mx_coll.name) + 0.25
-                             
-                            # link objects to matrix collection
-                            for collection in bpy.data.collections:
-                                if "MatrixCellCollection" in collection.name:
-                                    # join all objects into one parent collection
-                                    for obj in collection.all_objects:
-                                        bpy.data.collections[mx_coll.name].objects.link(obj)
-                                        collection.objects.unlink(obj)   
-                            
-                                    # remove matrix cell collection
-                                    bpy.data.collections.remove(collection)
-                               
-                            # join matrix collection into parent collection
-                            gen_join_collections(self.context, mx_coll, parent_coll)
-                            self.current_collection = parent_coll  # set current collection
-                            
-                            return True
-        # sa_block()                
         return False
 
     def execute_action(self, action, token):
@@ -775,6 +596,101 @@ class SyntaxAnalyser(LexicalAnalyser):
             self.levels.frac -= 1
             return True
 
+        # <MATRIX> actions
+        elif action == '#ACTION_MATRIX_INIT':
+            gen_calculate(self.parameters, self.text_scale, self.levels)
+
+            # saving state of the matrix
+            ms = MatrixState(self.current_collection, self.parameters.create_copy())
+            ms.xy_size.append(ms.init_params.width) # array for matrix parameters
+
+            # matrix collection
+            mx_coll = bpy.data.collections.new("MatrixBodyCollection")
+            bpy.data.collections[self.current_collection].children.link(mx_coll)
+            ms.mx_coll = mx_coll
+
+            self.state_stack.append(ms)
+
+            # first matrix cell collection
+            self.current_collection = gen_new_collection(self.context, "MatrixCellCollection", mx_coll.name)
+            self.matrix.obj_array[self.matrix.row_num].append(self.current_collection)
+            return True
+
+        elif action == '#ACTION_MATRIX_NEW_ROW':
+            token = self.get_token()
+            ms = self.state_stack[-1]
+
+            # matrix cell collection
+            self.current_collection = gen_new_collection(self.context, "MatrixCellCollection", ms.parent_coll)
+
+            # add new array that represents row
+            self.matrix.obj_array.append([])
+            self.matrix.row_num += 1
+            self.matrix.obj_array[self.matrix.row_num].append(self.current_collection)
+
+            # set width to start and height lower
+            self.parameters.width = ms.init_params.width
+            self.parameters.line -= 1.0 * self.text_scale
+            return True
+
+        elif action == '#ACTION_MATRIX_NEW_CELL':
+            token = self.get_token()
+            ms = self.state_stack[-1]
+
+            # matrix cell collection
+            self.current_collection = gen_new_collection(self.context, "MatrixCellCollection", ms.parent_coll)
+
+            # add collection to row
+            self.matrix.obj_array[self.matrix.row_num].append(self.current_collection)
+            return True
+
+        elif action == '#ACTION_MATRIX_CREATE':
+            ms = self.state_stack.pop()
+
+            # position matrix
+            gen_matrix_pos(self.context, self.matrix.obj_array, self.parameters)
+
+            # get matrix parameters
+            ms.xy_size = gen_matrix_param(self.context, True, ms.parent_coll, ms.xy_size)
+            bracket_type = matrix_brackets[self.matrix.brackets]
+
+            if not self.matrix.brackets == 'matrix':
+                # generate left bracket of matrix
+                gen_text(self.context, bracket_type[0], self.font[1])
+                gen_brackets(self.context, self.parameters, ms.parent_coll, self.base_collection, ms.xy_size, True)
+                ms.xy_size = gen_matrix_param(self.context, False, ms.parent_coll, ms.xy_size)
+
+                # generate right bracket of matrix
+                gen_text(self.context, bracket_type[1], self.font[1])
+                gen_brackets(self.context, self.parameters, ms.parent_coll, self.base_collection, ms.xy_size, False)
+
+            # center matrix into row
+            gen_matrix_center(self.parameters, ms.parent_coll, ms.xy_size, bracket_type[0])
+
+            # clear matrix array
+            self.parameters.line = 0.0
+            self.matrix.obj_array = [[]]
+            self.matrix.row_num = 0
+
+            # set width of parameters
+            self.parameters.width = gen_group_width(ms.mx_coll.name) + 0.25
+
+            # link objects to matrix collection
+            for collection in bpy.data.collections:
+                if "MatrixCellCollection" in collection.name:
+                    # join all objects into one parent collection
+                    for obj in collection.all_objects:
+                        bpy.data.collections[ms.mx_coll.name].objects.link(obj)
+                        collection.objects.unlink(obj)
+
+                    # remove matrix cell collection
+                    bpy.data.collections.remove(collection)
+
+            # join matrix collection into parent collection
+            gen_join_collections(self.context, ms.mx_coll, ms.parent_coll)
+            self.current_collection = ms.parent_coll  # set current collection
+            return True
+
         else:
             print(f"Unknown action: '{action}'")
             return False
@@ -852,6 +768,9 @@ class SyntaxAnalyser(LexicalAnalyser):
                     lookup_key = token.type
                 if token.type == "COMMAND" and token.value in unicode_chars:
                     lookup_key = "_MATH_SYMBOL"
+                if token.type == "_TEXT" and token.value in matrix_brackets:
+                    lookup_key = "matrix"
+
                 rule = math_ll_table.get((top_of_stack, lookup_key))
 
                 if rule:

@@ -25,7 +25,7 @@ matrix_brackets = {
 special_chars = [
     'OPEN_BRACKET',
     'CLOSE_BRACKET',
-    'AMPERSAND',
+    '_AMPERSAND',
     '_UNDERSCORE'
 ]
 
