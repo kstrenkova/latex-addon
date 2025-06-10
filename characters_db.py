@@ -61,7 +61,7 @@ unicode_chars = {
     'chi': '\u03c7',
     'psi': '\u03c8',
     'omega': '\u03c9',
-    
+
     # upper case greek alphabet
     'Gamma': '\u0393',
     'Delta': '\u0394',
@@ -74,7 +74,7 @@ unicode_chars = {
     'Phi': '\u03a6',
     'Psi': '\u03a8',
     'Omega': '\u03a9',
-    
+
     # relation operators
     'in': '\u2208',
     'notin': '\u2209',
@@ -97,7 +97,7 @@ unicode_chars = {
     'leq': '\u2264',
     'geq': '\u2265',
     'leqslant': '\u2264',
-    'geqslant': '\u2265', 
+    'geqslant': '\u2265',
     'll': '\u226a',
     'gg': '\u226b',
     'nless': '\u226e',
@@ -133,7 +133,7 @@ unicode_chars = {
     'nsucceq': '\u22e1',
     'frown': '\u2322',
     'smile': '\u263a',
-    
+
     # binary operators
     'ast': '*',
     'pm': '\xb1',
@@ -166,7 +166,7 @@ unicode_chars = {
     'triangleright': '\u25b9',
     'bigtriangledown': '\u25bd',
     'triangleleft': '\u25c3',
-    
+
     # logic notation
     'neg': '\xac',
     'implies': '\u21d2',
@@ -181,7 +181,7 @@ unicode_chars = {
     'lor': '\u2228',
     'top': '\u22a4',
     'bot': '\u22a5',
-    
+
     # arrows
     'leftarrow': '\u2190',
     'gets': '\u2190',
@@ -194,7 +194,7 @@ unicode_chars = {
     'Uparrow': '\u21d1',
     'Downarrow': '\u21d3',
     'Updownarrow': '\u21d5',
-    
+
     # brackets
     'lceil': '\u2308',
     'rceil': '\u2309',
@@ -204,7 +204,7 @@ unicode_chars = {
     'urcorner': '\u231d',
     'llcorner': '\u231e',
     'lrcorner': '\u231f',
-    
+
     # other symbols
     'backslash': '\\',
     'hbar': '\u0127',

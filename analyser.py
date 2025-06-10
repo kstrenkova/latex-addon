@@ -26,10 +26,10 @@ class Parameters:
         self.height = height
         self.width = width
         self.line = line
-        
+
     def create_copy(self):
         copy = Parameters(self.scale, self.height, self.width, self.line)
-        return copy     
+        return copy
 
 
 # class for levels
@@ -39,14 +39,14 @@ class Levels:
         self.exp_ix = exp_ix
         self.frac = frac
         self.matrix = matrix
-        
-        
-# class fot sum        
+
+
+# class fot sum
 class Sum:
     def __init__(self, bool, name, up_collection, down_collection, array):
         self.bool = bool
         self.name = name
-        self.up_collection = up_collection 
+        self.up_collection = up_collection
         self.down_collection = down_collection
         self.array = array
 
@@ -80,7 +80,7 @@ class MatrixState:
         self.mx_coll = None
 
 
-# class for matrix        
+# class for matrix
 class Matrix:
     def __init__(self, obj_array, row_num):
         self.obj_array = obj_array
@@ -176,16 +176,16 @@ class LexicalAnalyser:
                     return Token("COMMAND", string_value)
             elif state == "STATE_TEXT":
                 return Token("_TEXT", string_value)
-        
+
         # end token
         return Token("END", "")
-                   
+
     # end of get_token()
 
     @staticmethod
     # function gets the current character
     def get_char(input_character):
-        
+
         all_char = [
             ('\\', "BACKSLASH"),
             ('{', "OPEN_BRACKET"),
@@ -198,12 +198,12 @@ class LexicalAnalyser:
             (' ', "WHITESPACE"),
             ('\n', "WHITESPACE")
         ]
-        
+
          # return input character
         for item in all_char:
             if input_character == item[0]:
                 return item[1]
- 
+
         return "OTHER"
 
     # function returns token to latex string
@@ -238,7 +238,7 @@ class SyntaxAnalyser(LexicalAnalyser):
         self.parameters = Parameters(text_scale, 0.0, 0.0, 0.0)
         self.levels = Levels([], False, 0, False)
         self.matrix = Matrix([[]], 0)
-    
+
     # <SUM> -> index_exponent
     #       -> epsilon
     def sa_sum(self, symbol):
@@ -246,23 +246,23 @@ class SyntaxAnalyser(LexicalAnalyser):
         # generate sum symbol
         if symbol in unicode_chars:
             gen_text(self.context, unicode_chars[symbol], self.font[1])
-                    
+
         gen_calculate(self.parameters, self.text_scale, self.levels)
         self.parameters.height -= 0.4 * self.parameters.scale  # move lower
-        gen_position(self.parameters, True)        
+        gen_position(self.parameters, True)
         gen_collection(self.context, self.current_collection, self.base_collection)
-        
+
         self.sum.name = self.context.active_object.name  # save sum object
         token = self.get_token()  # get next token
-        
+
         # check index or exponent for sum
         if token.type == "UNDERSCORE" or token.type == "CARET":
             self.return_token(token)
             self.sum.bool = True  # index and exponent for sum
-            
+
             # saving parent collection to bind children collections to
             parent_coll = self.current_collection
-            
+
             # collection for upper indexes
             up_coll = bpy.data.collections.new("SumUpCollection")
             bpy.data.collections[parent_coll].children.link(up_coll)
@@ -272,34 +272,34 @@ class SyntaxAnalyser(LexicalAnalyser):
             down_coll = bpy.data.collections.new("SumDownCollection")
             bpy.data.collections[parent_coll].children.link(down_coll)
             self.sum.down_collection = down_coll.name
-            
+
             if token.type == "UNDERSCORE":
                 self.current_collection = down_coll.name
             else:
-                self.current_collection = up_coll.name    
-            
+                self.current_collection = up_coll.name
+
             # index_exponent
             if self.sa_const():
-                
+
                 # move sum limits
                 gen_move_sum(self.context, self.parameters, up_coll.name, self.sum)
                 gen_move_sum(self.context, self.parameters, down_coll.name, self.sum)
-                
+
                 space = 0.1 * self.parameters.scale
                 self.parameters.width = gen_fin_sum(self.context, self.sum, up_coll.name, down_coll.name) + space
-                
+
                 # join denominator collection into parent collection
                 gen_join_collections(self.context, up_coll, parent_coll)
                 gen_join_collections(self.context, down_coll, parent_coll)
                 self.current_collection = parent_coll  # set current collection
-                
+
                 # clear variables for sum
-                self.sum.bool = False 
+                self.sum.bool = False
                 self.sum.array = []
                 return True
         else:
             # epsilon
-            self.return_token(token) 
+            self.return_token(token)
             return True
 
     # <COMMAND> -> { <MORE_TERM> }
@@ -313,22 +313,22 @@ class SyntaxAnalyser(LexicalAnalyser):
             if token.value == "sum" or token.value == "prod":
                  # <SUM>
                  if self.sa_sum(token.value):
-                     return True                     
+                     return True
 
             # command
             else:
                 # mathematic symbols
                 if token.value in unicode_chars:
                     gen_text(self.context, unicode_chars[token.value], self.font[1])
-                
+
                 gen_calculate(self.parameters, self.text_scale, self.levels)
                 gen_position(self.parameters, True)
-                
+
                 # move prod and integral symbol
                 if token.value == "int":
-                    self.context.active_object.location.y -= 0.3 * self.parameters.scale   
+                    self.context.active_object.location.y -= 0.3 * self.parameters.scale
                     self.parameters.width -= 0.2 * self.parameters.scale
-                
+
                 gen_collection(self.context, self.current_collection, self.base_collection)
                 return True
 
@@ -416,44 +416,34 @@ class SyntaxAnalyser(LexicalAnalyser):
             return True
 
         elif action == '#ACTION_EI_BOTH':
-            token = self.peek_token()
+            token = self.get_token()
+            self.levels.ei_array.pop()
+            eis = self.state_stack[-1]
+
+            # special sum exponent or index
+            if self.sum.bool:
+                if token.type == "_UNDERSCORE":
+                    self.current_collection = self.sum.down_collection
+                else:
+                    self.current_collection = self.sum.up_collection
+
+            # return width for the second index or exponent
+            self.parameters.width = eis.init_params.width
+            return True
+
+        elif action == '#ACTION_EI_FINAL':
             eis = self.state_stack.pop()
 
-            # exponent + index
-            if (eis.mode == "exp" and token.type == "_UNDERSCORE") \
-                or (eis.mode == "ix" and token.type == "_CARET"):
-                self.levels.exp_ix = True
+            # calculate final width
+            sec_width = gen_group_width(self.current_collection)
+            fin_width = max(eis.width, sec_width)
 
-                # special sum exponent or index
-                if self.sum.bool:
-                    if token.type == "_UNDERSCORE":
-                        self.current_collection = self.sum.down_collection
-                    else:
-                        self.current_collection = self.sum.up_collection
-
-                # return width for the second index or exponent
-                self.parameters.width = eis.init_params.width
-
-            elif self.levels.exp_ix == True:
-                self.levels.exp_ix = False
-
-                # calculate final width
-                sec_width = gen_group_width(self.current_collection)
-                fin_width = max(eis.width, sec_width)
-
-                self.parameters.width = fin_width + 0.1 * self.parameters.scale
-
-            elif token.type == "_UNDERSCORE" or token.type == "_CARET":
-                print("Error, use brackets to correctly make multiple exponents or indexes!")
-                return False
-
-            print(f"EI ARRAY: {self.levels.ei_array}")
+            self.parameters.width = fin_width + 0.1 * self.parameters.scale
             self.levels.ei_array.pop()
 
             # join collection into parent collection
             gen_join_collections(self.context, eis.eicoll, eis.parent_coll)
             self.current_collection = eis.parent_coll  # set current collection
-   
             return True
 
         # <SQRT> actions
@@ -594,6 +584,18 @@ class SyntaxAnalyser(LexicalAnalyser):
 
             # decreasing level of fraction
             self.levels.frac -= 1
+            return True
+
+        # <SUM> actions
+        elif action == '#ACTION_SUM_INIT':
+            gen_text(self.context, unicode_chars['sum'], self.font[1])
+
+            gen_calculate(self.parameters, self.text_scale, self.levels)
+            self.parameters.height -= 0.4 * self.parameters.scale  # move lower
+            gen_position(self.parameters, True)
+            gen_collection(self.context, self.current_collection, self.base_collection)
+
+            self.sum.name = self.context.active_object.name  # save sum object
             return True
 
         # <MATRIX> actions
@@ -775,7 +777,12 @@ class SyntaxAnalyser(LexicalAnalyser):
 
                 if rule:
                     self.stack.pop()
-                    if rule != ['epsilon']:
+                    # TODO make it prettier
+                    if (token.value != '_' and top_of_stack == 'IX') or \
+                        (token.value != '^' and top_of_stack == 'EXP'):
+                        print(f"ASDSAd")
+                        continue
+                    elif rule != ['epsilon']:
                         for symbol in reversed(rule):
                             self.stack.append(symbol)
                 else:

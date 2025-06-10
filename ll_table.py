@@ -60,24 +60,18 @@ math_ll_table = {
     ('CONST', '_SPECIAL_CHAR'):     ['#ACTION_GENERATE_TEXT'],
     # <CONST> -> enter
     ('CONST', '_ENTER'):            ['enter'],
-    # <CONST> -> index_exponent <AFTER_EI>
-    # <CONST> -> index <AFTER_EI> <OPT_EXP>
-    # <CONST> -> exponent <AFTER_EI> <OPT_IX>
-    # <OPT_EXP> -> exponent <AFTER_EI>
-    # <OPT_EXP> -> epsilon
-    # <OPT_IX> -> index <AFTER_EI>
-    # <OPT_IX> -> epsilon
-    # <AFTER_EI> -> text
-    # <AFTER_EI> -> special_symbols
-    # <AFTER_EI> -> { <MORE_TERM> }
-    # <AFTER_EI> -> <COMMAND>
-    ('CONST', '_UNDERSCORE'): [
-        '#ACTION_LEVEL_DOWN', '#ACTION_EI_INIT', 'AFTER_EI', '#ACTION_EI_BOTH',
-    ],
-    ('CONST', '_CARET'): [
-        '#ACTION_LEVEL_UP', '#ACTION_EI_INIT', 'AFTER_EI', '#ACTION_EI_BOTH',
-    ],
+    # <CONST> -> index <EI_TERM> <EXP>
+    ('CONST', '_UNDERSCORE'): ['#ACTION_LEVEL_DOWN', '#ACTION_EI_INIT', 'EI_TERM', 'EXP'],
+    # <CONST> exponent <EI_TERM> <IX>
+    ('CONST', '_CARET'): ['#ACTION_LEVEL_UP', '#ACTION_EI_INIT', 'EI_TERM', 'IX'],
 
+    # <EXP> -> exponent <EI_TERM>
+    # <EXP> -> epsilon
+    ('EXP', '_CARET'): ['#ACTION_EI_BOTH', '#ACTION_LEVEL_UP', 'EI_TERM', '#ACTION_EI_FINAL'],
+
+    # <IX> -> index <EI_TERM>
+    # <IX> -> epsilon
+    ('IX', '_UNDERSCORE'): ['#ACTION_EI_BOTH', '#ACTION_LEVEL_DOWN', 'EI_TERM', '#ACTION_EI_FINAL'],
 
     # --- COMMAND ---
     # <COMMAND> -> { <MORE_TERM> }
@@ -87,7 +81,16 @@ math_ll_table = {
     # <COMMAND> -> frac <FRAC>
     ('COMMAND', 'frac'):             ['frac', 'FRAC'],
     # <COMMAND> -> command
-    ('COMMAND', 'sum'):              ['sum', '#ACTION_SUM'],
+
+
+    # <COMMAND> -> sum <SUM>
+    # <SUM> -> index <EI_TERM>
+    # <SUM> -> exponent <EI_TERM>
+    # <SUM> ->
+    ('SUM', '_UNDERSCORE'): [''],
+    # <COMMAND> -> sum index <EI_TERM>
+    # <COMMAND> -> sum exponent <EI_TERM>
+    ('COMMAND', 'sum'):              ['sum', '#ACTION_SUM_INIT'],
     ('COMMAND', 'prod'):             ['prod', '#ACTION_PROD'],
     ('COMMAND', '_SPACE_COMMAND'):   ['#ACTION_SPACE'],
     ('COMMAND', '_MATH_SYMBOL'):     ['#ACTION_MATH_SYMBOL'],
@@ -101,17 +104,17 @@ math_ll_table = {
         'end', '#ACTION_MATRIX_CREATE', '{', 'matrix', '}'
     ],
 
-    # --- AFTER_EI ---
-    # <AFTER_EI> -> text
-    ('AFTER_EI', '_TEXT'):           ['#ACTION_GENERATE_TEXT'],
-    # <AFTER_EI> -> special_symbols
-    ('AFTER_EI', '_SPECIAL_CHAR'):   ['#ACTION_GENERATE_TEXT'],
-    # <AFTER_EI> -> { <MORE_TERM> }
-    ('AFTER_EI', '{'):               ['COMMAND'],
-    # <AFTER_EI> -> <COMMAND>
-    ('AFTER_EI', 'sqrt'):            ['COMMAND'],
-    ('AFTER_EI', 'frac'):            ['COMMAND'],
-    ('AFTER_EI', '_MATH_SYMBOL'):    ['COMMAND'],
+    # --- EI_TERM ---
+    # <EI_TERM> -> text
+    ('EI_TERM', '_TEXT'):           ['#ACTION_GENERATE_TEXT'],
+    # <EI_TERM> -> special_symbols
+    ('EI_TERM', '_SPECIAL_CHAR'):   ['#ACTION_GENERATE_TEXT'],
+    # <EI_TERM> -> { <MORE_TERM> }
+    ('EI_TERM', '{'):               ['COMMAND'],
+    # <EI_TERM> -> <COMMAND>
+    ('EI_TERM', 'sqrt'):            ['COMMAND'],
+    ('EI_TERM', 'frac'):            ['COMMAND'],
+    ('EI_TERM', '_MATH_SYMBOL'):    ['COMMAND'],
 
     # --- SQRT ---
     # <SQRT> -> [ <MORE_TERM> ] { <MORE_TERM> }
