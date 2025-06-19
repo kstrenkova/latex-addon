@@ -6,15 +6,7 @@
 math_ll_table = {
     # --- PROG ---
     # <PROG> -> <TERM> <MORE_TERM>
-    ('PROG', '_TEXT'):            ['TERM', 'MORE_TERM'],
-    ('PROG', '_SPECIAL_CHAR'):    ['TERM', 'MORE_TERM'],
-    ('PROG', 'enter'):            ['TERM', 'MORE_TERM'],
-    ('PROG', 'index_exponent'):   ['TERM', 'MORE_TERM'],
-    ('PROG', '{'):                ['TERM', 'MORE_TERM'],
-    ('PROG', 'sqrt'):             ['TERM', 'MORE_TERM'],
-    ('PROG', 'frac'):             ['TERM', 'MORE_TERM'],
-    ('PROG', 'command'):          ['TERM', 'MORE_TERM'],
-    ('PROG', 'begin'):            ['TERM', 'MORE_TERM'],
+    ('PROG', '_ANY'):            ['TERM', 'MORE_TERM'],
 
     # --- TERM ---
     # <TERM> -> <CONST>
@@ -28,6 +20,7 @@ math_ll_table = {
     ('TERM', 'sqrt'):             ['COMMAND'],
     ('TERM', 'frac'):             ['COMMAND'],
     ('TERM', 'command'):          ['COMMAND'],
+    ('TERM', 'sum'):              ['COMMAND'],
     ('TERM', '_SPACE_COMMAND'):   ['COMMAND'],
     ('TERM', '_MATH_SYMBOL'):     ['COMMAND'],
     # <TERM -> <BLOCK>
@@ -44,6 +37,7 @@ math_ll_table = {
     ('MORE_TERM', 'sqrt'):             ['TERM', 'MORE_TERM'],
     ('MORE_TERM', 'frac'):             ['TERM', 'MORE_TERM'],
     ('MORE_TERM', 'command'):          ['TERM', 'MORE_TERM'],
+    ('MORE_TERM', 'sum'):              ['TERM', 'MORE_TERM'],
     ('MORE_TERM', '_SPACE_COMMAND'):   ['TERM', 'MORE_TERM'],
     ('MORE_TERM', '_MATH_SYMBOL'):     ['TERM', 'MORE_TERM'],
     ('MORE_TERM', 'begin'):            ['TERM', 'MORE_TERM'],
@@ -61,17 +55,19 @@ math_ll_table = {
     # <CONST> -> enter
     ('CONST', '_ENTER'):            ['enter'],
     # <CONST> -> index <EI_TERM> <EXP>
-    ('CONST', '_UNDERSCORE'): ['#ACTION_LEVEL_DOWN', '#ACTION_EI_INIT', 'EI_TERM', 'EXP'],
-    # <CONST> exponent <EI_TERM> <IX>
-    ('CONST', '_CARET'): ['#ACTION_LEVEL_UP', '#ACTION_EI_INIT', 'EI_TERM', 'IX'],
+    ('CONST', '_UNDERSCORE'):       ['#ACTION_LEVEL_DOWN', '#ACTION_EI_INIT', 'EI_TERM', 'EXP'],
+    # <CONST> -> exponent <EI_TERM> <IX>
+    ('CONST', '_CARET'):            ['#ACTION_LEVEL_UP', '#ACTION_EI_INIT', 'EI_TERM', 'IX'],
 
     # <EXP> -> exponent <EI_TERM>
     # <EXP> -> epsilon
-    ('EXP', '_CARET'): ['#ACTION_EI_BOTH', '#ACTION_LEVEL_UP', 'EI_TERM', '#ACTION_EI_FINAL'],
+    ('EXP', '_CARET'):              ['#ACTION_EI_BOTH', '#ACTION_LEVEL_UP', 'EI_TERM', '#ACTION_EI_FINAL'],
+    ('EXP', 'epsilon'):             ['#ACTION_EI_SINGLE'],
 
     # <IX> -> index <EI_TERM>
     # <IX> -> epsilon
-    ('IX', '_UNDERSCORE'): ['#ACTION_EI_BOTH', '#ACTION_LEVEL_DOWN', 'EI_TERM', '#ACTION_EI_FINAL'],
+    ('IX', '_UNDERSCORE'):          ['#ACTION_EI_BOTH', '#ACTION_LEVEL_DOWN', 'EI_TERM', '#ACTION_EI_FINAL'],
+    ('IX', 'epsilon'):              ['#ACTION_EI_SINGLE'],
 
     # --- COMMAND ---
     # <COMMAND> -> { <MORE_TERM> }
@@ -123,7 +119,7 @@ math_ll_table = {
         '{', '#ACTION_SQRT_INIT', 'MORE_TERM', '}', '#ACTION_SQRT_CREATE',
     ],
     # <SQRT> -> { <MORE_TERM> }
-    ('SQRT', '{'): [ '{', '#ACTION_SQRT_INIT', 'MORE_TERM', '}', '#ACTION_SQRT_CREATE' ],
+    ('SQRT', '{'): ['{', '#ACTION_SQRT_INIT', 'MORE_TERM', '}', '#ACTION_SQRT_CREATE'],
 
     # --- FRAC ---
     # <FRAC> -> { <MORE_TERM> } { <MORE_TERM> }

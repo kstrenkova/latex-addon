@@ -9,7 +9,7 @@ import os.path
 # functions from generator
 from .generator import *
 from .ll_table import *
-from .characters_db import space_sizes, special_chars, unicode_chars, matrix_brackets
+from .characters_db import *
 
 
 # class for tokens
@@ -34,11 +34,10 @@ class Parameters:
 
 # class for levels
 class Levels:
-    def __init__(self, ei_array, exp_ix, frac, matrix):
+    def __init__(self, ei_array, exp_ix, frac):
         self.ei_array = ei_array
         self.exp_ix = exp_ix
         self.frac = frac
-        self.matrix = matrix
 
 
 # class fot sum
@@ -60,6 +59,7 @@ class ExpIxState:
         self.mode = ''
         self.width = 0
 
+
 # class for fraction
 class FractionState:
     def __init__(self, parent_coll, init_params):
@@ -78,14 +78,8 @@ class MatrixState:
         self.init_params = init_params
         self.xy_size = []
         self.mx_coll = None
-
-
-# class for matrix
-class Matrix:
-    def __init__(self, obj_array, row_num):
-        self.obj_array = obj_array
-        self.row_num = row_num
-        self.brackets = 'matrix'
+        self.obj_array = [[]]
+        self.row_num = 0
 
 
 # class for lexical analyser
@@ -113,7 +107,6 @@ class LexicalAnalyser:
                     if self.position < len(self.text) and self.text[self.position] == ' ':
                         self.position += 1
                         return Token("_SPACE_COMMAND", ' ')
-
                     continue
 
                 elif c_type == "WHITESPACE":
@@ -193,8 +186,8 @@ class LexicalAnalyser:
             ('^', "_CARET"),
             ('_', "_UNDERSCORE"),
             ('&', "_AMPERSAND"),
-            ('[', "ANGLE_BRACKETS"),
-            (']', "ANGLE_BRACKETS"),
+            ('[', "ANGLE_BRACKET"),
+            (']', "ANGLE_BRACKET"),
             (' ', "WHITESPACE"),
             ('\n', "WHITESPACE")
         ]
@@ -216,123 +209,30 @@ class LexicalAnalyser:
             if c == '\\':
                 self.position -= 1
 
-        # TODO
-        # print(f"DEBUG: Returned token ('{token.type}', '{token.value}'). New position is {self.position}.")
-
 
 class SyntaxAnalyser(LexicalAnalyser):
-    def __init__(self, latex_text, context, text_scale, font_path):
-        super().__init__(latex_text)
+    def __init__(self, context, custom_prop):
+        super().__init__(custom_prop.latex_text)
 
         self.stack = ['$', 'PROG']
         self.state_stack = []
         self.parsing_context = "DEFAULT"
 
         self.context = context
-        self.text_scale = text_scale
-        self.font_path = font_path
+        self.text_scale = custom_prop.text_scale
+        self.font_path = custom_prop.font_path
         self.font = []  # default_font, unicode_font
         self.sum = Sum(False, "", "", "", [])
         self.base_collection = ""
         self.current_collection = ""
-        self.parameters = Parameters(text_scale, 0.0, 0.0, 0.0)
-        self.levels = Levels([], False, 0, False)
-        self.matrix = Matrix([[]], 0)
+        self.parameters = Parameters(custom_prop.text_scale, 0.0, 0.0, 0.0)
+        self.levels = Levels([], False, 0)
+        self.ms_brackets = "matrix"
 
-    # <SUM> -> index_exponent
-    #       -> epsilon
-    def sa_sum(self, symbol):
-
-        # generate sum symbol
-        if symbol in unicode_chars:
-            gen_text(self.context, unicode_chars[symbol], self.font[1])
-
-        gen_calculate(self.parameters, self.text_scale, self.levels)
-        self.parameters.height -= 0.4 * self.parameters.scale  # move lower
-        gen_position(self.parameters, True)
-        gen_collection(self.context, self.current_collection, self.base_collection)
-
-        self.sum.name = self.context.active_object.name  # save sum object
-        token = self.get_token()  # get next token
-
-        # check index or exponent for sum
-        if token.type == "UNDERSCORE" or token.type == "CARET":
-            self.return_token(token)
-            self.sum.bool = True  # index and exponent for sum
-
-            # saving parent collection to bind children collections to
-            parent_coll = self.current_collection
-
-            # collection for upper indexes
-            up_coll = bpy.data.collections.new("SumUpCollection")
-            bpy.data.collections[parent_coll].children.link(up_coll)
-            self.sum.up_collection = up_coll.name
-
-            # collection for upper indexes
-            down_coll = bpy.data.collections.new("SumDownCollection")
-            bpy.data.collections[parent_coll].children.link(down_coll)
-            self.sum.down_collection = down_coll.name
-
-            if token.type == "UNDERSCORE":
-                self.current_collection = down_coll.name
-            else:
-                self.current_collection = up_coll.name
-
-            # index_exponent
-            if self.sa_const():
-
-                # move sum limits
-                gen_move_sum(self.context, self.parameters, up_coll.name, self.sum)
-                gen_move_sum(self.context, self.parameters, down_coll.name, self.sum)
-
-                space = 0.1 * self.parameters.scale
-                self.parameters.width = gen_fin_sum(self.context, self.sum, up_coll.name, down_coll.name) + space
-
-                # join denominator collection into parent collection
-                gen_join_collections(self.context, up_coll, parent_coll)
-                gen_join_collections(self.context, down_coll, parent_coll)
-                self.current_collection = parent_coll  # set current collection
-
-                # clear variables for sum
-                self.sum.bool = False
-                self.sum.array = []
-                return True
-        else:
-            # epsilon
-            self.return_token(token)
-            return True
-
-    # <COMMAND> -> { <MORE_TERM> }
-    #           -> sqrt <SQRT>
-    #           -> frac <FRAC>
-    #           -> command <COMM_ARG>
-    def sa_command(self):
-        # COMMAND type
-        if token.type == "COMMAND":
-            # sum
-            if token.value == "sum" or token.value == "prod":
-                 # <SUM>
-                 if self.sa_sum(token.value):
-                     return True
-
-            # command
-            else:
-                # mathematic symbols
-                if token.value in unicode_chars:
-                    gen_text(self.context, unicode_chars[token.value], self.font[1])
-
-                gen_calculate(self.parameters, self.text_scale, self.levels)
-                gen_position(self.parameters, True)
-
-                # move prod and integral symbol
-                if token.value == "int":
-                    self.context.active_object.location.y -= 0.3 * self.parameters.scale
-                    self.parameters.width -= 0.2 * self.parameters.scale
-
-                gen_collection(self.context, self.current_collection, self.base_collection)
-                return True
-
-        return False
+    def peek_token(self):
+        token = self.get_token()
+        self.return_token(token)
+        return token
 
     def execute_action(self, action, token):
         # Context actions
@@ -347,7 +247,7 @@ class SyntaxAnalyser(LexicalAnalyser):
             return True
 
         # <CONST> actions
-        if action == '#ACTION_GENERATE_TEXT':
+        elif action == '#ACTION_GENERATE_TEXT':
             token = self.get_token()
             gen_text(self.context, token.value, self.font[0])
             gen_calculate(self.parameters, self.text_scale, self.levels)
@@ -366,17 +266,11 @@ class SyntaxAnalyser(LexicalAnalyser):
             return True
 
         # <COMMAND> actions
-        if action == '#ACTION_SPACE':
+        elif action == '#ACTION_SPACE':
             token = self.get_token()
             space = space_sizes[token.value] * self.parameters.scale
             self.parameters.width += space
             return True
-
-        elif action == '#ACTION_SUM':
-            return self.sa_sum("sum")
-
-        elif action == '#ACTION_PROD':
-            return self.sa_sum("prod")
 
         elif action == '#ACTION_INTEGRAL':
             gen_calculate(self.parameters, self.text_scale, self.levels)
@@ -413,6 +307,15 @@ class SyntaxAnalyser(LexicalAnalyser):
             self.state_stack.append(eis)
 
             self.current_collection = eicoll.name
+            return True
+
+        elif action == "#ACTION_EI_SINGLE":
+            eis = self.state_stack.pop()
+            self.levels.ei_array.pop()
+
+            # join collection into parent collection
+            gen_join_collections(self.context, eis.eicoll, eis.parent_coll)
+            self.current_collection = eis.parent_coll  # set current collection
             return True
 
         elif action == '#ACTION_EI_BOTH':
@@ -615,7 +518,7 @@ class SyntaxAnalyser(LexicalAnalyser):
 
             # first matrix cell collection
             self.current_collection = gen_new_collection(self.context, "MatrixCellCollection", mx_coll.name)
-            self.matrix.obj_array[self.matrix.row_num].append(self.current_collection)
+            ms.obj_array[ms.row_num].append(self.current_collection)
             return True
 
         elif action == '#ACTION_MATRIX_NEW_ROW':
@@ -626,9 +529,9 @@ class SyntaxAnalyser(LexicalAnalyser):
             self.current_collection = gen_new_collection(self.context, "MatrixCellCollection", ms.parent_coll)
 
             # add new array that represents row
-            self.matrix.obj_array.append([])
-            self.matrix.row_num += 1
-            self.matrix.obj_array[self.matrix.row_num].append(self.current_collection)
+            ms.obj_array.append([])
+            ms.row_num += 1
+            ms.obj_array[ms.row_num].append(self.current_collection)
 
             # set width to start and height lower
             self.parameters.width = ms.init_params.width
@@ -643,20 +546,20 @@ class SyntaxAnalyser(LexicalAnalyser):
             self.current_collection = gen_new_collection(self.context, "MatrixCellCollection", ms.parent_coll)
 
             # add collection to row
-            self.matrix.obj_array[self.matrix.row_num].append(self.current_collection)
+            ms.obj_array[ms.row_num].append(self.current_collection)
             return True
 
         elif action == '#ACTION_MATRIX_CREATE':
             ms = self.state_stack.pop()
 
             # position matrix
-            gen_matrix_pos(self.context, self.matrix.obj_array, self.parameters)
+            gen_matrix_pos(self.context, ms.obj_array, self.parameters)
 
             # get matrix parameters
             ms.xy_size = gen_matrix_param(self.context, True, ms.parent_coll, ms.xy_size)
-            bracket_type = matrix_brackets[self.matrix.brackets]
+            bracket_type = matrix_brackets[self.ms_brackets]
 
-            if not self.matrix.brackets == 'matrix':
+            if not self.ms_brackets == 'matrix':
                 # generate left bracket of matrix
                 gen_text(self.context, bracket_type[0], self.font[1])
                 gen_brackets(self.context, self.parameters, ms.parent_coll, self.base_collection, ms.xy_size, True)
@@ -668,11 +571,6 @@ class SyntaxAnalyser(LexicalAnalyser):
 
             # center matrix into row
             gen_matrix_center(self.parameters, ms.parent_coll, ms.xy_size, bracket_type[0])
-
-            # clear matrix array
-            self.parameters.line = 0.0
-            self.matrix.obj_array = [[]]
-            self.matrix.row_num = 0
 
             # set width of parameters
             self.parameters.width = gen_group_width(ms.mx_coll.name) + 0.25
@@ -717,7 +615,7 @@ class SyntaxAnalyser(LexicalAnalyser):
             if self.font_path != "":
                 self.font.append(bpy.data.fonts.load(self.font_path))
 
-            # unicode font for mathematical symbols (simplified path handling)
+            # unicode font for mathematical symbols
             font_file = os.path.join(os.path.dirname(__file__), "fonts", "Kelvinch-Roman.otf")
             self.font.append(bpy.data.fonts.load(font_file))
 
@@ -725,22 +623,20 @@ class SyntaxAnalyser(LexicalAnalyser):
             print(f"Error during initialization: {e}")
             return False
 
-        parsing_success = True
-
         # parsing loop
         while self.stack:
-            top_of_stack = self.stack[-1]
+            stack_top = self.stack[-1]
             token = self.peek_token()
             print(f"STACK: {self.stack}")
 
             # successful parsing
-            if top_of_stack == '$' and token.type == 'END':
+            if stack_top == '$' and token.type == 'END':
                 print("Success!")
                 self.stack.pop()
                 break
 
             # actions
-            elif top_of_stack.startswith('#'):
+            elif stack_top.startswith('#'):
                 action = self.stack.pop()
                 print(f"CT {token.value}")
                 if not self.execute_action(action, token):
@@ -748,14 +644,13 @@ class SyntaxAnalyser(LexicalAnalyser):
                     return False
 
             # terminal
-            elif self.is_terminal(top_of_stack):
-                if top_of_stack == token.value:
+            elif not (stack_top.isupper() and stack_top != '$'):
+                if stack_top == token.value:
                     self.stack.pop()
                     self.get_token()
                 else:
-                    print(f"Syntax Error: Expected '{top_of_stack}' but got '{token.value}'")
-                    parsing_success = False
-                    break
+                    print(f"Syntax Error: Expected '{stack_top}' but got '{token.value}'")
+                    return False
 
             # non-terminal
             else:
@@ -763,34 +658,34 @@ class SyntaxAnalyser(LexicalAnalyser):
                 print(f"Token value: '{token.value}'")
                 # TODO clean lookup
                 # TODO ANGLE_BRACKETS OUTSIDE OF SQRT
-                lookup_key = token.value if token.type == "COMMAND" or token.type == "CLOSE_BRACKET" or token.type == "OPEN_BRACKET" else token.type
-                if self.parsing_context == "SQRT" and token.type == "ANGLE_BRACKETS" and token.value in ['[',']']:
-                    lookup_key = token.value
+                key = token.value if token.type == "COMMAND" or token.type == "CLOSE_BRACKET" or token.type == "OPEN_BRACKET" else token.type
+                if self.parsing_context == "SQRT" and token.type == "ANGLE_BRACKET" and token.value in ['[',']']:
+                    key = token.value
                 if token.type == "_SPACE_COMMAND":
-                    lookup_key = token.type
-                if token.type == "COMMAND" and token.value in unicode_chars:
-                    lookup_key = "_MATH_SYMBOL"
+                    key = token.type
+                if token.type == "COMMAND" and token.value in unicode_chars and token.value != 'sum':
+                    key = "_MATH_SYMBOL"
                 if token.type == "_TEXT" and token.value in matrix_brackets:
-                    lookup_key = "matrix"
+                    self.ms_brackets = token.value
+                    key = "matrix"
+                if (token.value != '_' and stack_top == 'IX') or \
+                        (token.value != '^' and stack_top == 'EXP'):
+                    key = "epsilon"
+                if stack_top == "PROG":
+                    key = "_ANY"
 
-                rule = math_ll_table.get((top_of_stack, lookup_key))
+                rule = math_ll_table.get((stack_top, key))
 
                 if rule:
                     self.stack.pop()
-                    # TODO make it prettier
-                    if (token.value != '_' and top_of_stack == 'IX') or \
-                        (token.value != '^' and top_of_stack == 'EXP'):
-                        print(f"ASDSAd")
-                        continue
-                    elif rule != ['epsilon']:
+                    if rule != ['epsilon']:
                         for symbol in reversed(rule):
                             self.stack.append(symbol)
                 else:
-                    print(f"Syntax Error: No rule for ({top_of_stack}, {lookup_key}, {rule})")
-                    parsing_success = False
-                    break
+                    print(f"Syntax Error: No rule for ({stack_top}, {key}, {rule})")
+                    return False
 
-        if not parsing_success or self.stack:
+        if self.stack:
             print("Error, not all tokens have been read!")
             return False
 
@@ -799,11 +694,3 @@ class SyntaxAnalyser(LexicalAnalyser):
             obj.select_set(True)
 
         return True
-
-    def is_terminal(self, symbol):
-        return not (symbol.isupper() and symbol != '$')
-
-    def peek_token(self):
-        token = self.get_token()
-        self.return_token(token)
-        return token
