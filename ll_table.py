@@ -6,7 +6,7 @@
 math_ll_table = {
     # --- PROG ---
     # <PROG> -> <TERM> <MORE_TERM>
-    ('PROG', '_ANY'):            ['TERM', 'MORE_TERM'],
+    ('PROG', '_ANY'):             ['TERM', 'MORE_TERM'],
 
     # --- TERM ---
     # <TERM> -> <CONST>

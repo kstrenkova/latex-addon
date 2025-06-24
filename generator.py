@@ -322,7 +322,7 @@ def gen_move_sum(context, param, collection, sum):
         sum.array.append(obj.name)
         # move object depending on index or exponent mode
         obj.location.x += bbox[0].x - min_x
-        if "SumUpCollection" in collection:
+        if "ExponentCollection" in collection:
             obj.location.y += bbox[2].y - min_y + 0.25 * param.scale
         else:
             obj.location.y += bbox[0].y - max_y - 0.25 * param.scale

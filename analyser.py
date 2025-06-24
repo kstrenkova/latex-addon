@@ -42,12 +42,10 @@ class Levels:
 
 # class fot sum
 class Sum:
-    def __init__(self, bool, name, up_collection, down_collection, array):
-        self.bool = bool
-        self.name = name
-        self.up_collection = up_collection
-        self.down_collection = down_collection
-        self.array = array
+    def __init__(self):
+        self.bool = False
+        self.name = ''
+        self.array = []
 
 
 # class for index and exponent
@@ -56,7 +54,7 @@ class ExpIxState:
         self.parent_coll = parent_coll
         self.init_params = init_params
         self.eicoll = None
-        self.mode = ''
+        self.eicoll2 = None
         self.width = 0
 
 
@@ -222,9 +220,9 @@ class SyntaxAnalyser(LexicalAnalyser):
         self.text_scale = custom_prop.text_scale
         self.font_path = custom_prop.font_path
         self.font = []  # default_font, unicode_font
-        self.sum = Sum(False, "", "", "", [])
-        self.base_collection = ""
-        self.current_collection = ""
+        self.sum = Sum()
+        self.base_collection = ''
+        self.current_collection = ''
         self.parameters = Parameters(custom_prop.text_scale, 0.0, 0.0, 0.0)
         self.levels = Levels([], False, 0)
         self.ms_brackets = "matrix"
@@ -233,6 +231,38 @@ class SyntaxAnalyser(LexicalAnalyser):
         token = self.get_token()
         self.return_token(token)
         return token
+
+    def choose_rule(self, stack_top, token):
+        # TODO clean lookup
+        # TODO ANGLE_BRACKETS OUTSIDE OF SQRT
+
+        if token.type in {"COMMAND", "CLOSE_BRACKET", "OPEN_BRACKET"}:
+            key = token.value
+        else:
+            key = token.type
+
+        if self.parsing_context == "SQRT" and token.type == "ANGLE_BRACKET" and token.value in {'[', ']'}:
+            key = token.value
+
+        elif token.type == "_SPACE_COMMAND":
+            key = token.type
+
+        elif token.type == "COMMAND" and token.value in unicode_chars and token.value != 'sum':
+            key = "_MATH_SYMBOL"
+
+        elif token.type == "_TEXT" and token.value in matrix_brackets:
+            self.ms_brackets = token.value
+            key = "matrix"
+
+        elif (token.value != '_' and stack_top == 'IX') or \
+            (token.value != '^' and stack_top == 'EXP'):
+            key = "epsilon"
+
+        if stack_top == "PROG":
+            key = "_ANY"
+
+        rule = math_ll_table.get((stack_top, key))
+        return rule
 
     def execute_action(self, action, token):
         # Context actions
@@ -292,15 +322,15 @@ class SyntaxAnalyser(LexicalAnalyser):
             gen_collection(self.context, self.current_collection, self.base_collection)
             return True
 
-        # <AFTER_EI> actions
+        # <TERM_EI> actions
         elif action == '#ACTION_EI_INIT':
             token = self.get_token()
             eis = ExpIxState(self.current_collection, self.parameters.create_copy())
-            eis.mode = 'exp' if token.type == '_CARET' else 'ix'
             eis.width = gen_group_width(self.current_collection)
 
             # exponent or index collection
-            eicoll = bpy.data.collections.new("ExponentIndexCollection")
+            coll_name = 'ExponentCollection' if token.type == '_CARET' else 'IndexCollection'
+            eicoll = bpy.data.collections.new(coll_name)
             bpy.data.collections[self.current_collection].children.link(eicoll)
             eis.eicoll = eicoll
 
@@ -313,9 +343,15 @@ class SyntaxAnalyser(LexicalAnalyser):
             eis = self.state_stack.pop()
             self.levels.ei_array.pop()
 
+            if self.sum.bool:
+                gen_move_sum(self.context, self.parameters, eis.eicoll.name, self.sum)
+                space = 0.1 * self.parameters.scale
+                self.parameters.width = gen_fin_sum(self.context, self.sum, eis.eicoll.name, eis.eicoll.name) + space
+
             # join collection into parent collection
             gen_join_collections(self.context, eis.eicoll, eis.parent_coll)
             self.current_collection = eis.parent_coll  # set current collection
+            self.sum.bool = False
             return True
 
         elif action == '#ACTION_EI_BOTH':
@@ -323,12 +359,16 @@ class SyntaxAnalyser(LexicalAnalyser):
             self.levels.ei_array.pop()
             eis = self.state_stack[-1]
 
-            # special sum exponent or index
             if self.sum.bool:
-                if token.type == "_UNDERSCORE":
-                    self.current_collection = self.sum.down_collection
-                else:
-                    self.current_collection = self.sum.up_collection
+                gen_move_sum(self.context, self.parameters, eis.eicoll.name, self.sum)
+
+            # exponent or index collection
+            coll_name = 'ExponentCollection' if token.type == '_CARET' else 'IndexCollection'
+            eicoll = bpy.data.collections.new(coll_name)
+            bpy.data.collections[eis.parent_coll].children.link(eicoll)
+            eis.eicoll2 = eicoll
+
+            self.current_collection = eicoll.name
 
             # return width for the second index or exponent
             self.parameters.width = eis.init_params.width
@@ -344,9 +384,16 @@ class SyntaxAnalyser(LexicalAnalyser):
             self.parameters.width = fin_width + 0.1 * self.parameters.scale
             self.levels.ei_array.pop()
 
+            if self.sum.bool:
+                gen_move_sum(self.context, self.parameters, eis.eicoll2.name, self.sum)
+                space = 0.1 * self.parameters.scale
+                self.parameters.width = gen_fin_sum(self.context, self.sum, eis.eicoll.name, eis.eicoll2.name) + space
+
             # join collection into parent collection
             gen_join_collections(self.context, eis.eicoll, eis.parent_coll)
+            gen_join_collections(self.context, eis.eicoll2, eis.parent_coll)
             self.current_collection = eis.parent_coll  # set current collection
+            self.sum.bool = False
             return True
 
         # <SQRT> actions
@@ -499,6 +546,7 @@ class SyntaxAnalyser(LexicalAnalyser):
             gen_collection(self.context, self.current_collection, self.base_collection)
 
             self.sum.name = self.context.active_object.name  # save sum object
+            self.sum.bool = True
             return True
 
         # <MATRIX> actions
@@ -656,25 +704,7 @@ class SyntaxAnalyser(LexicalAnalyser):
             else:
                 print(f"Token type: '{token.type}'")
                 print(f"Token value: '{token.value}'")
-                # TODO clean lookup
-                # TODO ANGLE_BRACKETS OUTSIDE OF SQRT
-                key = token.value if token.type == "COMMAND" or token.type == "CLOSE_BRACKET" or token.type == "OPEN_BRACKET" else token.type
-                if self.parsing_context == "SQRT" and token.type == "ANGLE_BRACKET" and token.value in ['[',']']:
-                    key = token.value
-                if token.type == "_SPACE_COMMAND":
-                    key = token.type
-                if token.type == "COMMAND" and token.value in unicode_chars and token.value != 'sum':
-                    key = "_MATH_SYMBOL"
-                if token.type == "_TEXT" and token.value in matrix_brackets:
-                    self.ms_brackets = token.value
-                    key = "matrix"
-                if (token.value != '_' and stack_top == 'IX') or \
-                        (token.value != '^' and stack_top == 'EXP'):
-                    key = "epsilon"
-                if stack_top == "PROG":
-                    key = "_ANY"
-
-                rule = math_ll_table.get((stack_top, key))
+                rule = self.choose_rule(stack_top, token)
 
                 if rule:
                     self.stack.pop()
