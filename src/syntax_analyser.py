@@ -6,9 +6,9 @@
 import bpy
 import os.path
 
-# functions from generator
-from .lexical_analyser import LexicalAnalyser
 from .generator import *
+from .lexical_analyser import LexicalAnalyser
+from .syntax_analyser_math import MathSyntaxAnalyser
 
 # TODO get rid of ..data
 from ..data.ll_table import *
@@ -571,6 +571,14 @@ class SyntaxAnalyser(LexicalAnalyser):
                 print(f"Token type: '{token.type}'")
                 print(f"Token value: '{token.value}'")
                 rule = self.choose_rule(stack_top, token)
+
+                if rule == 'MATH_INLINE_PROG':
+                    # call math syntax analyser
+                    math_syntax = MathSyntaxAnalyser(self.context, self.cus_pt) # TODO
+
+                    if not math_syntax.parse():
+                        warn_msg = 'Mathematical equation was not fully generated. Check system console for more info on this matter.'
+                        self.report({'WARNING'}, warn_msg)
 
                 if rule:
                     self.stack.pop()

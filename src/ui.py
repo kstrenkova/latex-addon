@@ -58,11 +58,11 @@ class Custom_PT(bpy.types.PropertyGroup):
 
 # main addon panel
 class OBJECT_PT_ME(bpy.types.Panel):
-    bl_label = "Mathematical Equations"
+    bl_label = "Latex Text"
     bl_idname = "OBJECT_PT_ME"
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
-    bl_category = 'Equations'
+    bl_category = 'Latex Text'
 
     # drawing main panel
     def draw(self, context):

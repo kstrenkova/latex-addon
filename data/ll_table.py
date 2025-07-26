@@ -3,6 +3,25 @@
 # Created By  : Katarina Strenkova
 # ---------------------------------------------------------------------------
 
+ll_table = {
+    # --- PROG ---
+    # <PROG> -> <TERM> <MORE_TERM>
+    ('PROG', '_ANY'):             ['TERM', 'MORE_TERM'],
+
+    # --- TERM ---
+    # <TERM> -> <CONST>
+    ('TERM', '_TEXT'):            ['CONST'],
+
+    # <TERM> -> $ <MATH_INLINE_PROG> $
+    # <TERM> -> \( <MATH_INLINE_PROG> \)
+    # <TERM> -> begin { math } <MATH_INLINE_PROG> end { math }
+    ('MATH_INLINE_PROG', '_ANY'):   ['MATH_INLINE_PROG']
+
+    # <TERM> -> \[ <MATH_DISPLAY_PROG> \[
+    # <TERM> -> begin { equation } <MATH_DISPLAY_PROG> end { equation }
+    # <TERM> -> begin { displaymath } <MATH_DISPLAY_PROG> end { displaymath }
+}
+
 math_ll_table = {
     # --- PROG ---
     # <PROG> -> <TERM> <MORE_TERM>

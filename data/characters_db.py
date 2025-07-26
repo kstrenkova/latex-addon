@@ -29,6 +29,7 @@ char_type = {
     '^': "_CARET",
     '_': "_UNDERSCORE",
     '&': "_AMPERSAND",
+    '$': "DOLLAR_SIGN",
     '[': "ANGLE_BRACKET",
     ']': "ANGLE_BRACKET",
     ' ': "WHITESPACE",
@@ -39,7 +40,12 @@ special_chars = [
     'OPEN_BRACKET',
     'CLOSE_BRACKET',
     '_AMPERSAND',
-    '_UNDERSCORE'
+    '_UNDERSCORE',
+    'DOLLAR_SIGN',
+
+    # MATH MODE
+    '(',
+    ')'
 ]
 
 unicode_chars = {

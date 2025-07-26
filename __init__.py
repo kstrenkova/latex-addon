@@ -1,10 +1,10 @@
 bl_info = {
-    "name": "Mathematical Equation Generator",
+    "name": "Latex Text Generator",
     "author": "Katarina Strenkova",
     "version": (1, 0, 1),
     "blender": (3, 3, 0),
     "location": "3D Viewport",
-    "description": "Addon generates 3D mathematical equations from Latex mathematical notation.",
+    "description": "Addon generates editable 3D text from Latex notation.",
     "warning": "",
     "doc_url": "",
     "category": "Object",
