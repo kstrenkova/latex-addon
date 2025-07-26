@@ -8,8 +8,8 @@ import os.path
 
 # functions from generator
 from .generator import *
-from .ll_table import *
-from .characters_db import *
+from ..data.ll_table import *
+from ..data.characters_db import *
 
 
 # class for tokens
@@ -243,9 +243,6 @@ class SyntaxAnalyser(LexicalAnalyser):
 
         if self.parsing_context == "SQRT" and token.type == "ANGLE_BRACKET" and token.value in {'[', ']'}:
             key = token.value
-
-        elif token.type == "_SPACE_COMMAND":
-            key = token.type
 
         elif token.type == "COMMAND" and token.value in unicode_chars and token.value != 'sum':
             key = "_MATH_SYMBOL"
@@ -664,7 +661,8 @@ class SyntaxAnalyser(LexicalAnalyser):
                 self.font.append(bpy.data.fonts.load(self.font_path))
 
             # unicode font for mathematical symbols
-            font_file = os.path.join(os.path.dirname(__file__), "fonts", "Kelvinch-Roman.otf")
+            src_dir = os.path.dirname(__file__)
+            font_file = os.path.join(os.path.dirname(src_dir), "data", "fonts", "Kelvinch-Roman.otf")
             self.font.append(bpy.data.fonts.load(font_file))
 
         except Exception as e:
@@ -712,7 +710,7 @@ class SyntaxAnalyser(LexicalAnalyser):
                         for symbol in reversed(rule):
                             self.stack.append(symbol)
                 else:
-                    print(f"Syntax Error: No rule for ({stack_top}, {key}, {rule})")
+                    print(f"Syntax Error: No rule for ({stack_top}, {rule})")
                     return False
 
         if self.stack:

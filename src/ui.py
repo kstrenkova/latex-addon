@@ -4,7 +4,6 @@
 # ---------------------------------------------------------------------------
 
 import bpy
-import math
 
 from bpy.props import (StringProperty,
                        BoolProperty,

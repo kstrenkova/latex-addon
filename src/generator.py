@@ -8,9 +8,6 @@ from bpy_extras.object_utils import object_data_add  # add sqrt symbol
 
 from mathutils import Vector  # vertices
 
-# characters database
-from .characters_db import unicode_chars
-
 
 # function generates text in given font
 # special case for sum and integral symbol when the scaling is 3.5 bigger

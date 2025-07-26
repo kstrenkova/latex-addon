@@ -17,10 +17,11 @@ if "bpy" in locals():
     importlib.reload(characters_db)
     importlib.reload(ui)
 else:
-    from . import analyser
-    from . import generator
-    from . import ui
-    from . import characters_db
+    from .src import analyser
+    from .src import generator
+    from .src import ui
+    from .data import characters_db
+    from .data import ll_table
 
 
 # register
@@ -31,10 +32,10 @@ def register():
 # unregister
 def unregister():
     ui.unregister()
- 
-    
+
+
 if __name__ == "__main__":
-    register()    
-        
-          
+    register()
+
+
 
