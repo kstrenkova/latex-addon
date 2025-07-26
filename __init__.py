@@ -12,13 +12,18 @@ bl_info = {
 
 if "bpy" in locals():
     import importlib
-    importlib.reload(analyser)
     importlib.reload(generator)
-    importlib.reload(characters_db)
+    importlib.reload(lexical_analyser)
+    importlib.reload(syntax_analyser)
+    importlib.reload(syntax_analyser_math)
     importlib.reload(ui)
+    importlib.reload(characters_db)
+    importlib.reload(ll_table)
 else:
-    from .src import analyser
     from .src import generator
+    from .src import lexical_analyser
+    from .src import syntax_analyser
+    from .src import syntax_analyser_math
     from .src import ui
     from .data import characters_db
     from .data import ll_table

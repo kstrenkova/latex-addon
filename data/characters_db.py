@@ -22,6 +22,19 @@ matrix_brackets = {
     'Vmatrix': ('||', '||')
 }
 
+char_type = {
+    '\\': "BACKSLASH",
+    '{': "OPEN_BRACKET",
+    '}': "CLOSE_BRACKET",
+    '^': "_CARET",
+    '_': "_UNDERSCORE",
+    '&': "_AMPERSAND",
+    '[': "ANGLE_BRACKET",
+    ']': "ANGLE_BRACKET",
+    ' ': "WHITESPACE",
+    '\n': "WHITESPACE"
+}
+
 special_chars = [
     'OPEN_BRACKET',
     'CLOSE_BRACKET',

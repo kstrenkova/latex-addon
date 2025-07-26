@@ -17,7 +17,7 @@ from bpy.props import (StringProperty,
 from mathutils import Vector  # vertices
 
 # functions from analyser
-from .analyser import *
+from .syntax_analyser import *
 
 
 # custom properties

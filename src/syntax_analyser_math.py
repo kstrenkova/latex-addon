@@ -1,21 +1,18 @@
 # ---------------------------------------------------------------------------
-# File name   : math_analyser.py
+# File name   : syntex_analyser_math.py
 # Created By  : Katarina Strenkova
 # ---------------------------------------------------------------------------
 
 import bpy
 import os.path
 
+# functions from generator
+from .lexical_analyser import LexicalAnalyser
 from .generator import *
-from .ll_table import *
-from .characters_db import *
 
-
-# class for tokens
-class Token:
-    def __init__(self, token_type, token_value):
-        self.type = token_type
-        self.value = token_value
+# TODO get rid of ..data
+from ..data.ll_table import *
+from ..data.characters_db import *
 
 
 # class for parameters
@@ -79,7 +76,7 @@ class MatrixState:
         self.row_num = 0
 
 
-class SyntaxAnalyser(LexicalAnalyser):
+class MathSyntaxAnalyser(LexicalAnalyser):
     def __init__(self, context, custom_prop):
         super().__init__(custom_prop.latex_text)
 
