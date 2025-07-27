@@ -12,6 +12,16 @@ ll_table = {
     # <TERM> -> <CONST>
     ('TERM', '_TEXT'):            ['CONST'],
 
+    # --- MORE_TERM ---
+    # <MORE_TERM> -> <TERM> <MORE_TERM>
+    ('MORE_TERM', '_TEXT'):            ['TERM', 'MORE_TERM'],
+    ('MORE_TERM', 'DOLLAR_SIGN'):      ['TERM', 'MORE_TERM'],
+    ('MORE_TERM', 'END'):              ['epsilon'],
+
+    # --- CONST ---
+    # <CONST> -> text
+    ('CONST', '_TEXT'):             ['#ACTION_GENERATE_TEXT'],
+
     # <TERM> -> $ <MATH_INLINE_PROG> $
     # <TERM> -> \( <MATH_INLINE_PROG> \)
     # <TERM> -> begin { math } <MATH_INLINE_PROG> end { math }

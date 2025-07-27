@@ -41,7 +41,6 @@ def gen_text(context, text, font):
 
 # function positions text according to given parameters
 def gen_position(param, move):
-
     obj = bpy.context.active_object  # save active object
 
     # scale object
@@ -61,7 +60,7 @@ def gen_position(param, move):
 
 
 # function gets object into collection
-def gen_collection(context, collection, base_collection):
+def gen_collection(collection, base_collection):
     # active object
     active_obj = bpy.context.active_object
 
@@ -75,15 +74,15 @@ def gen_collection(context, collection, base_collection):
 
 
 # function creates new collection
-def gen_new_collection(context, coll_name, parent_coll):
+def gen_new_collection(coll_name, parent_coll):
     # add new collection
     collection = bpy.data.collections.new(coll_name)
     bpy.data.collections[parent_coll].children.link(collection)
-    return collection.name
+    return collection
 
 
 # function joins collections into parent collection and removes child collection
-def gen_join_collections(context, collection, parent_coll):
+def gen_join_collections(collection, parent_coll):
     # join all objects into one parent collection
     for obj in bpy.data.collections[collection.name].all_objects:
         bpy.data.collections[parent_coll].objects.link(obj)
@@ -92,10 +91,16 @@ def gen_join_collections(context, collection, parent_coll):
     # remove child collection
     bpy.data.collections.remove(collection)
 
+# function sets a new active collection
+def gen_activate_collection(collection):
+    layer_collection = bpy.context.view_layer.layer_collection
+    for layer in layer_collection.children:
+        if layer.name == collection.name:
+            bpy.context.view_layer.active_layer_collection = layer
+
 
 # function generates square root symbol
 def gen_sqrt_sym(context):
-
     # symbol vertices
     verts = [
         Vector((-0.5266461968421936, -0.13621671915054321, 0.0)),
@@ -137,7 +142,6 @@ def gen_sqrt_sym(context):
 
 # function moves sqrt symbol according to given parameters
 def gen_sqrt_move(context, param, sqrt_param, move):
-
     # position sqrt
     param.height -= 0.25 * param.scale
     gen_position(param, False)
@@ -211,14 +215,12 @@ def gen_sqrt_move(context, param, sqrt_param, move):
 
 # function generates line for fractions
 def gen_frac_line(context, param, x_pos):
-
     verts = [
         Vector((0.0, -0.025 * param.scale, 0.0)),
         Vector((0.0, 0.025 * param.scale, 0.0)),
         Vector((1.0, 0.025 * param.scale, 0.0)),
         Vector((1.0, -0.025 * param.scale, 0.0))
     ]
-
     edges = []
     faces = [[0, 1, 2, 3]]
 
@@ -257,7 +259,6 @@ def gen_frac_line(context, param, x_pos):
 
 # function calculates the scaling and height of text
 def gen_calculate(param, text_scale, levels):
-
     lvl_exp = 0  # exponent lvl
     lvl_ix = 0  # index lvl
 
@@ -301,7 +302,6 @@ def gen_calculate(param, text_scale, levels):
 
 # function moves sum symbol according to given parameters
 def gen_move_sum(context, param, collection, sum):
-
     # save sum symbol
     sum_symbol = bpy.data.objects[sum.name]
 
@@ -331,7 +331,6 @@ def gen_move_sum(context, param, collection, sum):
 
 # function centers exponent and index for sum symbol
 def gen_center_sum(context, sum, collection, exp_ix_width, sum_width):
-
     # find bigger width and calculate movement size
     if exp_ix_width > sum_width:
         diff = exp_ix_width - sum_width
@@ -377,7 +376,6 @@ def gen_fin_sum(context, sum, up_collection, down_collection):
 
 # function moves objects in fraction numerator
 def gen_frac_num(context, param, collection):
-
     # get lowest point in collection
     min_y = gen_min_y(context, collection)
     move_by = param.height - min_y + 0.6 * param.scale
@@ -390,7 +388,6 @@ def gen_frac_num(context, param, collection):
 
 # function moves objects in fraction denominator
 def gen_frac_den(context, param, collection):
-
     # get highest point in collection
     max_y = gen_group_height(context, collection)
     move_by = param.height - max_y + 0.1 * param.scale
@@ -418,7 +415,6 @@ def gen_center(context, obj1, obj2, collection):
 
 # function returns the furthest x position
 def gen_group_width(collection):
-
     bpy.ops.object.select_all(action='DESELECT') # deselect all objects
     is_init = False  # set initialisation flag
 

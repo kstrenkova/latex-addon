@@ -16,9 +16,9 @@ class Token:
 
 # class for lexical analyser
 class LexicalAnalyser:
-    def __init__(self, latex_text):
+    def __init__(self, latex_text, position):
         self.text = latex_text
-        self.position = 0
+        self.position = position
 
     # function gets the next token
     def get_token(self):
@@ -116,3 +116,11 @@ class LexicalAnalyser:
             c = self.text[self.position - 1]
             if c == '\\':
                 self.position -= 1
+
+    # get current string position
+    def get_position(self):
+        return self.position
+
+    # get current string position
+    def set_position(self, pos):
+        self.position = pos
