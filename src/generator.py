@@ -95,7 +95,7 @@ def gen_join_collections(collection, parent_coll):
 def gen_activate_collection(collection):
     layer_collection = bpy.context.view_layer.layer_collection
     for layer in layer_collection.children:
-        if layer.name == collection.name:
+        if layer.name == collection:
             bpy.context.view_layer.active_layer_collection = layer
 
 
@@ -330,7 +330,7 @@ def gen_move_sum(context, param, collection, sum):
 
 
 # function centers exponent and index for sum symbol
-def gen_center_sum(context, sum, collection, exp_ix_width, sum_width):
+def gen_center_sum(collection, exp_ix_width, sum_width):
     # find bigger width and calculate movement size
     if exp_ix_width > sum_width:
         diff = exp_ix_width - sum_width
@@ -461,7 +461,7 @@ def gen_min_x(context, collection):
 
 
 # function returns the highest y position
-def gen_group_height(context, collection):
+def gen_group_height(collection):
 
     bpy.ops.object.select_all(action='DESELECT') # deselect all objects
     is_init = False  # set initialisation flag
@@ -485,7 +485,7 @@ def gen_group_height(context, collection):
 
 
 # function returns the lowest y position
-def gen_min_y(context, collection):
+def gen_min_y(collection):
 
     bpy.ops.object.select_all(action='DESELECT') # deselect all objects
     is_init = False  # set initialisation flag

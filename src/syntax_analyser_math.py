@@ -41,9 +41,8 @@ class Parameters:
 
 # class for levels
 class Levels:
-    def __init__(self, ei_array, exp_ix, frac):
+    def __init__(self, ei_array, frac):
         self.ei_array = ei_array
-        self.exp_ix = exp_ix
         self.frac = frac
 
 
@@ -98,7 +97,7 @@ class MathSyntaxAnalyser(LexicalAnalyser):
         self.d = Defaults(context, custom_prop, base_coll)
         self.parameters = Parameters(custom_prop.text_scale, 0.0, 0.0, 0.0)
         self.sum = Sum()
-        self.levels = Levels([], False, 0)
+        self.levels = Levels([], 0)
         self.ms_brackets = "matrix"
 
     def peek_token(self):
@@ -153,6 +152,7 @@ class MathSyntaxAnalyser(LexicalAnalyser):
             gen_text(self.d.context, token.value, self.d.font[0])
             gen_calculate(self.parameters, self.d.text_scale, self.levels)
             gen_position(self.parameters, True)
+            print("BASE COLLECTION", self.d.base_collection.name)
             gen_collection(self.d.current_collection, self.d.base_collection)
             return True
 
@@ -537,9 +537,10 @@ class MathSyntaxAnalyser(LexicalAnalyser):
             print(f"STACK: {self.stack}")
 
             # TODO MATH MODE END
-            if token.value == '$' and token.type == 'DOLLAR_SIGN':
-                print("Position:", self.get_position()+1)
-                return True, self.get_position()+1
+            if token.value == '$' and token.type == '_DOLLAR_SIGN':
+                pos = self.get_position()
+                print("Position:", pos)
+                return True, pos
 
             # actions
             elif stack_top.startswith('#'):
@@ -570,7 +571,7 @@ class MathSyntaxAnalyser(LexicalAnalyser):
                         for symbol in reversed(rule):
                             self.stack.append(symbol)
                 else:
-                    print(f"Syntax Error: No rule for ({stack_top}, {rule})")
+                    print(f"Syntax Error: No rule for ({stack_top}, {token})")
                     return False, 0
 
         if self.stack:

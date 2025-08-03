@@ -12,24 +12,47 @@ ll_table = {
     # <TERM> -> <CONST>
     ('TERM', '_TEXT'):            ['CONST'],
 
+    # <TERM> -> <MATH_INLINE_MODE>
+    ('TERM', '_DOLLAR_SIGN'):      ['#ACTION_MATH_INLINE_MODE', '_DOLLAR_SIGN'],
+    ('TERM', '\('):               ['#ACTION_MATH_INLINE_MODE', '\)'],
+    ('TERM', '\['):               ['#ACTION_MATH_DISPLAY_MODE', '\]'],
+
+    # <TERM> -> $ <MATH_INLINE_PROG> $
+    # <TERM> -> \( <MATH_INLINE_PROG> \)
+    # <TERM> -> begin { math } <MATH_INLINE_PROG> end { math }
+
+    # <TERM> -> \[ <MATH_DISPLAY_PROG> \[
+    # <TERM> -> begin { equation } <MATH_DISPLAY_PROG> end { equation }
+    # <TERM> -> begin { displaymath } <MATH_DISPLAY_PROG> end { displaymath }
+
+    ('TERM', 'begin'):            ['BLOCK'],
+
     # --- MORE_TERM ---
     # <MORE_TERM> -> <TERM> <MORE_TERM>
     ('MORE_TERM', '_TEXT'):            ['TERM', 'MORE_TERM'],
-    ('MORE_TERM', 'DOLLAR_SIGN'):      ['TERM', 'MORE_TERM'],
+    ('MORE_TERM', '_DOLLAR_SIGN'):     ['TERM', 'MORE_TERM'],
     ('MORE_TERM', 'END'):              ['epsilon'],
 
     # --- CONST ---
     # <CONST> -> text
     ('CONST', '_TEXT'):             ['#ACTION_GENERATE_TEXT'],
 
-    # <TERM> -> $ <MATH_INLINE_PROG> $
-    # <TERM> -> \( <MATH_INLINE_PROG> \)
-    # <TERM> -> begin { math } <MATH_INLINE_PROG> end { math }
-    ('MATH_INLINE_PROG', '_ANY'):   ['MATH_INLINE_PROG']
+    # --- BLOCK ---
+    ('BLOCK', 'begin'): ['begin', '{', 'TYPE'],
 
-    # <TERM> -> \[ <MATH_DISPLAY_PROG> \[
-    # <TERM> -> begin { equation } <MATH_DISPLAY_PROG> end { equation }
-    # <TERM> -> begin { displaymath } <MATH_DISPLAY_PROG> end { displaymath }
+    # --- TYPE ---
+    ('TYPE', 'math'): [
+        '}', '#ACTION_MATH_INLINE_MODE',
+        'end', '{', 'math', '}'
+    ],
+    ('TYPE', 'equation'): [
+        '}', '#ACTION_MATH_DISPLAY_MODE',
+        'end', '{', 'equation', '}'
+    ],
+    ('TYPE', 'displaymath'): [
+        '}', '#ACTION_MATH_DISPLAY_MODE',
+        'end', '{', 'displaymath', '}'
+    ],
 }
 
 math_ll_table = {

@@ -40,9 +40,8 @@ class Parameters:
 
 # class for levels
 class Levels:
-    def __init__(self, ei_array, exp_ix, frac):
+    def __init__(self, ei_array, frac):
         self.ei_array = ei_array
-        self.exp_ix = exp_ix
         self.frac = frac
 
 
@@ -57,7 +56,7 @@ class SyntaxAnalyser(LexicalAnalyser):
         self.cus_pt = custom_prop
         self.d = Defaults(context, custom_prop)
         self.parameters = Parameters(custom_prop.text_scale, 0.0, 0.0, 0.0)
-        self.levels = Levels([], False, 0)
+        self.levels = Levels([], 0)
 
     def peek_token(self):
         token = self.get_token()
@@ -87,7 +86,43 @@ class SyntaxAnalyser(LexicalAnalyser):
             gen_text(self.d.context, token.value, self.d.font[0])
             gen_calculate(self.parameters, self.d.text_scale, self.levels)
             gen_position(self.parameters, True)
-            # gen_collection(self.d.current_collection, self.d.base_collection)
+            gen_collection(self.d.current_collection, self.d.base_collection)
+            return True
+
+        # MATH INLINE MODE
+        elif action == '#ACTION_MATH_INLINE_MODE':
+            print("ACTION: Entering math mode!")
+
+            self.d.current_collection = gen_new_collection("MathematicalEqCollection", self.d.base_collection)
+
+            # call math syntax analyser
+            math_syntax = MathSyntaxAnalyser(self.d.context, self.cus_pt, self.d.current_collection, self.get_position()+1) # TODO
+
+            # set active collection
+            layer_collection = bpy.context.view_layer.layer_collection
+            for layer in layer_collection.children:
+                print("Layer name: ", layer.name)
+                if layer.name == self.d.base_collection.name:
+                    for l in layer.children:
+                        print("Child Layer name: ", l.name, self.d.current_collection)
+                        if l.name == self.d.current_collection.name:
+                            bpy.context.view_layer.active_layer_collection = l
+                            print(f"Active collection set to '{self.d.current_collection.name}'")
+
+            status, position = math_syntax.parse()
+
+            if not status:
+                warn_msg = 'Mathematical equation was not fully generated. Check system console for more info on this matter.'
+                # TODO PUT WARNING
+                print({'WARNING'}, warn_msg)
+                return False
+
+            self.set_position(position)
+            print("Returned from math mode!")
+
+            # join collection into parent collection
+            gen_join_collections(self.d.current_collection, self.d.base_collection)
+            gen_activate_collection(self.d.base_collection)
             return True
 
         else:
@@ -131,41 +166,6 @@ class SyntaxAnalyser(LexicalAnalyser):
                 self.stack.pop()
                 break
 
-            # TODO MATH MODE
-            elif token.value == '$' and token.type == 'DOLLAR_SIGN':
-                print("Entering math mode!")
-
-                # call math syntax analyser
-                math_syntax = MathSyntaxAnalyser(self.d.context, self.cus_pt, self.d.base_collection, self.get_position()+1) # TODO
-
-                self.d.current_collection = gen_new_collection("MathematicalEqCollection", self.d.base_collection)
-
-                # set active collection
-                layer_collection = bpy.context.view_layer.layer_collection
-                for layer in layer_collection.children:
-                    print("Layer name: ", layer.name)
-                    if layer.name == self.d.base_collection:
-                        for l in layer.children:
-                            print("Child Layer name: ", l.name, self.d.current_collection)
-                            if l.name == self.d.current_collection.name:
-                                bpy.context.view_layer.active_layer_collection = l
-                                print(f"Active collection set to '{self.d.current_collection}'")
-
-                status, position = math_syntax.parse()
-
-                if not status:
-                    warn_msg = 'Mathematical equation was not fully generated. Check system console for more info on this matter.'
-                    # TODO PUT WARNING
-                    print({'WARNING'}, warn_msg)
-                    return False
-
-                self.set_position(position)
-                print("Returned from math mode!")
-
-                # join collection into parent collection
-                gen_join_collections(self.d.current_collection, self.d.base_collection)
-                gen_activate_collection(collection)
-
             # actions
             elif stack_top.startswith('#'):
                 action = self.stack.pop()
@@ -175,8 +175,12 @@ class SyntaxAnalyser(LexicalAnalyser):
                     return False
 
             # terminal
-            elif not (stack_top.isupper() and stack_top != '$'):
-                if stack_top == token.value:
+            # TODO dollar sign
+            elif not (stack_top.isupper() and stack_top != '$') or stack_top == '_DOLLAR_SIGN':
+                if stack_top == '_DOLLAR_SIGN' and token.value == '$':
+                    self.stack.pop()
+                    self.get_token()
+                elif stack_top == token.value:
                     self.stack.pop()
                     self.get_token()
                 else:
@@ -195,7 +199,7 @@ class SyntaxAnalyser(LexicalAnalyser):
                         for symbol in reversed(rule):
                             self.stack.append(symbol)
                 else:
-                    print(f"Syntax Error: No rule for ({stack_top}, {rule})")
+                    print(f"Syntax Error: No rule for ({stack_top}, {token.type}, {token.value})")
                     return False
 
         if self.stack:
