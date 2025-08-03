@@ -78,18 +78,19 @@ def gen_new_collection(coll_name, parent_coll):
     # add new collection
     collection = bpy.data.collections.new(coll_name)
     bpy.data.collections[parent_coll].children.link(collection)
-    return collection
+    return collection.name
 
 
 # function joins collections into parent collection and removes child collection
 def gen_join_collections(collection, parent_coll):
     # join all objects into one parent collection
-    for obj in bpy.data.collections[collection.name].all_objects:
+    for obj in bpy.data.collections[collection].all_objects:
         bpy.data.collections[parent_coll].objects.link(obj)
-        bpy.data.collections[collection.name].objects.unlink(obj)
+        bpy.data.collections[collection].objects.unlink(obj)
 
     # remove child collection
-    bpy.data.collections.remove(collection)
+    child_collection = bpy.data.collections.get(collection)
+    bpy.data.collections.remove(child_collection)
 
 # function sets a new active collection
 def gen_activate_collection(collection):
@@ -301,7 +302,7 @@ def gen_calculate(param, text_scale, levels):
 
 
 # function moves sum symbol according to given parameters
-def gen_move_sum(context, param, collection, sum):
+def gen_move_sum(param, collection, sum):
     # save sum symbol
     sum_symbol = bpy.data.objects[sum.name]
 
@@ -309,9 +310,9 @@ def gen_move_sum(context, param, collection, sum):
     bbox = [sum_symbol.matrix_world @ Vector(corner) for corner in sum_symbol.bound_box]
 
     # parameters of objects in collection
-    min_x = gen_min_x(context, collection)
-    min_y = gen_min_y(context, collection)
-    max_y = gen_group_height(context, collection)
+    min_x = gen_min_x(collection)
+    min_y = gen_min_y(collection)
+    max_y = gen_group_height(collection)
 
     # iterate through objects
     for obj in bpy.data.collections[collection].all_objects:
@@ -326,7 +327,7 @@ def gen_move_sum(context, param, collection, sum):
 
     # center text above sum symbol
     exp_ix_width = gen_group_width(collection)
-    gen_center_sum(context, sum, collection, exp_ix_width, bbox[4].x)  # sum width
+    gen_center_sum(collection, exp_ix_width, bbox[4].x)  # sum width
 
 
 # function centers exponent and index for sum symbol
@@ -375,9 +376,9 @@ def gen_fin_sum(context, sum, up_collection, down_collection):
 
 
 # function moves objects in fraction numerator
-def gen_frac_num(context, param, collection):
+def gen_frac_num(param, collection):
     # get lowest point in collection
-    min_y = gen_min_y(context, collection)
+    min_y = gen_min_y(collection)
     move_by = param.height - min_y + 0.6 * param.scale
 
     # select and move all objects in numerator
@@ -387,9 +388,9 @@ def gen_frac_num(context, param, collection):
 
 
 # function moves objects in fraction denominator
-def gen_frac_den(context, param, collection):
+def gen_frac_den(param, collection):
     # get highest point in collection
-    max_y = gen_group_height(context, collection)
+    max_y = gen_group_height(collection)
     move_by = param.height - max_y + 0.1 * param.scale
 
     # select and move all objects in denominator
@@ -399,7 +400,7 @@ def gen_frac_den(context, param, collection):
 
 
 # function centers objects on x axis
-def gen_center(context, obj1, obj2, collection):
+def gen_center(obj1, obj2, collection):
     # find wider text
     if obj1 > obj2:
         diff = obj1 - obj2
@@ -437,7 +438,7 @@ def gen_group_width(collection):
 
 
 # function returns the closest x position
-def gen_min_x(context, collection):
+def gen_min_x(collection):
 
     bpy.ops.object.select_all(action='DESELECT') # deselect all objects
     is_init = False  # set initialisation flag
@@ -521,7 +522,7 @@ def gen_matrix_pos(context, obj_array, param):
         max_cell_x = max(max_cell_x, len(row))
 
     gen_matrix_x(context, obj_array, param, max_cell_x)  # center by x axis
-    gen_matrix_y(context, obj_array, param, max_cell_x)  # move by y axis
+    gen_matrix_y(obj_array, param, max_cell_x)  # move by y axis
 
 
 # function centers matrix horizontally
@@ -552,7 +553,7 @@ def gen_matrix_x(context, obj_array, param, max_cell_x):
                 collection = row[i+1]
 
                 # select objects and find minimum x position
-                min_x = gen_min_x(context, collection)
+                min_x = gen_min_x(collection)
 
             # set x position
             for obj in context.selected_objects:
@@ -565,13 +566,13 @@ def gen_matrix_x(context, obj_array, param, max_cell_x):
             if len(row) > i:
                 collection = row[i]
                 cell_width = gen_group_width(collection)
-                gen_center(context, cell_width, max_width, collection)
+                gen_center(cell_width, max_width, collection)
 
         i += 1  # next collumn
 
 
 # function moves matrix vertically
-def gen_matrix_y(context, obj_array, param, max_cell_x):
+def gen_matrix_y(obj_array, param, max_cell_x):
 
     is_init = False  # set initialisation flag
 
@@ -585,14 +586,14 @@ def gen_matrix_y(context, obj_array, param, max_cell_x):
                 # first collumn
                 if i == 0:
                     collection = row[i]
-                    cell_height = gen_group_height(context, collection)
+                    cell_height = gen_group_height(collection)
                     max_height = cell_height
                 # less collumns than maximum
                 elif i >= len(row):
                     cell_height = max_height
                 else:
                     collection = row[i]
-                    cell_height = gen_group_height(context, collection)
+                    cell_height = gen_group_height(collection)
 
                 max_height = max(max_height, cell_height)
                 i += 1  # next cell
@@ -623,27 +624,27 @@ def gen_matrix_y(context, obj_array, param, max_cell_x):
                 # first collumn
                 if i == 0:
                     collection = row[i]
-                    cell_height = gen_min_y(context, collection)
+                    cell_height = gen_min_y(collection)
                     min_height = cell_height
                 # less collumns than maximum
                 elif i >= len(row):
                     cell_height = min_height
                 else:
                     collection = row[i]
-                    cell_height = gen_min_y(context, collection)
+                    cell_height = gen_min_y(collection)
 
                 min_height = min(min_height, cell_height)
                 i += 1  # next cell
 
 
 # function calculates position of matrix brackets
-def gen_matrix_param(context, left, collection, xy_size):
+def gen_matrix_param(left, collection, xy_size):
 
     # left bracket
     if left:
         # get matrix height
-        min_y = gen_min_y(context, collection)
-        max_y = gen_group_height(context, collection)
+        min_y = gen_min_y(collection)
+        max_y = gen_group_height(collection)
         xy_size.insert(0, max_y)
         xy_size.insert(0, min_y)
     # right bracket
@@ -696,11 +697,11 @@ def gen_brackets(context, param, collection, base_collection, xy_size, left):
 
     # add bracket to collection
     bpy.data.objects[obj_name].select_set(True)
-    gen_collection(context, collection, base_collection)
+    gen_collection(collection, base_collection)
 
 
 # function centers matrix
-def gen_matrix_center(param, collection, xy_size, bracket):
+def gen_matrix_center(param, collection, xy_size):
 
     # calculate center location
     matrix_height = xy_size[1] - xy_size[0]  # y_max - y_min

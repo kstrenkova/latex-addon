@@ -102,12 +102,12 @@ class SyntaxAnalyser(LexicalAnalyser):
             layer_collection = bpy.context.view_layer.layer_collection
             for layer in layer_collection.children:
                 print("Layer name: ", layer.name)
-                if layer.name == self.d.base_collection.name:
+                if layer.name == self.d.base_collection:
                     for l in layer.children:
                         print("Child Layer name: ", l.name, self.d.current_collection)
-                        if l.name == self.d.current_collection.name:
+                        if l.name == self.d.current_collection:
                             bpy.context.view_layer.active_layer_collection = l
-                            print(f"Active collection set to '{self.d.current_collection.name}'")
+                            print(f"Active collection set to '{self.d.current_collection}'")
 
             status, position = math_syntax.parse()
 
