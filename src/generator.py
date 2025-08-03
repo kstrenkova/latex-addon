@@ -92,6 +92,7 @@ def gen_join_collections(collection, parent_coll):
     child_collection = bpy.data.collections.get(collection)
     bpy.data.collections.remove(child_collection)
 
+
 # function sets a new active collection
 def gen_activate_collection(collection):
     layer_collection = bpy.context.view_layer.layer_collection

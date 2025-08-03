@@ -96,7 +96,8 @@ math_ll_table = {
     # <MORE_TERM> -> epsilon
     ('MORE_TERM', '}'):                ['epsilon'],
     ('MORE_TERM', ']'):                ['epsilon'],
-    ('MORE_TERM', '$'):                ['epsilon'],
+    # TODO ('MORE_TERM', '$'):                ['epsilon'],
+    ('MORE_TERM', '_DOLLAR_SIGN'):     ['epsilon'],
     ('MORE_TERM', 'END'):              ['epsilon'],
 
     # --- CONST ---

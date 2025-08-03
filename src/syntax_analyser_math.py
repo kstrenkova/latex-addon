@@ -541,7 +541,7 @@ class MathSyntaxAnalyser(LexicalAnalyser):
             print(f"STACK: {self.stack}")
 
             # TODO MATH MODE END
-            if token.value == '$' and token.type == '_DOLLAR_SIGN':
+            if stack_top == '$' and token.value == '$' and token.type == '_DOLLAR_SIGN':
                 pos = self.get_position()
                 print("Position:", pos)
                 return True, pos
@@ -575,7 +575,7 @@ class MathSyntaxAnalyser(LexicalAnalyser):
                         for symbol in reversed(rule):
                             self.stack.append(symbol)
                 else:
-                    print(f"Syntax Error: No rule for ({stack_top}, {token})")
+                    print(f"Syntax Error: No rule for ({stack_top}, {token.type}, {token.value})")
                     return False, 0
 
         if self.stack:

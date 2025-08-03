@@ -86,7 +86,7 @@ class SyntaxAnalyser(LexicalAnalyser):
             gen_text(self.d.context, token.value, self.d.font[0])
             gen_calculate(self.parameters, self.d.text_scale, self.levels)
             gen_position(self.parameters, True)
-            gen_collection(self.d.current_collection, self.d.base_collection)
+            # gen_collection(self.d.current_collection, self.d.base_collection)
             return True
 
         # MATH INLINE MODE
@@ -135,7 +135,7 @@ class SyntaxAnalyser(LexicalAnalyser):
             # creating base collection
             collection = bpy.data.collections.new("LatexCollection")
             bpy.context.scene.collection.children.link(collection)
-            gen_activate_collection(collection)
+            gen_activate_collection(collection.name)
 
             self.d.base_collection = collection.name
             self.d.current_collection = collection.name
