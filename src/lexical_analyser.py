@@ -19,6 +19,7 @@ class LexicalAnalyser:
     def __init__(self, latex_text, position):
         self.text = latex_text
         self.position = position
+        print(f"Lexer created for text: '{self.text[:20]}...' at position {self.position}")
 
     # function gets the next token
     def get_token(self):
@@ -117,10 +118,8 @@ class LexicalAnalyser:
             if c == '\\':
                 self.position -= 1
 
-    # get current string position
-    def get_position(self):
-        return self.position
-
-    # get current string position
-    def set_position(self, pos):
-        self.position = pos
+    # function checks the next token
+    def peek_token(self):
+        token = self.get_token()
+        self.return_token(token)
+        return token

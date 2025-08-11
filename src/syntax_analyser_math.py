@@ -6,37 +6,13 @@
 import bpy
 import os.path
 
-# functions from generator
-from .lexical_analyser import LexicalAnalyser
 from .generator import *
+from .lexical_analyser import LexicalAnalyser
+from .syntax_utils import Defaults, Parameters
 
 # TODO get rid of ..data
 from ..data.ll_table import *
 from ..data.characters_db import *
-
-
-# class that holds default settings
-class Defaults:
-    def __init__(self, context, custom_prop, base_coll):
-        self.context = context
-        self.text_scale = custom_prop.text_scale
-        self.font_path = custom_prop.font_path
-        self.font = []  # default_font, unicode_font
-        self.base_collection = base_coll
-        self.current_collection = base_coll
-
-
-# class for parameters
-class Parameters:
-    def __init__(self, scale, height, width, line):
-        self.scale = scale
-        self.height = height
-        self.width = width
-        self.line = line
-
-    def create_copy(self):
-        copy = Parameters(self.scale, self.height, self.width, self.line)
-        return copy
 
 
 # class for levels
@@ -93,24 +69,19 @@ class MatrixState:
         self.row_num = 0
 
 
-class MathSyntaxAnalyser(LexicalAnalyser):
-    def __init__(self, context, custom_prop, base_coll, pos):
-        super().__init__(custom_prop.latex_text, pos)
+class MathSyntaxAnalyser:
+    def __init__(self, lex, defaults, parameters):
+        self.lex = lex
+        self.d = defaults
+        self.parameters = parameters
 
         self.stack = ['$', 'PROG']
         self.state_stack = []
         self.parsing_context = "DEFAULT"
 
-        self.d = Defaults(context, custom_prop, base_coll)
-        self.parameters = Parameters(custom_prop.text_scale, 0.0, 0.0, 0.0)
         self.sum = Sum()
         self.levels = Levels([], 0)
         self.ms_brackets = "matrix"
-
-    def peek_token(self):
-        token = self.get_token()
-        self.return_token(token)
-        return token
 
     def choose_rule(self, stack_top, token):
         # TODO clean lookup
@@ -155,7 +126,7 @@ class MathSyntaxAnalyser(LexicalAnalyser):
 
         # <CONST> actions
         elif action == '#ACTION_GENERATE_TEXT':
-            token = self.get_token()
+            token = self.lex.get_token()
             gen_text(self.d.context, token.value, self.d.font[0])
             gen_calculate(self.parameters, self.d.text_scale, self.levels)
             gen_position(self.parameters, True)
@@ -175,7 +146,7 @@ class MathSyntaxAnalyser(LexicalAnalyser):
 
         # <COMMAND> actions
         elif action == '#ACTION_SPACE':
-            token = self.get_token()
+            token = self.lex.get_token()
             space = space_sizes[token.value] * self.parameters.scale
             self.parameters.width += space
             return True
@@ -191,7 +162,7 @@ class MathSyntaxAnalyser(LexicalAnalyser):
             return True
 
         elif action == '#ACTION_MATH_SYMBOL':
-            token = self.get_token()
+            token = self.lex.get_token()
             if token.value in unicode_chars:
                 gen_text(self.d.context, unicode_chars[token.value], self.d.font[1])
 
@@ -202,7 +173,7 @@ class MathSyntaxAnalyser(LexicalAnalyser):
 
         # <TERM_EI> actions
         elif action == '#ACTION_EI_INIT':
-            token = self.get_token()
+            token = self.lex.get_token()
             eis = ExpIxState(self.d.current_collection, self.parameters.create_copy())
             eis.width = gen_group_width(self.d.current_collection)
 
@@ -233,7 +204,7 @@ class MathSyntaxAnalyser(LexicalAnalyser):
             return True
 
         elif action == '#ACTION_EI_BOTH':
-            token = self.get_token()
+            token = self.lex.get_token()
             self.levels.ei_array.pop()
             eis = self.state_stack[-1]
 
@@ -445,7 +416,7 @@ class MathSyntaxAnalyser(LexicalAnalyser):
             return True
 
         elif action == '#ACTION_MATRIX_NEW_ROW':
-            token = self.get_token()
+            token = self.lex.get_token()
             ms = self.state_stack[-1]
 
             # matrix cell collection
@@ -462,7 +433,7 @@ class MathSyntaxAnalyser(LexicalAnalyser):
             return True
 
         elif action == '#ACTION_MATRIX_NEW_CELL':
-            token = self.get_token()
+            token = self.lex.get_token()
             ms = self.state_stack[-1]
 
             # matrix cell collection
@@ -537,13 +508,14 @@ class MathSyntaxAnalyser(LexicalAnalyser):
         # parsing loop
         while self.stack:
             stack_top = self.stack[-1]
-            token = self.peek_token()
+            token = self.lex.peek_token()
             print(f"STACK: {self.stack}")
 
             # TODO MATH MODE END
             if stack_top == '$' and token.value == '$' and token.type == '_DOLLAR_SIGN':
                 pos = self.get_position()
                 print("Position:", pos)
+                self.d.position = self.get_position()
                 return True, pos
 
             # actions
@@ -558,7 +530,7 @@ class MathSyntaxAnalyser(LexicalAnalyser):
             elif not (stack_top.isupper() and stack_top != '$'):
                 if stack_top == token.value:
                     self.stack.pop()
-                    self.get_token()
+                    self.lex.get_token()
                 else:
                     print(f"Syntax Error: Expected '{stack_top}' but got '{token.value}'")
                     return False, 0

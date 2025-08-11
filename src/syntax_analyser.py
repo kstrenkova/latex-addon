@@ -9,33 +9,11 @@ import os.path
 from .generator import *
 from .lexical_analyser import LexicalAnalyser
 from .syntax_analyser_math import MathSyntaxAnalyser
+from .syntax_utils import Defaults, Parameters
 
 # TODO get rid of ..data
 from ..data.ll_table import *
 from ..data.characters_db import *
-
-
-# class that holds default settings
-class Defaults:
-    def __init__(self, context, custom_prop):
-        self.context = context
-        self.text_scale = custom_prop.text_scale
-        self.font_path = custom_prop.font_path
-        self.font = []  # default_font, unicode_font
-        self.base_collection = ''
-        self.current_collection = ''
-
-# class for parameters
-class Parameters:
-    def __init__(self, scale, height, width, line):
-        self.scale = scale
-        self.height = height
-        self.width = width
-        self.line = line
-
-    def create_copy(self):
-        copy = Parameters(self.scale, self.height, self.width, self.line)
-        return copy
 
 
 # class for levels
@@ -45,23 +23,15 @@ class Levels:
         self.frac = frac
 
 
-class SyntaxAnalyser(LexicalAnalyser):
-    def __init__(self, context, custom_prop):
-        super().__init__(custom_prop.latex_text, 0)
-
+class SyntaxAnalyser:
+    def __init__(self, lex, context, custom_prop):
         self.stack = ['$', 'PROG']
         self.state_stack = []
-        self.parsing_context = "DEFAULT"
 
-        self.cus_pt = custom_prop
+        self.lex = lex
         self.d = Defaults(context, custom_prop)
         self.parameters = Parameters(custom_prop.text_scale, 0.0, 0.0, 0.0)
         self.levels = Levels([], 0)
-
-    def peek_token(self):
-        token = self.get_token()
-        self.return_token(token)
-        return token
 
     def choose_rule(self, stack_top, token):
         # TODO clean lookup
@@ -82,7 +52,7 @@ class SyntaxAnalyser(LexicalAnalyser):
     def execute_action(self, action, token):
         # <CONST> actions
         if action == '#ACTION_GENERATE_TEXT':
-            token = self.get_token()
+            token = self.lex.get_token()
             gen_text(self.d.context, token.value, self.d.font[0])
             gen_calculate(self.parameters, self.d.text_scale, self.levels)
             gen_position(self.parameters, True)
@@ -94,11 +64,13 @@ class SyntaxAnalyser(LexicalAnalyser):
             print("ACTION: Entering math mode!")
 
             self.d.current_collection = gen_new_collection("MathematicalEqCollection", self.d.base_collection)
+            self.d.position = self.get_position()+1
 
             # call math syntax analyser
-            math_syntax = MathSyntaxAnalyser(self.d.context, self.cus_pt, self.d.current_collection, self.get_position()+1) # TODO
+            math_syntax = MathSyntaxAnalyser(self.lex, self.d, self.parameters)
 
             # set active collection
+            # TODO tidy up
             layer_collection = bpy.context.view_layer.layer_collection
             for layer in layer_collection.children:
                 print("Layer name: ", layer.name)
@@ -156,7 +128,7 @@ class SyntaxAnalyser(LexicalAnalyser):
         # parsing loop
         while self.stack:
             stack_top = self.stack[-1]
-            token = self.peek_token()
+            token = self.lex.peek_token()
             print(f"STACK: {self.stack}")
             print(f"TOKEN VALUE AND TYPE", token.value, token.type)
 
@@ -179,10 +151,10 @@ class SyntaxAnalyser(LexicalAnalyser):
             elif not (stack_top.isupper() and stack_top != '$') or stack_top == '_DOLLAR_SIGN':
                 if stack_top == '_DOLLAR_SIGN' and token.value == '$':
                     self.stack.pop()
-                    self.get_token()
+                    self.lex.get_token()
                 elif stack_top == token.value:
                     self.stack.pop()
-                    self.get_token()
+                    self.lex.get_token()
                 else:
                     print(f"Syntax Error: Expected '{stack_top}' but got '{token.value}'")
                     return False

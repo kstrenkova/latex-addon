@@ -96,8 +96,11 @@ class WM_OT_AddText(bpy.types.Operator):
         scene = context.scene
         cus_pt = scene.custom_prop
 
-        # create class for analysis
-        syntax = SyntaxAnalyser(context, cus_pt)
+        # create lexical analyser
+        lex = LexicalAnalyser(cus_pt.latex_text, 0)
+
+        # create syntax analyser
+        syntax = SyntaxAnalyser(lex, context, cus_pt)
 
         if not syntax.parse():
             warn_msg = 'Mathematical equation was not fully generated. Check system console for more info on this matter.'
