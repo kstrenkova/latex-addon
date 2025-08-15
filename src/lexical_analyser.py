@@ -19,7 +19,6 @@ class LexicalAnalyser:
     def __init__(self, latex_text, position):
         self.text = latex_text
         self.position = position
-        print(f"Lexer created for text: '{self.text[:20]}...' at position {self.position}")
 
     # function gets the next token
     def get_token(self):

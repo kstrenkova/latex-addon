@@ -8,13 +8,11 @@
 class Defaults:
     def __init__(self, context, custom_prop):
         self.context = context
-        self.latex_text = custom_prop.latex_text
         self.text_scale = custom_prop.text_scale
         self.font_path = custom_prop.font_path
         self.font = []  # default_font, unicode_font
-        self.base_collection = ""
-        self.current_collection = ""
-        self.position = 0
+        self.base_coll = ""
+        self.current_coll = ""
 
 
 # class for parameters

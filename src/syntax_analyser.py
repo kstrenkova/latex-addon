@@ -7,7 +7,6 @@ import bpy
 import os.path
 
 from .generator import *
-from .lexical_analyser import LexicalAnalyser
 from .syntax_analyser_math import MathSyntaxAnalyser
 from .syntax_utils import Defaults, Parameters
 
@@ -53,48 +52,47 @@ class SyntaxAnalyser:
         # <CONST> actions
         if action == '#ACTION_GENERATE_TEXT':
             token = self.lex.get_token()
-            gen_text(self.d.context, token.value, self.d.font[0])
+            gen_text(token.value, self.d.font[0], self.d.current_coll)
             gen_calculate(self.parameters, self.d.text_scale, self.levels)
             gen_position(self.parameters, True)
-            # gen_collection(self.d.current_collection, self.d.base_collection)
             return True
 
         # MATH INLINE MODE
         elif action == '#ACTION_MATH_INLINE_MODE':
             print("ACTION: Entering math mode!")
-
-            self.d.current_collection = gen_new_collection("MathematicalEqCollection", self.d.base_collection)
-            self.d.position = self.get_position()+1
-
-            # call math syntax analyser
-            math_syntax = MathSyntaxAnalyser(self.lex, self.d, self.parameters)
+            self.lex.get_token()
+            latex_coll = self.d.base_coll
+            self.d.current_coll = gen_new_collection("MathematicalEqCollection", self.d.base_coll)
 
             # set active collection
             # TODO tidy up
             layer_collection = bpy.context.view_layer.layer_collection
             for layer in layer_collection.children:
                 print("Layer name: ", layer.name)
-                if layer.name == self.d.base_collection:
+                print("Base collection:", self.d.base_coll)
+                if layer.name == self.d.base_coll:
                     for l in layer.children:
-                        print("Child Layer name: ", l.name, self.d.current_collection)
-                        if l.name == self.d.current_collection:
+                        print("Child Layer name: ", l.name, self.d.current_coll)
+                        if l.name == self.d.current_coll:
                             bpy.context.view_layer.active_layer_collection = l
-                            print(f"Active collection set to '{self.d.current_collection}'")
+                            print(f"Active collection set to '{self.d.current_coll}'")
 
-            status, position = math_syntax.parse()
+            # call math syntax analyser
+            math_syntax = MathSyntaxAnalyser(self.lex, self.d, self.parameters)
 
-            if not status:
+            if not math_syntax.parse():
                 warn_msg = 'Mathematical equation was not fully generated. Check system console for more info on this matter.'
                 # TODO PUT WARNING
                 print({'WARNING'}, warn_msg)
                 return False
 
-            self.set_position(position)
+            self.d.base_coll = latex_coll
             print("Returned from math mode!")
 
             # join collection into parent collection
-            gen_join_collections(self.d.current_collection, self.d.base_collection)
-            gen_activate_collection(self.d.base_collection)
+            gen_join_collections(self.d.current_coll, self.d.base_coll)
+            gen_activate_collection(self.d.base_coll)
+            self.d.current_coll = latex_coll
             return True
 
         else:
@@ -109,8 +107,8 @@ class SyntaxAnalyser:
             bpy.context.scene.collection.children.link(collection)
             gen_activate_collection(collection.name)
 
-            self.d.base_collection = collection.name
-            self.d.current_collection = collection.name
+            self.d.base_coll = collection.name
+            self.d.current_coll = collection.name
 
             # chosen default font
             if self.d.font_path != "":

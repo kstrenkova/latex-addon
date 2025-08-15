@@ -74,6 +74,7 @@ class MathSyntaxAnalyser:
         self.lex = lex
         self.d = defaults
         self.parameters = parameters
+        self.d.base_coll = self.d.current_coll
 
         self.stack = ['$', 'PROG']
         self.state_stack = []
@@ -127,11 +128,9 @@ class MathSyntaxAnalyser:
         # <CONST> actions
         elif action == '#ACTION_GENERATE_TEXT':
             token = self.lex.get_token()
-            gen_text(self.d.context, token.value, self.d.font[0])
+            gen_text(token.value, self.d.font[0], self.d.current_coll)
             gen_calculate(self.parameters, self.d.text_scale, self.levels)
             gen_position(self.parameters, True)
-            print("BASE COLLECTION", self.d.base_collection)
-            gen_collection(self.d.current_collection, self.d.base_collection)
             return True
 
         elif action == '#ACTION_LEVEL_DOWN':
@@ -158,34 +157,33 @@ class MathSyntaxAnalyser:
             # move prod and integral symbol
             self.d.context.active_object.location.y -= 0.3 * self.parameters.scale
             self.parameters.width -= 0.2 * self.parameters.scale
-            gen_collection(self.d.current_collection, self.d.base_collection)
+            gen_collection(self.d.current_coll, self.d.base_coll)
             return True
 
         elif action == '#ACTION_MATH_SYMBOL':
             token = self.lex.get_token()
             if token.value in unicode_chars:
-                gen_text(self.d.context, unicode_chars[token.value], self.d.font[1])
+                gen_text(unicode_chars[token.value], self.d.font[1], self.d.current_coll)
 
             gen_calculate(self.parameters, self.d.text_scale, self.levels)
             gen_position(self.parameters, True)
-            gen_collection(self.d.current_collection, self.d.base_collection)
             return True
 
         # <TERM_EI> actions
         elif action == '#ACTION_EI_INIT':
             token = self.lex.get_token()
-            eis = ExpIxState(self.d.current_collection, self.parameters.create_copy())
-            eis.width = gen_group_width(self.d.current_collection)
+            eis = ExpIxState(self.d.current_coll, self.parameters.create_copy())
+            eis.width = gen_group_width(self.d.current_coll)
 
             # exponent or index collection
             coll_name = 'ExponentCollection' if token.type == '_CARET' else 'IndexCollection'
             eicoll = bpy.data.collections.new(coll_name)
-            bpy.data.collections[self.d.current_collection].children.link(eicoll)
+            bpy.data.collections[self.d.current_coll].children.link(eicoll)
             eis.eicoll = eicoll.name
 
             self.state_stack.append(eis)
 
-            self.d.current_collection = eicoll.name
+            self.d.current_coll = eicoll.name
             return True
 
         elif action == "#ACTION_EI_SINGLE":
@@ -199,7 +197,7 @@ class MathSyntaxAnalyser:
 
             # join collection into parent collection
             gen_join_collections(eis.eicoll, eis.parent_coll)
-            self.d.current_collection = eis.parent_coll  # set current collection
+            self.d.current_coll = eis.parent_coll
             self.sum.bool = False
             return True
 
@@ -217,7 +215,7 @@ class MathSyntaxAnalyser:
             bpy.data.collections[eis.parent_coll].children.link(eicoll)
             eis.eicoll2 = eicoll.name
 
-            self.d.current_collection = eicoll.name
+            self.d.current_coll = eicoll.name
 
             # return width for the second index or exponent
             self.parameters.width = eis.init_params.width
@@ -227,7 +225,7 @@ class MathSyntaxAnalyser:
             eis = self.state_stack.pop()
 
             # calculate final width
-            sec_width = gen_group_width(self.d.current_collection)
+            sec_width = gen_group_width(self.d.current_coll)
             fin_width = max(eis.width, sec_width)
 
             self.parameters.width = fin_width + 0.1 * self.parameters.scale
@@ -241,7 +239,7 @@ class MathSyntaxAnalyser:
             # join collection into parent collection
             gen_join_collections(eis.eicoll, eis.parent_coll)
             gen_join_collections(eis.eicoll2, eis.parent_coll)
-            self.d.current_collection = eis.parent_coll  # set current collection
+            self.d.current_coll = eis.parent_coll  # set current collection
             self.sum.bool = False
             return True
 
@@ -249,7 +247,7 @@ class MathSyntaxAnalyser:
         elif action == '#ACTION_SQRT_INIT':
             # saving parameters
             gen_calculate(self.parameters, self.d.text_scale, self.levels)
-            sqs = SqrtState(self.d.current_collection, self.parameters.create_copy())
+            sqs = SqrtState(self.d.current_coll, self.parameters.create_copy())
 
             sqrt_width = 0.855927586555481  # width of square root symbol
 
@@ -267,7 +265,7 @@ class MathSyntaxAnalyser:
 
             self.state_stack.append(sqs)
 
-            self.d.current_collection = sqcoll.name
+            self.d.current_coll = sqcoll.name
             return True
 
         elif action == '#ACTION_SQRT_CREATE':
@@ -281,7 +279,8 @@ class MathSyntaxAnalyser:
             }
 
             # gets parameters of text under square root
-            if len(sqs.sqcoll.all_objects):
+            sq_coll_obj = bpy.data.collections.get(sqs.sqcoll)
+            if len(sq_coll_obj.all_objects):
                 use_param = True
                 sqrt_param['x_pos'] = gen_group_width(sqs.parent_coll)
                 sqrt_param['y_min'] = gen_min_y(sqs.parent_coll)
@@ -296,7 +295,7 @@ class MathSyntaxAnalyser:
 
             # join collection into parent collection
             gen_join_collections(sqs.sqcoll, sqs.parent_coll)
-            self.d.current_collection = sqs.parent_coll  # set current collection
+            self.d.current_coll = sqs.parent_coll  # set current collection
             return True
 
         # <FRAC> actions
@@ -307,25 +306,25 @@ class MathSyntaxAnalyser:
 
             gen_calculate(self.parameters, self.d.text_scale, self.levels)
 
-            parent_coll = bpy.data.collections[self.d.current_collection]
+            parent_coll = bpy.data.collections[self.d.current_coll]
             fs = FractionState(parent_coll, self.parameters.create_copy())
 
             # numerator collection
             ncoll = bpy.data.collections.new("NumeratorCollection")
-            bpy.data.collections[self.d.current_collection].children.link(ncoll)
+            bpy.data.collections[self.d.current_coll].children.link(ncoll)
             fs.ncoll = ncoll.name
 
             self.state_stack.append(fs)
 
-            self.d.current_collection = ncoll.name
+            self.d.current_coll = ncoll.name
             return True
 
         elif action == '#ACTION_FRAC_UP':
             fs = self.state_stack[-1]
 
             # gets the furthest x position
-            if len(bpy.data.collections[self.d.current_collection].all_objects):
-                fs.nwidth = gen_group_width(self.d.current_collection)
+            if len(bpy.data.collections[self.d.current_coll].all_objects):
+                fs.nwidth = gen_group_width(self.d.current_coll)
 
             # move numerator objects
             gen_calculate(self.parameters, self.d.text_scale, self.levels)
@@ -336,7 +335,7 @@ class MathSyntaxAnalyser:
             fs.parent_coll.children.link(dcoll)
             fs.dcoll = dcoll.name
 
-            self.d.current_collection = dcoll.name
+            self.d.current_coll = dcoll.name
 
             # reloading last width
             self.parameters.width = fs.init_params.width
@@ -346,8 +345,8 @@ class MathSyntaxAnalyser:
             fs = self.state_stack.pop()
 
             # gets the furthest x position
-            if len(bpy.data.collections[self.d.current_collection].all_objects):
-                fs.dwidth = gen_group_width(self.d.current_collection)
+            if len(bpy.data.collections[self.d.current_coll].all_objects):
+                fs.dwidth = gen_group_width(self.d.current_coll)
 
             # move denominator objects
             gen_calculate(self.parameters, self.d.text_scale, self.levels)
@@ -366,14 +365,14 @@ class MathSyntaxAnalyser:
 
             # center numerator and denominator
             gen_center(fs.nwidth, fs.dwidth, center_coll)
-            gen_collection(fs.dcoll, self.d.base_collection)
+            gen_collection(fs.dcoll, self.d.base_coll)
 
             # join numerator and denominator collections
             gen_join_collections(fs.dcoll, fs.ncoll)
 
             # join denominator collection into parent collection
-            gen_join_collections(fs.ncoll, fs.parent_coll)
-            self.d.current_collection = fs.parent_coll  # set current collection
+            gen_join_collections(fs.ncoll, fs.parent_coll.name)
+            self.d.current_coll = fs.parent_coll.name
 
             # set back line width
             self.parameters.width = line_length + 0.2 * self.parameters.scale  # space
@@ -384,12 +383,12 @@ class MathSyntaxAnalyser:
 
         # <SUM> actions
         elif action == '#ACTION_SUM_INIT':
-            gen_text(self.d.context, unicode_chars['sum'], self.d.font[1])
+            gen_text(unicode_chars['sum'], self.d.font[1], self.d.current_coll)
 
             gen_calculate(self.parameters, self.d.text_scale, self.levels)
             self.parameters.height -= 0.4 * self.parameters.scale  # move lower
             gen_position(self.parameters, True)
-            gen_collection(self.d.current_collection, self.d.base_collection)
+            gen_collection(self.d.current_coll, self.d.base_coll)
 
             self.sum.name = self.d.context.active_object.name  # save sum object
             self.sum.bool = True
@@ -400,19 +399,19 @@ class MathSyntaxAnalyser:
             gen_calculate(self.parameters, self.d.text_scale, self.levels)
 
             # saving state of the matrix
-            ms = MatrixState(self.d.current_collection, self.parameters.create_copy())
+            ms = MatrixState(self.d.current_coll, self.parameters.create_copy())
             ms.xy_size.append(ms.init_params.width) # array for matrix parameters
 
             # matrix collection
             mx_coll = bpy.data.collections.new("MatrixBodyCollection")
-            bpy.data.collections[self.d.current_collection].children.link(mx_coll)
+            bpy.data.collections[self.d.current_coll].children.link(mx_coll)
             ms.mx_coll = mx_coll.name
 
             self.state_stack.append(ms)
 
             # first matrix cell collection
-            self.d.current_collection = gen_new_collection("MatrixCellCollection", mx_coll)
-            ms.obj_array[ms.row_num].append(self.d.current_collection)
+            self.d.current_coll = gen_new_collection("MatrixCellCollection", mx_coll)
+            ms.obj_array[ms.row_num].append(self.d.current_coll)
             return True
 
         elif action == '#ACTION_MATRIX_NEW_ROW':
@@ -420,12 +419,12 @@ class MathSyntaxAnalyser:
             ms = self.state_stack[-1]
 
             # matrix cell collection
-            self.d.current_collection = gen_new_collection("MatrixCellCollection", ms.parent_coll)
+            self.d.current_coll = gen_new_collection("MatrixCellCollection", ms.parent_coll)
 
             # add new array that represents row
             ms.obj_array.append([])
             ms.row_num += 1
-            ms.obj_array[ms.row_num].append(self.d.current_collection)
+            ms.obj_array[ms.row_num].append(self.d.current_coll)
 
             # set width to start and height lower
             self.parameters.width = ms.init_params.width
@@ -437,10 +436,10 @@ class MathSyntaxAnalyser:
             ms = self.state_stack[-1]
 
             # matrix cell collection
-            self.d.current_collection = gen_new_collection("MatrixCellCollection", ms.parent_coll)
+            self.d.current_coll = gen_new_collection("MatrixCellCollection", ms.parent_coll)
 
             # add collection to row
-            ms.obj_array[ms.row_num].append(self.d.current_collection)
+            ms.obj_array[ms.row_num].append(self.d.current_coll)
             return True
 
         elif action == '#ACTION_MATRIX_CREATE':
@@ -455,13 +454,13 @@ class MathSyntaxAnalyser:
 
             if not self.ms_brackets == 'matrix':
                 # generate left bracket of matrix
-                gen_text(self.d.context, bracket_type[0], self.d.font[1])
-                gen_brackets(self.d.context, self.parameters, ms.parent_coll, self.d.base_collection, ms.xy_size, True)
+                gen_text(bracket_type[0], self.d.font[1], self.d.current_coll)
+                gen_brackets(self.d.context, self.parameters, ms.parent_coll, self.d.base_coll, ms.xy_size, True)
                 ms.xy_size = gen_matrix_param(False, ms.parent_coll, ms.xy_size)
 
                 # generate right bracket of matrix
-                gen_text(self.d.context, bracket_type[1], self.d.font[1])
-                gen_brackets(self.d.context, self.parameters, ms.parent_coll, self.d.base_collection, ms.xy_size, False)
+                gen_text(bracket_type[1], self.d.font[1], self.d.current_coll)
+                gen_brackets(self.d.context, self.parameters, ms.parent_coll, self.d.base_coll, ms.xy_size, False)
 
             # center matrix into row
             gen_matrix_center(self.parameters, ms.parent_coll, ms.xy_size)
@@ -482,7 +481,7 @@ class MathSyntaxAnalyser:
 
             # join matrix collection into parent collection
             gen_join_collections(ms.mx_coll, ms.parent_coll)
-            self.d.current_collection = ms.parent_coll  # set current collection
+            self.d.current_coll = ms.parent_coll  # set current collection
             return True
 
         else:
@@ -513,18 +512,15 @@ class MathSyntaxAnalyser:
 
             # TODO MATH MODE END
             if stack_top == '$' and token.value == '$' and token.type == '_DOLLAR_SIGN':
-                pos = self.get_position()
-                print("Position:", pos)
-                self.d.position = self.get_position()
-                return True, pos
+                return True
 
             # actions
             elif stack_top.startswith('#'):
                 action = self.stack.pop()
-                print(f"CT {token.value}")
+                print(f"V: {token.value}")
                 if not self.execute_action(action, token):
                     print(f"Action error: {action}")
-                    return False, 0
+                    return False
 
             # terminal
             elif not (stack_top.isupper() and stack_top != '$'):
@@ -533,7 +529,7 @@ class MathSyntaxAnalyser:
                     self.lex.get_token()
                 else:
                     print(f"Syntax Error: Expected '{stack_top}' but got '{token.value}'")
-                    return False, 0
+                    return False
 
             # non-terminal
             else:
@@ -548,8 +544,8 @@ class MathSyntaxAnalyser:
                             self.stack.append(symbol)
                 else:
                     print(f"Syntax Error: No rule for ({stack_top}, {token.type}, {token.value})")
-                    return False, 0
+                    return False
 
         if self.stack:
             print("Error, not all tokens have been read!")
-            return False, 0
+            return False

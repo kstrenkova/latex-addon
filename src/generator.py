@@ -10,33 +10,18 @@ from mathutils import Vector  # vertices
 
 
 # function generates text in given font
-# special case for sum and integral symbol when the scaling is 3.5 bigger
-def gen_text(context, text, font):
-    # generate basic text
-    bpy.ops.object.text_add(enter_editmode=True, align='WORLD', location=(0, 0, 0), scale=(1, 1, 1))
-    bpy.ops.font.delete(type='PREVIOUS_WORD')
-    bpy.ops.font.text_insert(text=text)
-    bpy.ops.object.editmode_toggle()
-
-    # generated text
-    active_obj = context.active_object
-
-    # set text font if one is chosen
-    if not font == "":
-        active_obj.data.font = font
-        active_obj.data.size = 1.0
+def gen_text(text, font, collection):
+    text_data = bpy.data.curves.new("Text", type='FONT')
+    text_data.body = text
+    text_data.font = font
 
     # sum, prod and integral symbols
     if text == '\u2211' or text == '\u222b' or text == '\u220f':
-        # scale and move symbol
-        active_obj.scale.x = 3.5
-        active_obj.scale.y = 3.5
-        # apply scale
-        bpy.ops.object.transform_apply(scale=True, location=False, rotation=False)
+        text_data.size = 2
 
-    # apply changes
-    bpy.ops.object.select_all(action='DESELECT') # deselect all objects
-    bpy.data.objects[active_obj.name].select_set(True)
+    text_obj = bpy.data.objects.new("Text", text_data)
+    bpy.data.collections[collection].objects.link(text_obj)
+    bpy.context.view_layer.objects.active = text_obj
 
 
 # function positions text according to given parameters
