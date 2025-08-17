@@ -20,6 +20,7 @@ class Levels:
     def __init__(self, ei_array, frac):
         self.ei_array = ei_array
         self.frac = frac
+        self.sqrt = False
 
 
 class SyntaxAnalyser:

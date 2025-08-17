@@ -20,6 +20,7 @@ class Levels:
     def __init__(self, ei_array, frac):
         self.ei_array = ei_array
         self.frac = frac
+        self.sqrt = False
 
 
 # class fot sum
@@ -78,7 +79,6 @@ class MathSyntaxAnalyser:
 
         self.stack = ['$', 'PROG']
         self.state_stack = []
-        self.parsing_context = "DEFAULT"
 
         self.sum = Sum()
         self.levels = Levels([], 0)
@@ -88,15 +88,12 @@ class MathSyntaxAnalyser:
         # TODO clean lookup
         # TODO ANGLE_BRACKETS OUTSIDE OF SQRT
 
-        if token.type in {"COMMAND", "CLOSE_BRACKET", "OPEN_BRACKET"}:
+        if token.type in {"COMMAND", "CLOSE_BRACKET", "OPEN_BRACKET", "ANGLE_BRACKET"}:
             key = token.value
         else:
             key = token.type
 
-        if self.parsing_context == "SQRT" and token.type == "ANGLE_BRACKET" and token.value in {'[', ']'}:
-            key = token.value
-
-        elif token.type == "COMMAND" and token.value in unicode_chars and token.value != 'sum':
+        if token.type == "COMMAND" and token.value in unicode_chars and token.value != 'sum':
             key = "_MATH_SYMBOL"
 
         elif (token.type != '_UNDERSORE' and stack_top == 'IX') or \
@@ -110,19 +107,8 @@ class MathSyntaxAnalyser:
         return rule
 
     def execute_action(self, action, token):
-        # Context actions
-        if action == '#ACTION_SQRT_CONTEXT':
-            print("Context change: Entering SQRT")
-            self.parsing_context = 'SQRT'
-            return True
-
-        elif action == '#ACTION_RESET_CONTEXT':
-            print(f"Context change: Leaving {self.parsing_context}")
-            self.parsing_context = 'DEFAULT'
-            return True
-
         # <CONST> actions
-        elif action == '#ACTION_GENERATE_TEXT':
+        if action == '#ACTION_GENERATE_TEXT':
             token = self.lex.get_token()
             gen_text(token.value, self.d.font[0], self.d.current_coll)
             gen_calculate(self.parameters, self.d.text_scale, self.levels)
@@ -137,6 +123,13 @@ class MathSyntaxAnalyser:
         elif action == '#ACTION_LEVEL_UP':
             self.levels.ei_array.append("exp")
             gen_calculate(self.parameters, self.d.text_scale, self.levels)
+            return True
+
+        elif action == '#ACTION_LEVEL_UP_SQRT':
+            self.levels.ei_array.append("exp")
+            self.levels.sqrt = True
+            gen_calculate(self.parameters, self.d.text_scale, self.levels)
+            self.levels.sqrt = False
             return True
 
         # <COMMAND> actions
@@ -246,13 +239,30 @@ class MathSyntaxAnalyser:
             sqs = SqrtState(self.d.current_coll, self.parameters.create_copy())
 
             sqrt_width = 0.855927586555481  # width of square root symbol
-
-            # mode 'single' doesn't have multipliers
-            #if mode == "single":
             self.parameters.width += sqrt_width * self.parameters.scale
-            # else:
-            #     tmp_param.width -= (sqrt_width - 0.4) * self.parameters.scale
-            #     self.parameters.width += 0.4 * self.parameters.scale
+
+            # square root collection
+            sqcoll = bpy.data.collections.new("SqrtCollection")
+            bpy.data.collections[sqs.parent_coll].children.link(sqcoll)
+            sqs.sqcoll = sqcoll.name
+
+            self.state_stack.append(sqs)
+
+            self.d.current_coll = sqcoll.name
+            return True
+
+        elif action == '#ACTION_SQRT_INIT_WITH_INDEX':
+            self.levels.ei_array.pop()
+            self.parameters.width += 0.1 # space before index
+
+            # saving parameters
+            gen_calculate(self.parameters, self.d.text_scale, self.levels)
+            sqs = SqrtState(self.d.current_coll, self.parameters.create_copy())
+
+            sqrt_width = 0.855927586555481  # width of square root symbol
+
+            sqs.init_params.width -= (sqrt_width - 0.4) * self.parameters.scale
+            self.parameters.width += 0.4 * self.parameters.scale
 
             # square root collection
             sqcoll = bpy.data.collections.new("SqrtCollection")

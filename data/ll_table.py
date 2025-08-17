@@ -67,6 +67,8 @@ math_ll_table = {
     ('TERM', '_ENTER'):           ['CONST'],
     ('TERM', '_UNDERSCORE'):      ['CONST'],
     ('TERM', '_CARET'):           ['CONST'],
+    ('TERM', '['):                ['CONST'],
+    ('TERM', ']'):                ['CONST'],
 
     # <TERM> -> <COMMAND>
     ('TERM', '{'):                ['COMMAND'],
@@ -86,6 +88,8 @@ math_ll_table = {
     ('MORE_TERM', 'enter'):            ['TERM', 'MORE_TERM'],
     ('MORE_TERM', '_UNDERSCORE'):      ['TERM', 'MORE_TERM'],
     ('MORE_TERM', '_CARET'):           ['TERM', 'MORE_TERM'],
+    ('MORE_TERM', '['):                ['TERM', 'MORE_TERM'],
+    ('MORE_TERM', ']'):                ['TERM', 'MORE_TERM'],
     ('MORE_TERM', '{'):                ['TERM', 'MORE_TERM'],
     ('MORE_TERM', 'sqrt'):             ['TERM', 'MORE_TERM'],
     ('MORE_TERM', 'frac'):             ['TERM', 'MORE_TERM'],
@@ -97,7 +101,6 @@ math_ll_table = {
     ('MORE_TERM', 'dollar'):           ['TERM', 'MORE_TERM'],
     # <MORE_TERM> -> epsilon
     ('MORE_TERM', '}'):                ['epsilon'],
-    ('MORE_TERM', ']'):                ['epsilon'],
     ('MORE_TERM', '$'):                ['epsilon'],
     ('MORE_TERM', 'dollar'):           ['epsilon'],
     ('MORE_TERM', 'END'):              ['epsilon'],
@@ -105,6 +108,8 @@ math_ll_table = {
     # --- CONST ---
     # <CONST> -> text
     ('CONST', '_TEXT'):             ['#ACTION_GENERATE_TEXT'],
+    ('CONST', '['):                 ['#ACTION_GENERATE_TEXT'],
+    ('CONST', ']'):                 ['#ACTION_GENERATE_TEXT'],
     # <CONST> -> special_char
     ('CONST', '_SPECIAL_CHAR'):     ['#ACTION_GENERATE_TEXT'],
     # <CONST> -> enter
@@ -128,7 +133,7 @@ math_ll_table = {
     # <COMMAND> -> { <MORE_TERM> }
     ('COMMAND', '{'):                ['{', 'MORE_TERM', '}'],
     # <COMMAND> -> sqrt <SQRT>
-    ('COMMAND', 'sqrt'):             ['#ACTION_SQRT_CONTEXT', 'sqrt', 'SQRT', '#ACTION_RESET_CONTEXT',],
+    ('COMMAND', 'sqrt'):             ['sqrt', 'SQRT'],
     # <COMMAND> -> frac <FRAC>
     ('COMMAND', 'frac'):             ['frac', 'FRAC'],
     # <COMMAND> -> command
@@ -172,11 +177,23 @@ math_ll_table = {
     # --- SQRT ---
     # <SQRT> -> [ <MORE_TERM> ] { <MORE_TERM> }
     ('SQRT', '['): [
-        '[', 'MORE_TERM', ']',
-        '{', '#ACTION_SQRT_INIT', 'MORE_TERM', '}', '#ACTION_SQRT_CREATE',
+        '[', '#ACTION_LEVEL_UP_SQRT', 'SQRT_CONTEXT', ']',
+        '{', '#ACTION_SQRT_INIT_WITH_INDEX', 'MORE_TERM', '}',
+        '#ACTION_SQRT_CREATE',
     ],
     # <SQRT> -> { <MORE_TERM> }
-    ('SQRT', '{'): ['{', '#ACTION_SQRT_INIT', 'MORE_TERM', '}', '#ACTION_SQRT_CREATE'],
+    ('SQRT', '{'): [
+        '{', '#ACTION_SQRT_INIT', 'MORE_TERM', '}',
+        '#ACTION_SQRT_CREATE',
+    ],
+
+    # TODO finish up sqrt context
+    # --- SQRT_CONTEXT ---
+    # <SQRT_CONTEXT> -> <TERM> <SQRT_CONTEXT>
+    ('SQRT_CONTEXT', '_TEXT'):            ['TERM', 'SQRT_CONTEXT'],
+    ('SQRT_CONTEXT', '_SPECIAL_CHAR'):    ['TERM', 'SQRT_CONTEXT'],
+    # <SQRT_CONTEXT> -> epsilon
+    ('SQRT_CONTEXT', ']'):             ['epsilon'],
 
     # --- FRAC ---
     # <FRAC> -> { <MORE_TERM> } { <MORE_TERM> }

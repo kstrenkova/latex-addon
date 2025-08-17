@@ -253,12 +253,6 @@ def gen_calculate(param, text_scale, levels):
     param.height = param.line
     param.scale = text_scale
 
-    # specific scaling in fraction
-    if levels.frac == 2:
-        param.scale = 0.65 * text_scale
-    elif levels.frac > 2:
-        param.scale = 0.45 * text_scale
-
     # iterating through array of exponents and indexes
     for item in levels.ei_array:
 
@@ -271,6 +265,11 @@ def gen_calculate(param, text_scale, levels):
                 param.scale = 0.45 * text_scale
         else:
             param.scale = 0.45 * text_scale
+
+        # specific scaling in sqrt
+        if levels.sqrt:
+            param.width += 0.1 * text_scale
+            param.scale = 0.15 * text_scale #TODO
 
         # adding number of exponent or index
         if item == "exp":
