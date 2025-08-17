@@ -20,94 +20,75 @@ class LexicalAnalyser:
         self.text = latex_text
         self.position = position
 
-    # function gets the next token
+    # function that returns if the string is at the end
+    def is_end(self):
+        return self.position >= len(self.text)
+
+    # function looks at the next character
+    def get_char(self):
+        return self.text[self.position]
+
+    # function creates a text token
+    def state_text(self):
+        text = ""
+        while not self.is_end() and self.get_char() not in char_type and not self.get_char().isspace():
+            text += self.get_char()
+            self.position += 1
+        return Token("_TEXT", text)
+
+    # function skips all the whitespace characters
+    def state_whitespace(self):
+        while not self.is_end() and self.get_char().isspace():
+            self.position += 1
+
+    # function creates a command token
+    def state_command(self):
+        c = self.get_char()
+        c_type = char_type.get(c)
+
+        if c_type in special_chars:
+            self.position += 1
+            return Token("SPECIAL_CHAR", c)
+        elif c == '\\':
+            self.position += 1
+            return Token("_ENTER", c)
+        elif c in space_sizes:
+            self.position += 1
+            return Token("_SPACE_COMMAND", c)
+
+        name = ""
+        while not self.is_end() and self.get_char().isalpha():
+            name += self.get_char()
+            self.position += 1
+
+        if name in space_sizes:
+            return Token("_SPACE_COMMAND", name)
+
+        return Token("COMMAND", name)
+
     def get_token(self):
-        state = "STATE_START"
-        string_value = ""
+        self.state_whitespace() # erasing whitespace
 
-        while self.position < len(self.text):
-            c = self.text[self.position]
-            c_type = char_type.get(c, "OTHER")
+        if self.is_end():
+            return Token("END", "")
 
-            # choose the next state
-            if state == "STATE_START":
-                if c_type == "BACKSLASH":
-                    state = "STATE_COMMAND"
-                    self.position += 1
+        c = self.get_char()
+        c_type = char_type.get(c)
 
-                    # special case for space, e.g. a \ b
-                    if self.position < len(self.text) and self.text[self.position] == ' ':
-                        self.position += 1
-                        return Token("_SPACE_COMMAND", ' ')
-                    continue
+        # <STATE_COMMAND>
+        if c == '\\':
+            self.position += 1
+            return self.state_command()
 
-                elif c_type == "WHITESPACE":
-                    self.position += 1
-                    continue
+        # SPECIAL CHARACTERS
+        if c_type:
+            self.position += 1
+            return Token(c_type, c)
 
-                elif c_type == "OTHER":
-                    state = "STATE_TEXT"
-                    string_value += c
-                    self.position += 1
-                    continue
+        # <STATE_TEXT>
+        return self.state_text()
 
-                else:
-                    self.position += 1
-                    return Token(c_type, c)
-
-            # COMMANDS
-            elif state == "STATE_COMMAND":
-                if c_type in special_chars:
-                    self.position += 1
-                    return Token("SPECIAL_CHAR", c)
-                elif c_type == "BACKSLASH":
-                    self.position += 1
-                    return Token("_ENTER", "\\")
-                elif c_type == "OTHER" and c in space_sizes:
-                    self.position += 1
-                    return Token("_SPACE_COMMAND", c)
-                elif c_type == "OTHER":
-                    state = "STATE_COMMAND_NAME"
-                else:
-                    self.position += 1
-                    return Token(c_type, c)
-
-            # COMMAND NAME
-            elif state == "STATE_COMMAND_NAME":
-                if c_type == "OTHER" and c.isalpha():
-                    string_value += c
-                    self.position += 1
-                else:
-                    if string_value in space_sizes:
-                        return Token("_SPACE_COMMAND", string_value)
-                    else:
-                        return Token("COMMAND", string_value)
-
-            # TEXT
-            elif state == "STATE_TEXT":
-                if c_type != "OTHER":
-                    return Token("_TEXT", string_value)
-                else:
-                    string_value += c
-                    self.position += 1
-
-        # TODO
-        # characters in buffer
-        if string_value != "":
-            if state == "STATE_COMMAND":
-                if string_value in space_sizes:
-                    return Token("_SPACE_COMMAND", string_value)
-                else:
-                    return Token("COMMAND", string_value)
-            elif state == "STATE_TEXT":
-                return Token("_TEXT", string_value)
-
-        # end token
-        return Token("END", "")
-
-    # end of get_token()
-
-    # function returns token to latex string
+    # function returns the position before the current token
     def return_token(self, token):
         self.position -= len(token.value)
 
