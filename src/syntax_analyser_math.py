@@ -99,12 +99,8 @@ class MathSyntaxAnalyser:
         elif token.type == "COMMAND" and token.value in unicode_chars and token.value != 'sum':
             key = "_MATH_SYMBOL"
 
-        elif token.type == "_TEXT" and token.value in matrix_brackets:
-            self.ms_brackets = token.value
-            key = "matrix"
-
-        elif (token.value != '_' and stack_top == 'IX') or \
-            (token.value != '^' and stack_top == 'EXP'):
+        elif (token.type != '_UNDERSORE' and stack_top == 'IX') or \
+            (token.type != '_CARET' and stack_top == 'EXP'):
             key = "epsilon"
 
         if stack_top == "PROG":
@@ -395,6 +391,14 @@ class MathSyntaxAnalyser:
             return True
 
         # <MATRIX> actions
+        elif action == '#ACTION_VALIDATE_MATRIX_TYPE':
+            token = self.lex.get_token()
+            if token.type == '_TEXT' and token.value in matrix_brackets:
+                self.ms_brackets = token.value
+                return True
+            else:
+                print("There are no matrix bracket type ", token.value)
+
         elif action == '#ACTION_MATRIX_INIT':
             gen_calculate(self.parameters, self.d.text_scale, self.levels)
 
@@ -410,7 +414,7 @@ class MathSyntaxAnalyser:
             self.state_stack.append(ms)
 
             # first matrix cell collection
-            self.d.current_coll = gen_new_collection("MatrixCellCollection", mx_coll)
+            self.d.current_coll = gen_new_collection("MatrixCellCollection", ms.mx_coll)
             ms.obj_array[ms.row_num].append(self.d.current_coll)
             return True
 
@@ -511,7 +515,7 @@ class MathSyntaxAnalyser:
             print(f"STACK: {self.stack}")
 
             # TODO MATH MODE END
-            if stack_top == '$' and token.value == '$' and token.type == '_DOLLAR_SIGN':
+            if stack_top == '$' and token.value == '$' and token.type == 'dollar':
                 return True
 
             # actions

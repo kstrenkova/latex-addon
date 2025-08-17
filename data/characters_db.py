@@ -29,7 +29,7 @@ char_type = {
     '^': "_CARET",
     '_': "_UNDERSCORE",
     '&': "_AMPERSAND",
-    '$': "_DOLLAR_SIGN",
+    '$': "dollar",
     '[': "ANGLE_BRACKET",
     ']': "ANGLE_BRACKET",
     ' ': "WHITESPACE",
@@ -41,7 +41,7 @@ special_chars = [
     'CLOSE_BRACKET',
     '_AMPERSAND',
     '_UNDERSCORE',
-    '_DOLLAR_SIGN',
+    'dollar',
 
     # MATH MODE
     '(',

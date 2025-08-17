@@ -13,7 +13,7 @@ ll_table = {
     ('TERM', '_TEXT'):            ['CONST'],
 
     # <TERM> -> <MATH_INLINE_MODE>
-    ('TERM', '_DOLLAR_SIGN'):      ['#ACTION_MATH_INLINE_MODE', '_DOLLAR_SIGN'],
+    ('TERM', 'dollar'):      ['#ACTION_MATH_INLINE_MODE', 'dollar'],
     ('TERM', '\('):               ['#ACTION_MATH_INLINE_MODE', '\)'],
     ('TERM', '\['):               ['#ACTION_MATH_DISPLAY_MODE', '\]'],
 
@@ -30,7 +30,7 @@ ll_table = {
     # --- MORE_TERM ---
     # <MORE_TERM> -> <TERM> <MORE_TERM>
     ('MORE_TERM', '_TEXT'):            ['TERM', 'MORE_TERM'],
-    ('MORE_TERM', '_DOLLAR_SIGN'):     ['TERM', 'MORE_TERM'],
+    ('MORE_TERM', 'dollar'):     ['TERM', 'MORE_TERM'],
     ('MORE_TERM', 'END'):              ['epsilon'],
 
     # --- CONST ---
@@ -67,6 +67,7 @@ math_ll_table = {
     ('TERM', '_ENTER'):           ['CONST'],
     ('TERM', '_UNDERSCORE'):      ['CONST'],
     ('TERM', '_CARET'):           ['CONST'],
+
     # <TERM> -> <COMMAND>
     ('TERM', '{'):                ['COMMAND'],
     ('TERM', 'sqrt'):             ['COMMAND'],
@@ -93,11 +94,12 @@ math_ll_table = {
     ('MORE_TERM', '_SPACE_COMMAND'):   ['TERM', 'MORE_TERM'],
     ('MORE_TERM', '_MATH_SYMBOL'):     ['TERM', 'MORE_TERM'],
     ('MORE_TERM', 'begin'):            ['TERM', 'MORE_TERM'],
+    ('MORE_TERM', 'dollar'):           ['TERM', 'MORE_TERM'],
     # <MORE_TERM> -> epsilon
     ('MORE_TERM', '}'):                ['epsilon'],
     ('MORE_TERM', ']'):                ['epsilon'],
-    # TODO ('MORE_TERM', '$'):                ['epsilon'],
-    ('MORE_TERM', '_DOLLAR_SIGN'):     ['epsilon'],
+    ('MORE_TERM', '$'):                ['epsilon'],
+    ('MORE_TERM', 'dollar'):           ['epsilon'],
     ('MORE_TERM', 'END'):              ['epsilon'],
 
     # --- CONST ---
@@ -148,9 +150,11 @@ math_ll_table = {
     # --- BLOCK ---
     # <BLOCK> -> begin { text } <MATRIX> end { text }
     ('BLOCK', 'begin'): [
-        'begin', '#ACTION_MATRIX_INIT', '{', 'matrix', '}',
+        'begin', '{', '#ACTION_VALIDATE_MATRIX_TYPE', '}',
+        '#ACTION_MATRIX_INIT',
         'MATRIX',
-        'end', '#ACTION_MATRIX_CREATE', '{', 'matrix', '}'
+        '#ACTION_MATRIX_CREATE',
+        'end', '{', '#ACTION_VALIDATE_MATRIX_TYPE', '}'
     ],
 
     # --- EI_TERM ---

@@ -145,12 +145,11 @@ class SyntaxAnalyser:
                     return False
 
             # terminal
-            # TODO dollar sign
-            elif not (stack_top.isupper() and stack_top != '$') or stack_top == '_DOLLAR_SIGN':
-                if stack_top == '_DOLLAR_SIGN' and token.value == '$':
-                    self.stack.pop()
-                    self.lex.get_token()
-                elif stack_top == token.value:
+            # TODO make carets, underscores and all that work as terminals
+            elif not (stack_top.isupper() and stack_top != '$'):
+                terminal = token.value if token.type == "COMMAND" else token.type
+
+                if stack_top == terminal:
                     self.stack.pop()
                     self.lex.get_token()
                 else:
