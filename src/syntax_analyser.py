@@ -35,7 +35,6 @@ class SyntaxAnalyser:
 
     def choose_rule(self, stack_top, token):
         # TODO clean lookup
-
         if token.type in {"COMMAND", "CLOSE_BRACKET", "OPEN_BRACKET"}:
             key = token.value
         else:
@@ -48,6 +47,11 @@ class SyntaxAnalyser:
 
         rule = ll_table.get((stack_top, key))
         return rule
+
+    def set_active_collection(self, base_coll, current_coll):
+        view_layer = bpy.context.view_layer
+        collection = view_layer.layer_collection.children[base_coll].children[current_coll]
+        view_layer.active_layer_collection = collection
 
     def execute_action(self, action, token):
         # <CONST> actions
@@ -64,19 +68,7 @@ class SyntaxAnalyser:
             self.lex.get_token()
             latex_coll = self.d.base_coll
             self.d.current_coll = gen_new_collection("MathematicalEqCollection", self.d.base_coll)
-
-            # set active collection
-            # TODO tidy up
-            layer_collection = bpy.context.view_layer.layer_collection
-            for layer in layer_collection.children:
-                print("Layer name: ", layer.name)
-                print("Base collection:", self.d.base_coll)
-                if layer.name == self.d.base_coll:
-                    for l in layer.children:
-                        print("Child Layer name: ", l.name, self.d.current_coll)
-                        if l.name == self.d.current_coll:
-                            bpy.context.view_layer.active_layer_collection = l
-                            print(f"Active collection set to '{self.d.current_coll}'")
+            self.set_active_collection(latex_coll, self.d.current_coll)
 
             # call math syntax analyser
             math_syntax = MathSyntaxAnalyser(self.lex, self.d, self.parameters)
