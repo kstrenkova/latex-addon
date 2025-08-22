@@ -24,28 +24,25 @@ matrix_brackets = {
 
 char_type = {
     '\\': "BACKSLASH",
-    '{': "OPEN_BRACKET",
-    '}': "CLOSE_BRACKET",
+    '{': "_OPEN_CURLY",
+    '(': "_OPEN_BRACKET",
+    '[': "_OPEN_ANGLE",
+    '}': "_CLOSE_CURLY",
+    ')': "_CLOSE_BRACKET",
+    ']': "_CLOSE_ANGLE",
     '^': "_CARET",
     '_': "_UNDERSCORE",
     '&': "_AMPERSAND",
     '$': "dollar",
-    '[': "ANGLE_BRACKET",
-    ']': "ANGLE_BRACKET",
-    ' ': "WHITESPACE",
-    '\n': "WHITESPACE"
 }
 
 special_chars = [
-    'OPEN_BRACKET',
-    'CLOSE_BRACKET',
-    '_AMPERSAND',
+    '_OPEN_CURLY',
+    '_CLOSE_CURLY',
+    '_CARET',
     '_UNDERSCORE',
+    '_AMPERSAND',
     'dollar',
-
-    # MATH MODE
-    '(',
-    ')'
 ]
 
 unicode_chars = {

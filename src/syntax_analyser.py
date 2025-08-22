@@ -35,7 +35,7 @@ class SyntaxAnalyser:
 
     def choose_rule(self, stack_top, token):
         # TODO clean lookup
-        if token.type in {"COMMAND", "CLOSE_BRACKET", "OPEN_BRACKET"}:
+        if token.type in {"COMMAND", "_CLOSE_CURLY", "_OPEN_CURLY"}:
             key = token.value
         else:
             key = token.type
@@ -64,19 +64,21 @@ class SyntaxAnalyser:
 
         # MATH INLINE MODE
         elif action == '#ACTION_MATH_INLINE_MODE':
-            print("ACTION: Entering math mode!")
             self.lex.get_token()
             latex_coll = self.d.base_coll
             self.d.current_coll = gen_new_collection("MathematicalEqCollection", self.d.base_coll)
+
+            # activate the collection for mathematical equations
             self.set_active_collection(latex_coll, self.d.current_coll)
 
             # call math syntax analyser
             math_syntax = MathSyntaxAnalyser(self.lex, self.d, self.parameters)
 
+            print("Entering math mode!")
+
             if not math_syntax.parse():
                 warn_msg = 'Mathematical equation was not fully generated. Check system console for more info on this matter.'
-                # TODO PUT WARNING
-                print({'WARNING'}, warn_msg)
+                self.report({'WARNING'}, warn_msg)
                 return False
 
             self.d.base_coll = latex_coll
@@ -121,7 +123,8 @@ class SyntaxAnalyser:
             stack_top = self.stack[-1]
             token = self.lex.peek_token()
             print(f"STACK: {self.stack}")
-            print(f"TOKEN VALUE AND TYPE", token.value, token.type)
+            print(f"Token type: '{token.type}'")
+            print(f"Token value: '{token.value}'")
 
             # successful parsing
             if stack_top == '$' and token.type == 'END':
@@ -138,7 +141,6 @@ class SyntaxAnalyser:
                     return False
 
             # terminal
-            # TODO make carets, underscores and all that work as terminals
             elif not (stack_top.isupper() and stack_top != '$'):
                 terminal = token.value if token.type == "COMMAND" else token.type
 
@@ -151,10 +153,7 @@ class SyntaxAnalyser:
 
             # non-terminal
             else:
-                print(f"Token type: '{token.type}'")
-                print(f"Token value: '{token.value}'")
                 rule = self.choose_rule(stack_top, token)
-
                 if rule:
                     self.stack.pop()
                     if rule != ['epsilon']:

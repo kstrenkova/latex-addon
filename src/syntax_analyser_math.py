@@ -88,7 +88,7 @@ class MathSyntaxAnalyser:
         # TODO clean lookup
         # TODO ANGLE_BRACKETS OUTSIDE OF SQRT
 
-        if token.type in {"COMMAND", "CLOSE_BRACKET", "OPEN_BRACKET", "ANGLE_BRACKET"}:
+        if token.type in {"COMMAND", "_CLOSE_CURLY", "_OPEN_CURLY", "_OPEN_ANGLE", "_CLOSE_ANGLE"}:
             key = token.value
         else:
             key = token.type

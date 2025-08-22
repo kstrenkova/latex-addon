@@ -46,12 +46,15 @@ class LexicalAnalyser:
         c = self.get_char()
         c_type = char_type.get(c)
 
-        if c_type in special_chars:
-            self.position += 1
-            return Token("SPECIAL_CHAR", c)
-        elif c == '\\':
+        if c_type == "BACKSLASH":
             self.position += 1
             return Token("_ENTER", c)
+        elif c_type in special_chars:
+            self.position += 1
+            return Token("_SPECIAL_CHAR", c)
+        elif c_type: # \[ \(
+            self.position += 1
+            return Token("_SYMBOL_COMMAND", c)
         elif c in space_sizes:
             self.position += 1
             return Token("_SPACE_COMMAND", c)
@@ -67,7 +70,8 @@ class LexicalAnalyser:
         return Token("COMMAND", name)
 
     def get_token(self):
-        self.state_whitespace() # erasing whitespace
+        # <WHITESPACE>
+        self.state_whitespace()
 
         if self.is_end():
             return Token("END", "")
@@ -76,12 +80,12 @@ class LexicalAnalyser:
         c_type = char_type.get(c)
 
         # <STATE_COMMAND>
-        if c == '\\':
+        if c_type == "BACKSLASH":
             self.position += 1
             return self.state_command()
 
         # SPECIAL CHARACTERS
-        if c_type:
+        if c_type in special_chars:
             self.position += 1
             return Token(c_type, c)
 

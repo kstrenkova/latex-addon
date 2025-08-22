@@ -13,7 +13,7 @@ ll_table = {
     ('TERM', '_TEXT'):            ['CONST'],
 
     # <TERM> -> <MATH_INLINE_MODE>
-    ('TERM', 'dollar'):      ['#ACTION_MATH_INLINE_MODE', 'dollar'],
+    ('TERM', 'dollar'):           ['#ACTION_MATH_INLINE_MODE', 'dollar'],
     ('TERM', '\('):               ['#ACTION_MATH_INLINE_MODE', '\)'],
     ('TERM', '\['):               ['#ACTION_MATH_DISPLAY_MODE', '\]'],
 
@@ -25,20 +25,20 @@ ll_table = {
     # <TERM> -> begin { equation } <MATH_DISPLAY_PROG> end { equation }
     # <TERM> -> begin { displaymath } <MATH_DISPLAY_PROG> end { displaymath }
 
-    ('TERM', 'begin'):            ['BLOCK'],
+    ('TERM', 'begin'):                 ['BLOCK'],
 
     # --- MORE_TERM ---
     # <MORE_TERM> -> <TERM> <MORE_TERM>
     ('MORE_TERM', '_TEXT'):            ['TERM', 'MORE_TERM'],
-    ('MORE_TERM', 'dollar'):     ['TERM', 'MORE_TERM'],
+    ('MORE_TERM', 'dollar'):           ['TERM', 'MORE_TERM'],
     ('MORE_TERM', 'END'):              ['epsilon'],
 
     # --- CONST ---
     # <CONST> -> text
-    ('CONST', '_TEXT'):             ['#ACTION_GENERATE_TEXT'],
+    ('CONST', '_TEXT'):                ['#ACTION_GENERATE_TEXT'],
 
     # --- BLOCK ---
-    ('BLOCK', 'begin'): ['begin', '{', 'TYPE'],
+    ('BLOCK', 'begin'):                ['begin', '{', 'TYPE'],
 
     # --- TYPE ---
     ('TYPE', 'math'): [
@@ -78,6 +78,7 @@ math_ll_table = {
     ('TERM', 'sum'):              ['COMMAND'],
     ('TERM', '_SPACE_COMMAND'):   ['COMMAND'],
     ('TERM', '_MATH_SYMBOL'):     ['COMMAND'],
+
     # <TERM -> <BLOCK>
     ('TERM', 'begin'):            ['BLOCK'],
 
@@ -107,50 +108,42 @@ math_ll_table = {
 
     # --- CONST ---
     # <CONST> -> text
-    ('CONST', '_TEXT'):             ['#ACTION_GENERATE_TEXT'],
-    ('CONST', '['):                 ['#ACTION_GENERATE_TEXT'],
-    ('CONST', ']'):                 ['#ACTION_GENERATE_TEXT'],
+    ('CONST', '_TEXT'):                ['#ACTION_GENERATE_TEXT'],
+    ('CONST', '['):                    ['#ACTION_GENERATE_TEXT'],
+    ('CONST', ']'):                    ['#ACTION_GENERATE_TEXT'],
     # <CONST> -> special_char
-    ('CONST', '_SPECIAL_CHAR'):     ['#ACTION_GENERATE_TEXT'],
+    ('CONST', '_SPECIAL_CHAR'):        ['#ACTION_GENERATE_TEXT'],
     # <CONST> -> enter
-    ('CONST', '_ENTER'):            ['enter'],
+    ('CONST', '_ENTER'):               ['enter'],
     # <CONST> -> index <EI_TERM> <EXP>
-    ('CONST', '_UNDERSCORE'):       ['#ACTION_LEVEL_DOWN', '#ACTION_EI_INIT', 'EI_TERM', 'EXP'],
+    ('CONST', '_UNDERSCORE'):          ['#ACTION_LEVEL_DOWN', '#ACTION_EI_INIT', 'EI_TERM', 'EXP'],
     # <CONST> -> exponent <EI_TERM> <IX>
-    ('CONST', '_CARET'):            ['#ACTION_LEVEL_UP', '#ACTION_EI_INIT', 'EI_TERM', 'IX'],
+    ('CONST', '_CARET'):               ['#ACTION_LEVEL_UP', '#ACTION_EI_INIT', 'EI_TERM', 'IX'],
 
     # <EXP> -> exponent <EI_TERM>
     # <EXP> -> epsilon
-    ('EXP', '_CARET'):              ['#ACTION_EI_BOTH', '#ACTION_LEVEL_UP', 'EI_TERM', '#ACTION_EI_FINAL'],
-    ('EXP', 'epsilon'):             ['#ACTION_EI_SINGLE'],
+    ('EXP', '_CARET'):                 ['#ACTION_EI_BOTH', '#ACTION_LEVEL_UP', 'EI_TERM', '#ACTION_EI_FINAL'],
+    ('EXP', 'epsilon'):                ['#ACTION_EI_SINGLE'],
 
     # <IX> -> index <EI_TERM>
     # <IX> -> epsilon
-    ('IX', '_UNDERSCORE'):          ['#ACTION_EI_BOTH', '#ACTION_LEVEL_DOWN', 'EI_TERM', '#ACTION_EI_FINAL'],
-    ('IX', 'epsilon'):              ['#ACTION_EI_SINGLE'],
+    ('IX', '_UNDERSCORE'):             ['#ACTION_EI_BOTH', '#ACTION_LEVEL_DOWN', 'EI_TERM', '#ACTION_EI_FINAL'],
+    ('IX', 'epsilon'):                 ['#ACTION_EI_SINGLE'],
 
     # --- COMMAND ---
     # <COMMAND> -> { <MORE_TERM> }
-    ('COMMAND', '{'):                ['{', 'MORE_TERM', '}'],
+    ('COMMAND', '{'):                  ['{', 'MORE_TERM', '}'],
     # <COMMAND> -> sqrt <SQRT>
-    ('COMMAND', 'sqrt'):             ['sqrt', 'SQRT'],
+    ('COMMAND', 'sqrt'):               ['sqrt', 'SQRT'],
     # <COMMAND> -> frac <FRAC>
-    ('COMMAND', 'frac'):             ['frac', 'FRAC'],
-    # <COMMAND> -> command
-
+    ('COMMAND', 'frac'):               ['frac', 'FRAC'],
 
     # <COMMAND> -> sum <SUM>
-    # <SUM> -> index <EI_TERM>
-    # <SUM> -> exponent <EI_TERM>
-    # <SUM> ->
-    ('SUM', '_UNDERSCORE'): [''],
-    # <COMMAND> -> sum index <EI_TERM>
-    # <COMMAND> -> sum exponent <EI_TERM>
-    ('COMMAND', 'sum'):              ['sum', '#ACTION_SUM_INIT'],
-    ('COMMAND', 'prod'):             ['prod', '#ACTION_PROD'],
-    ('COMMAND', '_SPACE_COMMAND'):   ['#ACTION_SPACE'],
-    ('COMMAND', '_MATH_SYMBOL'):     ['#ACTION_MATH_SYMBOL'],
-    ('COMMAND', 'int'):              ['int', '#ACTION_INTEGRAL'],
+    ('COMMAND', 'sum'):                ['sum', '#ACTION_SUM_INIT'],
+    ('COMMAND', 'prod'):               ['prod', '#ACTION_PROD_INIT'],
+    ('COMMAND', '_SPACE_COMMAND'):     ['#ACTION_SPACE'],
+    ('COMMAND', '_MATH_SYMBOL'):       ['#ACTION_MATH_SYMBOL'],
+    ('COMMAND', 'int'):                ['int', '#ACTION_INTEGRAL_INIT'],
 
     # --- BLOCK ---
     # <BLOCK> -> begin { text } <MATRIX> end { text }
@@ -203,14 +196,15 @@ math_ll_table = {
     ],
 
     # --- MATRIX ---
-    # TODO
+    # <MATRIX> -> TODO
+    # <MATRIX> -> enter <MATRIX>
+    # <MATRIX> -> & <MATRIX>
     ('MATRIX', '_TEXT'):            ['CONST', 'MATRIX'],
     ('MATRIX', '_SPECIAL_CHAR'):    ['CONST', 'MATRIX'],
     ('MATRIX', '_ENTER'):           ['#ACTION_MATRIX_NEW_ROW', 'MATRIX'],
     ('MATRIX', '{'):                ['COMMAND', 'MATRIX'],
     ('MATRIX', 'sqrt'):             ['COMMAND', 'MATRIX'],
     ('MATRIX', 'frac'):             ['COMMAND', 'MATRIX'],
-    ('MATRIX', 'command'):          ['COMMAND', 'MATRIX'],
     ('MATRIX', '_AMPERSAND'):       ['#ACTION_MATRIX_NEW_CELL', 'MATRIX'],
     ('MATRIX', 'end'):              ['epsilon'],
 }
