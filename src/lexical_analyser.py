@@ -54,7 +54,8 @@ class LexicalAnalyser:
             return Token("_SPECIAL_CHAR", c)
         elif c_type: # \[ \(
             self.position += 1
-            return Token("_SYMBOL_COMMAND", c)
+            c = '\\' + c
+            return Token("COMMAND", c)
         elif c in space_sizes:
             self.position += 1
             return Token("_SPACE_COMMAND", c)
@@ -66,6 +67,10 @@ class LexicalAnalyser:
 
         if name in space_sizes:
             return Token("_SPACE_COMMAND", name)
+
+        # TODO for sum and integrals
+        if name in unicode_chars and name != 'sum':
+            return Token("_MATH_SYMBOL", name)
 
         return Token("COMMAND", name)
 

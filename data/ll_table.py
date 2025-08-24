@@ -12,10 +12,17 @@ ll_table = {
     # <TERM> -> <CONST>
     ('TERM', '_TEXT'):            ['CONST'],
 
-    # <TERM> -> <MATH_INLINE_MODE>
-    ('TERM', 'dollar'):           ['#ACTION_MATH_INLINE_MODE', 'dollar'],
-    ('TERM', '\('):               ['#ACTION_MATH_INLINE_MODE', '\)'],
-    ('TERM', '\['):               ['#ACTION_MATH_DISPLAY_MODE', '\]'],
+    # <TERM> -> <MATH_MODE>
+    ('TERM', 'dollar'):           ['MATH_MODE'],
+    ('TERM', '\('):               ['MATH_MODE'],
+    ('TERM', '\['):               ['MATH_MODE'],
+
+    # <MATH_MODE> -> $ <MATH_INLINE_PROG> $
+    # <MATH_MODE> -> \( <MATH_INLINE_PROG> \)
+    # <MATH_MODE> -> \[ <MATH_DISPLAY_PROG> \[
+    ('MATH_MODE', 'dollar'):      ['#ACTION_MATH_INLINE_MODE', 'dollar'],
+    ('MATH_MODE', '\('):          ['#ACTION_MATH_INLINE_MODE', '\)'],
+    ('MATH_MODE', '\['):          ['#ACTION_MATH_DISPLAY_MODE', '\]'],
 
     # <TERM> -> $ <MATH_INLINE_PROG> $
     # <TERM> -> \( <MATH_INLINE_PROG> \)
@@ -30,28 +37,27 @@ ll_table = {
     # --- MORE_TERM ---
     # <MORE_TERM> -> <TERM> <MORE_TERM>
     ('MORE_TERM', '_TEXT'):            ['TERM', 'MORE_TERM'],
+    ('MORE_TERM', 'begin'):            ['TERM', 'MORE_TERM'],
     ('MORE_TERM', 'dollar'):           ['TERM', 'MORE_TERM'],
+    ('MORE_TERM', '\('):               ['TERM', 'MORE_TERM'],
+    ('MORE_TERM', '\['):               ['TERM', 'MORE_TERM'],
+    ('MORE_TERM', 'end'):              ['epsilon'],
     ('MORE_TERM', 'END'):              ['epsilon'],
 
     # --- CONST ---
     # <CONST> -> text
     ('CONST', '_TEXT'):                ['#ACTION_GENERATE_TEXT'],
 
-    # --- BLOCK ---
-    ('BLOCK', 'begin'):                ['begin', '{', 'TYPE'],
+    # --- COMMAND ---
+    # <COMMAND> ->
 
-    # --- TYPE ---
-    ('TYPE', 'math'): [
-        '}', '#ACTION_MATH_INLINE_MODE',
-        'end', '{', 'math', '}'
-    ],
-    ('TYPE', 'equation'): [
-        '}', '#ACTION_MATH_DISPLAY_MODE',
-        'end', '{', 'equation', '}'
-    ],
-    ('TYPE', 'displaymath'): [
-        '}', '#ACTION_MATH_DISPLAY_MODE',
-        'end', '{', 'displaymath', '}'
+    # --- BLOCK ---
+    # <BLOCK> -> begin { text } <BLOCK_CONTENT> end { text }
+    ('BLOCK', 'begin'): [
+        'begin', '{', '#ACTION_BLOCK_BEGIN', '}',
+        '#ACTION_BLOCK_INIT',
+        'MORE_TERM',
+        'end', '{', '#ACTION_BLOCK_END', '}',
     ],
 }
 
@@ -74,7 +80,6 @@ math_ll_table = {
     ('TERM', '{'):                ['COMMAND'],
     ('TERM', 'sqrt'):             ['COMMAND'],
     ('TERM', 'frac'):             ['COMMAND'],
-    ('TERM', 'command'):          ['COMMAND'],
     ('TERM', 'sum'):              ['COMMAND'],
     ('TERM', '_SPACE_COMMAND'):   ['COMMAND'],
     ('TERM', '_MATH_SYMBOL'):     ['COMMAND'],
@@ -103,7 +108,10 @@ math_ll_table = {
     # <MORE_TERM> -> epsilon
     ('MORE_TERM', '}'):                ['epsilon'],
     ('MORE_TERM', '$'):                ['epsilon'],
+    ('MORE_TERM', 'end'):              ['epsilon'],
     ('MORE_TERM', 'dollar'):           ['epsilon'],
+    ('MORE_TERM', '\)'):               ['epsilon'],
+    ('MORE_TERM', '\]'):               ['epsilon'],
     ('MORE_TERM', 'END'):              ['epsilon'],
 
     # --- CONST ---

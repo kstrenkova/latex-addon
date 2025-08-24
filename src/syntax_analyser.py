@@ -32,6 +32,7 @@ class SyntaxAnalyser:
         self.d = Defaults(context, custom_prop)
         self.parameters = Parameters(custom_prop.text_scale, 0.0, 0.0, 0.0)
         self.levels = Levels([], 0)
+        self.block_type = ''
 
     def choose_rule(self, stack_top, token):
         # TODO clean lookup
@@ -44,7 +45,6 @@ class SyntaxAnalyser:
             key = "_ANY"
 
         print("KEY:", key)
-
         rule = ll_table.get((stack_top, key))
         return rule
 
@@ -53,7 +53,17 @@ class SyntaxAnalyser:
         collection = view_layer.layer_collection.children[base_coll].children[current_coll]
         view_layer.active_layer_collection = collection
 
-    def execute_action(self, action, token):
+    def enter_block(self):
+        # MATH INLINE MODE
+        if self.block_type == 'math':
+            return self.execute_action('#ACTION_MATH_INLINE_MODE')
+        # MATH DISPLAY MODE
+        elif self.block_type == 'equation':
+            return self.execute_action('#ACTION_MATH_INLINE_MODE') # TODO
+        elif self.block_type == 'displaymath':
+            return self.execute_action('#ACTION_MATH_INLINE_MODE') # TODO
+
+    def execute_action(self, action):
         # <CONST> actions
         if action == '#ACTION_GENERATE_TEXT':
             token = self.lex.get_token()
@@ -62,9 +72,38 @@ class SyntaxAnalyser:
             gen_position(self.parameters, True)
             return True
 
+        # <BLOCK> actions
+        elif action == '#ACTION_BLOCK_BEGIN':
+            token = self.lex.get_token()
+
+            if token.type == '_TEXT' and token.value in block_type:
+                self.block_type = token.value
+                return True
+
+            print("This block value is not correct or supported!")
+            return False
+
+        elif action == '#ACTION_BLOCK_INIT':
+            return self.enter_block()
+
+        elif action == '#ACTION_BLOCK_END':
+            token = self.lex.get_token()
+
+            if token.type == '_TEXT' and token.value == self.block_type:
+                self.block_type = ''
+                return True
+
+            print("The end block value doesn't match the begin block value.")
+            return False
+
         # MATH INLINE MODE
         elif action == '#ACTION_MATH_INLINE_MODE':
-            self.lex.get_token()
+            # When we use blocks we don't want to consume token and when we use symbols we do
+            # How to change this to a clear version is the TODO
+            token = self.lex.peek_token()
+            if token.value in ['$', '\(', '[']:
+                self.lex.get_token()
+
             latex_coll = self.d.base_coll
             self.d.current_coll = gen_new_collection("MathematicalEqCollection", self.d.base_coll)
 
@@ -78,7 +117,7 @@ class SyntaxAnalyser:
 
             if not math_syntax.parse():
                 warn_msg = 'Mathematical equation was not fully generated. Check system console for more info on this matter.'
-                self.report({'WARNING'}, warn_msg)
+                # TODO self.report({'WARNING'}, warn_msg)
                 return False
 
             self.d.base_coll = latex_coll
@@ -135,14 +174,15 @@ class SyntaxAnalyser:
             # actions
             elif stack_top.startswith('#'):
                 action = self.stack.pop()
-                print(f"CT {token.value}")
-                if not self.execute_action(action, token):
+                print(f"Before action CT {token.value}")
+                if not self.execute_action(action):
                     print(f"Action error: {action}")
                     return False
 
             # terminal
             elif not (stack_top.isupper() and stack_top != '$'):
-                terminal = token.value if token.type == "COMMAND" else token.type
+                #TODO cleanup
+                terminal = token.value if token.type in ["COMMAND", "_OPEN_CURLY", "_CLOSE_CURLY"] else token.type
 
                 if stack_top == terminal:
                     self.stack.pop()

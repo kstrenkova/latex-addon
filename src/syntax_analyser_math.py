@@ -84,6 +84,19 @@ class MathSyntaxAnalyser:
         self.levels = Levels([], 0)
         self.ms_brackets = "matrix"
 
+    def math_mode_end(self, stack_top, token):
+        if stack_top != '$':
+            return False
+
+        end_tokens = {
+            ('dollar', '$'),
+            ('COMMAND', '\)'),
+            ('COMMAND', '\]'),
+            ('COMMAND', 'end')
+        }
+
+        return (token.type, token.value) in end_tokens
+
     def choose_rule(self, stack_top, token):
         # TODO clean lookup
         # TODO ANGLE_BRACKETS OUTSIDE OF SQRT
@@ -93,10 +106,7 @@ class MathSyntaxAnalyser:
         else:
             key = token.type
 
-        if token.type == "COMMAND" and token.value in unicode_chars and token.value != 'sum':
-            key = "_MATH_SYMBOL"
-
-        elif (token.type != '_UNDERSORE' and stack_top == 'IX') or \
+        if (token.type != '_UNDERSORE' and stack_top == 'IX') or \
             (token.type != '_CARET' and stack_top == 'EXP'):
             key = "epsilon"
 
@@ -106,7 +116,7 @@ class MathSyntaxAnalyser:
         rule = math_ll_table.get((stack_top, key))
         return rule
 
-    def execute_action(self, action, token):
+    def execute_action(self, action):
         # <CONST> actions
         if action == '#ACTION_GENERATE_TEXT':
             token = self.lex.get_token()
@@ -139,7 +149,7 @@ class MathSyntaxAnalyser:
             self.parameters.width += space
             return True
 
-        elif action == '#ACTION_INTEGRAL':
+        elif action == '#ACTION_INTEGRAL_INIT':
             gen_calculate(self.parameters, self.d.text_scale, self.levels)
             gen_position(self.parameters, True)
 
@@ -524,15 +534,14 @@ class MathSyntaxAnalyser:
             token = self.lex.peek_token()
             print(f"STACK: {self.stack}")
 
-            # TODO MATH MODE END
-            if stack_top == '$' and token.value == '$' and token.type == 'dollar':
+            if self.math_mode_end(stack_top, token):
                 return True
 
             # actions
             elif stack_top.startswith('#'):
                 action = self.stack.pop()
                 print(f"V: {token.value}")
-                if not self.execute_action(action, token):
+                if not self.execute_action(action):
                     print(f"Action error: {action}")
                     return False
 

@@ -45,6 +45,12 @@ special_chars = [
     'dollar',
 ]
 
+block_type = [
+    'math',
+    'equation',
+    'displaymath',
+]
+
 unicode_chars = {
     # lower case greek alphabet
     'alpha': '\u03b1',
