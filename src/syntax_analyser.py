@@ -4,7 +4,6 @@
 # ---------------------------------------------------------------------------
 
 import bpy
-import os.path
 
 from .generator import *
 from .syntax_analyser_math import MathSyntaxAnalyser
@@ -69,7 +68,7 @@ class SyntaxAnalyser:
         # <CONST> actions
         if action == '#ACTION_GENERATE_TEXT':
             token = self.lex.get_token()
-            gen_text(token.value, self.d.font[0], self.d.current_coll)
+            gen_text(token.value, self.d.base_font, self.d.current_coll)
             gen_calculate(self.parameters, self.d.text_scale, self.levels)
             gen_position(self.parameters, True)
             return True
@@ -146,15 +145,10 @@ class SyntaxAnalyser:
             self.d.base_coll = collection.name
             self.d.current_coll = collection.name
 
-            # TODO make the font selection easier for user
             # chosen default font
-            if self.d.font_path != "":
-                self.d.font.append(bpy.data.fonts.load(self.d.font_path))
-
-            # unicode font for mathematical symbols
-            src_dir = os.path.dirname(__file__)
-            font_file = os.path.join(os.path.dirname(src_dir), "data", "fonts", "Kelvinch-Roman.otf")
-            self.d.font.append(bpy.data.fonts.load(font_file))
+            if self.d.base_font != "":
+                self.d.base_font = bpy.data.fonts.load(self.d.base_font)
+            # TODO else
 
         except Exception as e:
             print(f"Error during initialization: {e}")

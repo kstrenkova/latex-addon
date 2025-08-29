@@ -4,11 +4,9 @@
 # ---------------------------------------------------------------------------
 
 import bpy
-import os.path
 
 from .generator import *
-from .lexical_analyser import LexicalAnalyser
-from .syntax_utils import Defaults, Parameters
+from .syntax_utils import change_font
 
 # TODO get rid of ..data
 from ..data.ll_table import *
@@ -119,7 +117,7 @@ class MathSyntaxAnalyser:
         # <CONST> actions
         if action == '#ACTION_GENERATE_TEXT':
             token = self.lex.get_token()
-            gen_text(token.value, self.d.font[0], self.d.current_coll)
+            gen_text(token.value, self.d.base_font, self.d.current_coll)
             gen_calculate(self.parameters, self.d.text_scale, self.levels)
             gen_position(self.parameters, True)
             return True
@@ -151,7 +149,7 @@ class MathSyntaxAnalyser:
         elif action == '#ACTION_MATH_SYMBOL':
             token = self.lex.get_token()
             if token.value in unicode_chars:
-                gen_text(unicode_chars[token.value], self.d.font[1], self.d.current_coll)
+                gen_text(unicode_chars[token.value], change_font('math'), self.d.current_coll)
 
             gen_calculate(self.parameters, self.d.text_scale, self.levels)
             gen_position(self.parameters, True)
@@ -162,12 +160,8 @@ class MathSyntaxAnalyser:
             # TODO latex uses cmsy font to generate these symbols
             print("MATHCAL token:", token.type, token.value)
 
-            src_dir = os.path.dirname(__file__)
-            font_file = os.path.join(os.path.dirname(src_dir), "data", "fonts", "latinmodern-math.otf")
-            font = bpy.data.fonts.load(font_file)
-
             if token.value in unicode_math_font:
-                gen_text(unicode_math_font[token.value], font, self.d.current_coll)
+                gen_text(unicode_math_font[token.value], change_font('mathcal'), self.d.current_coll)
 
             gen_calculate(self.parameters, self.d.text_scale, self.levels)
             gen_position(self.parameters, True)
@@ -404,7 +398,7 @@ class MathSyntaxAnalyser:
 
         # <SUM> actions
         elif action == '#ACTION_SUM_INIT':
-            gen_text(unicode_chars_big['sum'], self.d.font[1], self.d.current_coll)
+            gen_text(unicode_chars_big['sum'], change_font('math'), self.d.current_coll)
 
             gen_calculate(self.parameters, self.d.text_scale, self.levels)
             self.parameters.height -= 0.4 * self.parameters.scale  # move lower
@@ -417,7 +411,7 @@ class MathSyntaxAnalyser:
 
         # TODO erase repeating code <SUM> actions -> PROD
         elif action == '#ACTION_PROD_INIT':
-            gen_text(unicode_chars_big['prod'], self.d.font[1], self.d.current_coll)
+            gen_text(unicode_chars_big['prod'], change_font('math'), self.d.current_coll)
 
             gen_calculate(self.parameters, self.d.text_scale, self.levels)
             self.parameters.height -= 0.4 * self.parameters.scale  # move lower
@@ -507,12 +501,12 @@ class MathSyntaxAnalyser:
 
             if not self.ms_brackets == 'matrix':
                 # generate left bracket of matrix
-                gen_text(bracket_type[0], self.d.font[1], self.d.current_coll)
+                gen_text(bracket_type[0], change_font('math'), self.d.current_coll)
                 gen_brackets(self.d.context, self.parameters, ms.parent_coll, self.d.base_coll, ms.xy_size, True)
                 ms.xy_size = gen_matrix_param(False, ms.parent_coll, ms.xy_size)
 
                 # generate right bracket of matrix
-                gen_text(bracket_type[1], self.d.font[1], self.d.current_coll)
+                gen_text(bracket_type[1], change_font('math'), self.d.current_coll)
                 gen_brackets(self.d.context, self.parameters, ms.parent_coll, self.d.base_coll, ms.xy_size, False)
 
             # center matrix into row
@@ -543,20 +537,6 @@ class MathSyntaxAnalyser:
 
     # main function for parsing process
     def parse(self):
-        try:
-            # chosen default font
-            if self.d.font_path != "":
-                self.d.font.append(bpy.data.fonts.load(self.d.font_path))
-
-            # unicode font for mathematical symbols
-            src_dir = os.path.dirname(__file__)
-            font_file = os.path.join(os.path.dirname(src_dir), "data", "fonts", "Kelvinch-Roman.otf")
-            self.d.font.append(bpy.data.fonts.load(font_file))
-
-        except Exception as e:
-            print(f"Error during initialization: {e}")
-            return False, 0
-
         # parsing loop
         while self.stack:
             stack_top = self.stack[-1]
