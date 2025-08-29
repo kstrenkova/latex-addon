@@ -15,14 +15,7 @@ from ..data.characters_db import *
 
 # TODO decide if bold and italic will be font change or object warp
 # TODO decide which mathfont to implement
-
-# class for levels
-class Levels:
-    def __init__(self, ei_array, frac):
-        self.ei_array = ei_array
-        self.frac = frac
-        self.sqrt = False
-
+# TODO next fun thing -> itemize, enumerate
 
 class SyntaxAnalyser:
     def __init__(self, lex, context, custom_prop):
@@ -32,7 +25,6 @@ class SyntaxAnalyser:
         self.lex = lex
         self.d = Defaults(context, custom_prop)
         self.parameters = Parameters(custom_prop.text_scale, 0.0, 0.0, 0.0)
-        self.levels = Levels([], 0)
         self.block_type = ''
 
     def choose_rule(self, stack_top, token):
@@ -69,7 +61,6 @@ class SyntaxAnalyser:
         if action == '#ACTION_GENERATE_TEXT':
             token = self.lex.get_token()
             gen_text(token.value, self.d.base_font, self.d.current_coll)
-            gen_calculate(self.parameters, self.d.text_scale, self.levels)
             gen_position(self.parameters, True)
             return True
 
