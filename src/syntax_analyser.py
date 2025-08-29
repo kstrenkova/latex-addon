@@ -101,7 +101,7 @@ class SyntaxAnalyser:
             # When we use blocks we don't want to consume token and when we use symbols we do
             # How to change this to a clear version is the TODO
             token = self.lex.peek_token()
-            if token.value in ['$', '\(', '[']:
+            if token.value in ['$', '\(', '\[']:
                 self.lex.get_token()
 
             latex_coll = self.d.base_coll

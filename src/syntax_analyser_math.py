@@ -24,6 +24,7 @@ class Levels:
 
 
 # class fot sum
+# TODO make it general for prod as well
 class Sum:
     def __init__(self):
         self.bool = False
@@ -99,14 +100,12 @@ class MathSyntaxAnalyser:
 
     def choose_rule(self, stack_top, token):
         # TODO clean lookup
-        # TODO ANGLE_BRACKETS OUTSIDE OF SQRT
-
-        if token.type in {"COMMAND", "_CLOSE_CURLY", "_OPEN_CURLY", "_OPEN_ANGLE", "_CLOSE_ANGLE"}:
+        if token.type in ["COMMAND", "_CLOSE_CURLY", "_OPEN_CURLY", "_OPEN_ANGLE", "_CLOSE_ANGLE"]:
             key = token.value
         else:
             key = token.type
 
-        if (token.type != '_UNDERSORE' and stack_top == 'IX') or \
+        if (token.type != '_UNDERSCORE' and stack_top == 'IX') or \
             (token.type != '_CARET' and stack_top == 'EXP'):
             key = "epsilon"
 
@@ -399,7 +398,20 @@ class MathSyntaxAnalyser:
 
         # <SUM> actions
         elif action == '#ACTION_SUM_INIT':
-            gen_text(unicode_chars['sum'], self.d.font[1], self.d.current_coll)
+            gen_text(unicode_chars_big['sum'], self.d.font[1], self.d.current_coll)
+
+            gen_calculate(self.parameters, self.d.text_scale, self.levels)
+            self.parameters.height -= 0.4 * self.parameters.scale  # move lower
+            gen_position(self.parameters, True)
+            gen_collection(self.d.current_coll, self.d.base_coll)
+
+            self.sum.name = self.d.context.active_object.name  # save sum object
+            self.sum.bool = True
+            return True
+
+        # TODO erase repeating code <SUM> actions -> PROD
+        elif action == '#ACTION_PROD_INIT':
+            gen_text(unicode_chars_big['prod'], self.d.font[1], self.d.current_coll)
 
             gen_calculate(self.parameters, self.d.text_scale, self.levels)
             self.parameters.height -= 0.4 * self.parameters.scale  # move lower

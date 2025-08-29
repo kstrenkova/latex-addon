@@ -232,8 +232,12 @@ unicode_chars = {
     'hbar': '\u0127',
     'partial': '\u2202',
     'varnothing': '\u2205',
+    'infty': '\u221e',
+}
+
+unicode_chars_big = {
+    # big symbols
     'prod': '\u220f',
     'int': '\u222b',
-    'infty': '\u221e',
     'sum': '\u2211'
 }

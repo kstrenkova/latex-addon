@@ -8,6 +8,8 @@ from bpy_extras.object_utils import object_data_add  # add sqrt symbol
 
 from mathutils import Vector  # vertices
 
+from ..data.characters_db import unicode_chars_big
+
 
 # function generates text in given font
 def gen_text(text, font, collection):
@@ -15,8 +17,8 @@ def gen_text(text, font, collection):
     text_data.body = text
     text_data.font = font
 
-    # sum, prod and integral symbols
-    if text == '\u2211' or text == '\u222b' or text == '\u220f':
+    # changing size for bigger symbols, e.g. sum, integral
+    if text in unicode_chars_big.values():
         text_data.size = 2
 
     text_obj = bpy.data.objects.new("Text", text_data)

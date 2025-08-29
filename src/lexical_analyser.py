@@ -68,8 +68,7 @@ class LexicalAnalyser:
         if name in space_sizes:
             return Token("_SPACE_COMMAND", name)
 
-        # TODO for sum and integrals
-        if name in unicode_chars and name != 'sum':
+        if name in unicode_chars:
             return Token("_MATH_SYMBOL", name)
 
         return Token("COMMAND", name)
@@ -90,7 +89,7 @@ class LexicalAnalyser:
             return self.state_command()
 
         # SPECIAL CHARACTERS
-        if c_type in special_chars:
+        if c_type:
             self.position += 1
             return Token(c_type, c)
 
