@@ -46,9 +46,15 @@ special_chars = [
 ]
 
 block_type = [
-    'math',
-    'equation',
+    # math mode
     'displaymath',
+    'equation',
+    'math',
+
+    # bullet points
+    'enumerate',
+    'itemize',
+
 ]
 
 unicode_chars = {
@@ -242,11 +248,13 @@ unicode_chars_big = {
     'sum': '\u2211'
 }
 
+#
 unicode_math_font = {
-    'F': '\u2131',
-    'H': '\u210B',
-    'L': '\u2112',
-    'M': '\u2133',
-    'O': '\U0001D4AA',
-    'P': '\U0001D4AB',
+    'A': '\U0001D49C','B': '\u212C', 'C': '\U0001D49E', 'D': '\U0001D49F',
+    'E': '\u2130', 'F': '\u2131', 'G': '\U0001D4A2', 'H': '\u210B',
+    'I': '\u2110', 'J': '\U0001D4A5', 'K': '\U0001D4A6', 'L': '\u2112',
+    'M': '\u2133', 'N': '\U0001D4A9', 'O': '\U0001D4AA', 'P': '\U0001D4AB',
+    'Q': '\U0001D4AC', 'R': '\u211B', 'S': '\U0001D4AE', 'T': '\U0001D4AF',
+    'U': '\U0001D4B0', 'V': '\U0001D4B1', 'W': '\U0001D4B2',
+    'X': '\U0001D4B3', 'Y': '\U0001D4B4', 'Z': '\U0001D4B5'
 }

@@ -55,6 +55,8 @@ class SyntaxAnalyser:
             return self.execute_action('#ACTION_MATH_INLINE_MODE') # TODO
         elif self.block_type == 'displaymath':
             return self.execute_action('#ACTION_MATH_INLINE_MODE') # TODO
+        elif self.block_type == 'itemize':
+            print("HEHE") # TODO
 
     def execute_action(self, action):
         # <CONST> actions
@@ -127,23 +129,17 @@ class SyntaxAnalyser:
 
     # main function for parsing process
     def parse(self):
-        try:
-            # creating base collection
-            collection = bpy.data.collections.new("LatexCollection")
-            bpy.context.scene.collection.children.link(collection)
-            gen_activate_collection(collection.name)
+        # creating base collection
+        collection = bpy.data.collections.new("LatexCollection")
+        bpy.context.scene.collection.children.link(collection)
+        gen_activate_collection(collection.name)
 
-            self.d.base_coll = collection.name
-            self.d.current_coll = collection.name
+        self.d.base_coll = collection.name
+        self.d.current_coll = collection.name
 
-            # chosen default font
-            if self.d.base_font != "":
-                self.d.base_font = bpy.data.fonts.load(self.d.base_font)
-            # TODO else
-
-        except Exception as e:
-            print(f"Error during initialization: {e}")
-            return False
+        # load base font
+        if self.d.base_font != "":
+            self.d.base_font = bpy.data.fonts.load(self.d.base_font)
 
         # parsing loop
         while self.stack:

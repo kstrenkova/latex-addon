@@ -15,7 +15,8 @@ from ..data.characters_db import unicode_chars_big
 def gen_text(text, font, collection):
     text_data = bpy.data.curves.new("Text", type='FONT')
     text_data.body = text
-    text_data.font = font
+    if font != "":
+        text_data.font = font
 
     # changing size for bigger symbols, e.g. sum, integral
     if text in unicode_chars_big.values():

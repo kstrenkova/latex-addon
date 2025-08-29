@@ -51,6 +51,18 @@ ll_table = {
     # --- COMMAND ---
     # <COMMAND> ->
 
+    # itemize
+    # \begin{itemize}
+    # \item skdaslkd
+    # \item hehe
+    # \end{itemize}
+
+    # <BLOCK> -> begin { text } TODO end { text }
+
+    # <BLOCK> -> begin { itemize } <ITEMIZE> end { itemize }
+    # <ITEMIZE> -> item <MORE_TERM> <ITEMIZE>
+    # <ITEMIZE> -> epsilon
+
     # --- BLOCK ---
     # <BLOCK> -> begin { text } <BLOCK_CONTENT> end { text }
     ('BLOCK', 'begin'): [

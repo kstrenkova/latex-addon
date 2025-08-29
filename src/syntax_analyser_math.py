@@ -157,15 +157,14 @@ class MathSyntaxAnalyser:
 
         elif action == '#ACTION_GENERATE_MATH_LETTER':
             token = self.lex.get_token()
-            # TODO latex uses cmsy font to generate these symbols
-            print("MATHCAL token:", token.type, token.value)
 
             if token.value in unicode_math_font:
                 gen_text(unicode_math_font[token.value], change_font('mathcal'), self.d.current_coll)
+                gen_calculate(self.parameters, self.d.text_scale, self.levels)
+                gen_position(self.parameters, True)
+                return True
 
-            gen_calculate(self.parameters, self.d.text_scale, self.levels)
-            gen_position(self.parameters, True)
-            return True
+            print("Function mathcal doesn't support the letter", token.value, "!")
 
         # <TERM_EI> actions
         elif action == '#ACTION_EI_INIT':
