@@ -82,6 +82,7 @@ math_ll_table = {
     ('TERM', 'frac'):             ['COMMAND'],
     ('TERM', 'sum'):              ['COMMAND'],
     ('TERM', 'prod'):             ['COMMAND'],
+    ('TERM', 'mathcal'):          ['COMMAND'],
     ('TERM', '_SPACE_COMMAND'):   ['COMMAND'],
     ('TERM', '_MATH_SYMBOL'):     ['COMMAND'],
 
@@ -100,9 +101,9 @@ math_ll_table = {
     ('MORE_TERM', '{'):                ['TERM', 'MORE_TERM'],
     ('MORE_TERM', 'sqrt'):             ['TERM', 'MORE_TERM'],
     ('MORE_TERM', 'frac'):             ['TERM', 'MORE_TERM'],
-    ('MORE_TERM', 'command'):          ['TERM', 'MORE_TERM'],
     ('MORE_TERM', 'sum'):              ['TERM', 'MORE_TERM'],
     ('MORE_TERM', 'prod'):             ['TERM', 'MORE_TERM'],
+    ('MORE_TERM', 'mathcal'):          ['TERM', 'MORE_TERM'],
     ('MORE_TERM', '_SPACE_COMMAND'):   ['TERM', 'MORE_TERM'],
     ('MORE_TERM', '_MATH_SYMBOL'):     ['TERM', 'MORE_TERM'],
     ('MORE_TERM', 'begin'):            ['TERM', 'MORE_TERM'],
@@ -148,15 +149,21 @@ math_ll_table = {
     # <COMMAND> -> frac <FRAC>
     ('COMMAND', 'frac'):               ['frac', 'FRAC'],
 
-    # <COMMAND> -> sum <SUM>
+
+    # <COMMAND> -> sum <SUM> TODO
     ('COMMAND', 'sum'):                ['sum', '#ACTION_SUM_INIT'],
     ('COMMAND', 'prod'):               ['prod', '#ACTION_PROD_INIT'],
+    ('COMMAND', 'int'):                ['int', '#ACTION_INTEGRAL_INIT'],
+
+    # TODO rule: mathcal { LETTER }
+    ('COMMAND', 'mathcal'):            ['mathcal', '{', '#ACTION_GENERATE_MATH_LETTER', '}'],
+
     ('COMMAND', '_SPACE_COMMAND'):     ['#ACTION_SPACE'],
     ('COMMAND', '_MATH_SYMBOL'):       ['#ACTION_MATH_SYMBOL'],
-    ('COMMAND', 'int'):                ['int', '#ACTION_INTEGRAL_INIT'],
 
     # --- BLOCK ---
     # <BLOCK> -> begin { text } <MATRIX> end { text }
+    # TODO connect BLOCK from main syntax with MATRIX BLOCK
     ('BLOCK', 'begin'): [
         'begin', '{', '#ACTION_VALIDATE_MATRIX_TYPE', '}',
         '#ACTION_MATRIX_INIT',

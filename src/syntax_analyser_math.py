@@ -148,20 +148,26 @@ class MathSyntaxAnalyser:
             self.parameters.width += space
             return True
 
-        elif action == '#ACTION_INTEGRAL_INIT':
-            gen_calculate(self.parameters, self.d.text_scale, self.levels)
-            gen_position(self.parameters, True)
-
-            # move prod and integral symbol
-            self.d.context.active_object.location.y -= 0.3 * self.parameters.scale
-            self.parameters.width -= 0.2 * self.parameters.scale
-            gen_collection(self.d.current_coll, self.d.base_coll)
-            return True
-
         elif action == '#ACTION_MATH_SYMBOL':
             token = self.lex.get_token()
             if token.value in unicode_chars:
                 gen_text(unicode_chars[token.value], self.d.font[1], self.d.current_coll)
+
+            gen_calculate(self.parameters, self.d.text_scale, self.levels)
+            gen_position(self.parameters, True)
+            return True
+
+        elif action == '#ACTION_GENERATE_MATH_LETTER':
+            token = self.lex.get_token()
+            # TODO latex uses cmsy font to generate these symbols
+            print("MATHCAL token:", token.type, token.value)
+
+            src_dir = os.path.dirname(__file__)
+            font_file = os.path.join(os.path.dirname(src_dir), "data", "fonts", "latinmodern-math.otf")
+            font = bpy.data.fonts.load(font_file)
+
+            if token.value in unicode_math_font:
+                gen_text(unicode_math_font[token.value], font, self.d.current_coll)
 
             gen_calculate(self.parameters, self.d.text_scale, self.levels)
             gen_position(self.parameters, True)
@@ -420,6 +426,17 @@ class MathSyntaxAnalyser:
 
             self.sum.name = self.d.context.active_object.name  # save sum object
             self.sum.bool = True
+            return True
+
+        # TODO
+        elif action == '#ACTION_INTEGRAL_INIT':
+            gen_calculate(self.parameters, self.d.text_scale, self.levels)
+            gen_position(self.parameters, True)
+
+            # move prod and integral symbol
+            self.d.context.active_object.location.y -= 0.3 * self.parameters.scale
+            self.parameters.width -= 0.2 * self.parameters.scale
+            gen_collection(self.d.current_coll, self.d.base_coll)
             return True
 
         # <MATRIX> actions

@@ -26,3 +26,5 @@ class Parameters:
     def create_copy(self):
         copy = Parameters(self.scale, self.height, self.width, self.line)
         return copy
+
+# TODO add working with fonts

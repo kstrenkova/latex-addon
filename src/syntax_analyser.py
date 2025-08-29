@@ -14,6 +14,8 @@ from .syntax_utils import Defaults, Parameters
 from ..data.ll_table import *
 from ..data.characters_db import *
 
+# TODO decide if bold and italic will be font change or object warp
+# TODO decide which mathfont to implement
 
 # class for levels
 class Levels:
@@ -144,6 +146,7 @@ class SyntaxAnalyser:
             self.d.base_coll = collection.name
             self.d.current_coll = collection.name
 
+            # TODO make the font selection easier for user
             # chosen default font
             if self.d.font_path != "":
                 self.d.font.append(bpy.data.fonts.load(self.d.font_path))

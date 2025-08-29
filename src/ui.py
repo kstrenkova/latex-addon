@@ -29,7 +29,7 @@ class Custom_PT(bpy.types.PropertyGroup):
     font_path: StringProperty(
         name = "Font",
         description="Choose a font:",
-        default="",
+        default="", # TODO maybe adding default
         maxlen=1024,
         subtype='FILE_PATH'
     ) # type: ignore
@@ -100,7 +100,7 @@ class WM_OT_AddText(bpy.types.Operator):
         # create lexical analyser
         lex = LexicalAnalyser(cus_pt.latex_text, 0)
 
-        # create syntax analyser
+        # create main syntax analyser
         syntax = SyntaxAnalyser(lex, context, cus_pt)
 
         if not syntax.parse():

@@ -241,3 +241,12 @@ unicode_chars_big = {
     'int': '\u222b',
     'sum': '\u2211'
 }
+
+unicode_math_font = {
+    'F': '\u2131',
+    'H': '\u210B',
+    'L': '\u2112',
+    'M': '\u2133',
+    'O': '\U0001D4AA',
+    'P': '\U0001D4AB',
+}
