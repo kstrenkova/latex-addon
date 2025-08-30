@@ -34,6 +34,9 @@ class SyntaxAnalyser:
         else:
             key = token.type
 
+        if (token.type, token.value) != ('COMMAND', 'item') and stack_top == 'ITEMIZE':
+            key = "epsilon"
+
         if stack_top == "PROG":
             key = "_ANY"
 
@@ -55,15 +58,22 @@ class SyntaxAnalyser:
             return self.execute_action('#ACTION_MATH_INLINE_MODE') # TODO
         elif self.block_type == 'displaymath':
             return self.execute_action('#ACTION_MATH_INLINE_MODE') # TODO
-        elif self.block_type == 'itemize':
-            print("HEHE") # TODO
 
     def execute_action(self, action):
         # <CONST> actions
         if action == '#ACTION_GENERATE_TEXT':
             token = self.lex.get_token()
             gen_text(token.value, self.d.base_font, self.d.current_coll)
-            gen_position(self.parameters, True)
+            self.parameters.height = self.parameters.line
+            gen_move_position(self.parameters)
+            return True
+
+        if action == '#ACTION_NEW_LINE':
+            token = self.lex.peek_token()
+            if token.type == '_ENTER':
+                self.lex.get_token()
+            self.parameters.line -= 1.0
+            self.parameters.width = 0.0
             return True
 
         # <BLOCK> actions
@@ -89,6 +99,10 @@ class SyntaxAnalyser:
 
             print("The end block value doesn't match the begin block value.")
             return False
+
+        elif action == '#ACTION_ADD_ITEM':
+            gen_bullet_point(self.parameters, self.d, '\u2022')
+            return True
 
         # MATH INLINE MODE
         elif action == '#ACTION_MATH_INLINE_MODE':

@@ -11,6 +11,7 @@ ll_table = {
     # --- TERM ---
     # <TERM> -> <CONST>
     ('TERM', '_TEXT'):            ['CONST'],
+    ('TERM', '_ENTER'):           ['CONST'],
 
     # <TERM> -> <MATH_MODE>
     ('TERM', 'dollar'):           ['MATH_MODE'],
@@ -37,16 +38,19 @@ ll_table = {
     # --- MORE_TERM ---
     # <MORE_TERM> -> <TERM> <MORE_TERM>
     ('MORE_TERM', '_TEXT'):            ['TERM', 'MORE_TERM'],
+    ('MORE_TERM', '_ENTER'):           ['TERM', 'MORE_TERM'],
     ('MORE_TERM', 'begin'):            ['TERM', 'MORE_TERM'],
     ('MORE_TERM', 'dollar'):           ['TERM', 'MORE_TERM'],
     ('MORE_TERM', '\('):               ['TERM', 'MORE_TERM'],
     ('MORE_TERM', '\['):               ['TERM', 'MORE_TERM'],
+    ('MORE_TERM', 'item'):             ['epsilon'], # TODO?
     ('MORE_TERM', 'end'):              ['epsilon'],
     ('MORE_TERM', 'END'):              ['epsilon'],
 
     # --- CONST ---
     # <CONST> -> text
     ('CONST', '_TEXT'):                ['#ACTION_GENERATE_TEXT'],
+    ('CONST', '_ENTER'):               ['#ACTION_NEW_LINE'],
 
     # --- COMMAND ---
     # <COMMAND> ->
@@ -61,14 +65,18 @@ ll_table = {
 
     # <BLOCK> -> begin { itemize } <ITEMIZE> end { itemize }
     # <ITEMIZE> -> item <MORE_TERM> <ITEMIZE>
+    # <ITEMIZE> -> item [ <MORE_TERM> ] <MORE_TERM> <ITEMIZE> -> will change the bullet point
     # <ITEMIZE> -> epsilon
+    ('ITEMIZE', 'item'):            ['item', '#ACTION_ADD_ITEM', 'MORE_TERM', 'ITEMIZE'],
+    ('ITEMIZE', 'epsilon'):         ['#ACTION_NEW_LINE'],
 
     # --- BLOCK ---
     # <BLOCK> -> begin { text } <BLOCK_CONTENT> end { text }
     ('BLOCK', 'begin'): [
         'begin', '{', '#ACTION_BLOCK_BEGIN', '}',
-        '#ACTION_BLOCK_INIT',
-        'MORE_TERM',
+        # '#ACTION_BLOCK_INIT',
+        # 'MORE_TERM',
+        'ITEMIZE', # TODO temporary ITEMIZE, uncomment to print items
         'end', '{', '#ACTION_BLOCK_END', '}',
     ],
 }

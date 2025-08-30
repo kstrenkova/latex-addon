@@ -4,11 +4,11 @@
 # ---------------------------------------------------------------------------
 
 import bpy
+
 from bpy_extras.object_utils import object_data_add  # add sqrt symbol
+from ..data.characters_db import unicode_chars_big
 
 from mathutils import Vector  # vertices
-
-from ..data.characters_db import unicode_chars_big
 
 
 # function generates text in given font
@@ -27,9 +27,9 @@ def gen_text(text, font, collection):
     bpy.context.view_layer.objects.active = text_obj
 
 
-# function positions text according to given parameters
-def gen_position(param, move):
-    obj = bpy.context.active_object  # save active object
+def gen_set_position(param):
+    # save active object
+    obj = bpy.context.active_object
 
     # scale object
     obj.scale.x = param.scale
@@ -39,12 +39,16 @@ def gen_position(param, move):
     obj.location.y = param.height  # move by height (y)
     obj.location.z = 0.0
 
-    # add text width
-    if move:
-        # get corners of bounding box
-        bbox = [obj.matrix_world @ Vector(corner) for corner in obj.bound_box]
-        obj_dimension = bbox[4].x * param.scale
-        param.width += obj_dimension + (0.1 * param.scale)  # space
+
+def gen_move_position(param):
+    # save active object
+    obj = bpy.context.active_object
+    gen_set_position(param)
+
+    # get corners of bounding box
+    bbox = [obj.matrix_world @ Vector(corner) for corner in obj.bound_box]
+    obj_dimension = bbox[4].x * param.scale
+    param.width += obj_dimension + (0.1 * param.scale)  # space
 
 
 # function gets object into collection
@@ -134,7 +138,7 @@ def gen_sqrt_sym(context):
 def gen_sqrt_move(context, param, sqrt_param, move):
     # position sqrt
     param.height -= 0.25 * param.scale
-    gen_position(param, False)
+    gen_set_position(param)
     param.height += 0.25 * param.scale
 
     # apply scale
@@ -690,7 +694,6 @@ def gen_brackets(context, param, collection, base_collection, xy_size, left):
 
 # function centers matrix
 def gen_matrix_center(param, collection, xy_size):
-
     # calculate center location
     matrix_height = xy_size[1] - xy_size[0]  # y_max - y_min
     center_loc = xy_size[1] - matrix_height / 2.0 - 0.3 * param.scale
@@ -698,3 +701,18 @@ def gen_matrix_center(param, collection, xy_size):
     # center matrix into row
     for obj in bpy.data.collections[collection].all_objects:
         obj.location.y -= center_loc
+
+
+def gen_bullet_point(param, defaults, text):
+    gen_text(text, defaults.base_font, defaults.current_coll)
+    param.line -= 1.0
+    param.height = param.line
+
+    obj = bpy.context.active_object  # save active object
+
+    bbox = [obj.matrix_world @ Vector(corner) for corner in obj.bound_box]
+    obj_dimension = bbox[4].x * param.scale
+    param.width = 1.3 - obj_dimension # space before bullet point
+
+    gen_move_position(param)
+    param.width += 0.3 # space after bullet point

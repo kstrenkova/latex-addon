@@ -119,7 +119,7 @@ class MathSyntaxAnalyser:
             token = self.lex.get_token()
             gen_text(token.value, self.d.base_font, self.d.current_coll)
             gen_calculate(self.parameters, self.d.text_scale, self.levels)
-            gen_position(self.parameters, True)
+            gen_move_position(self.parameters)
             return True
 
         elif action == '#ACTION_LEVEL_DOWN':
@@ -152,7 +152,7 @@ class MathSyntaxAnalyser:
                 gen_text(unicode_chars[token.value], change_font('math'), self.d.current_coll)
 
             gen_calculate(self.parameters, self.d.text_scale, self.levels)
-            gen_position(self.parameters, True)
+            gen_move_position(self.parameters)
             return True
 
         elif action == '#ACTION_GENERATE_MATH_LETTER':
@@ -161,7 +161,7 @@ class MathSyntaxAnalyser:
             if token.value in unicode_math_font:
                 gen_text(unicode_math_font[token.value], change_font('mathcal'), self.d.current_coll)
                 gen_calculate(self.parameters, self.d.text_scale, self.levels)
-                gen_position(self.parameters, True)
+                gen_move_position(self.parameters)
                 return True
 
             print("Function mathcal doesn't support the letter", token.value, "!")
@@ -184,6 +184,7 @@ class MathSyntaxAnalyser:
             return True
 
         elif action == "#ACTION_EI_SINGLE":
+            # TODO when this is last before $, it makes the text smaller
             eis = self.state_stack.pop()
             self.levels.ei_array.pop()
 
@@ -219,6 +220,7 @@ class MathSyntaxAnalyser:
             return True
 
         elif action == '#ACTION_EI_FINAL':
+            # TODO when this is last before $, it makes the text smaller
             eis = self.state_stack.pop()
 
             # calculate final width
@@ -401,7 +403,7 @@ class MathSyntaxAnalyser:
 
             gen_calculate(self.parameters, self.d.text_scale, self.levels)
             self.parameters.height -= 0.4 * self.parameters.scale  # move lower
-            gen_position(self.parameters, True)
+            gen_move_position(self.parameters)
             gen_collection(self.d.current_coll, self.d.base_coll)
 
             self.sum.name = self.d.context.active_object.name  # save sum object
@@ -414,7 +416,7 @@ class MathSyntaxAnalyser:
 
             gen_calculate(self.parameters, self.d.text_scale, self.levels)
             self.parameters.height -= 0.4 * self.parameters.scale  # move lower
-            gen_position(self.parameters, True)
+            gen_move_position(self.parameters)
             gen_collection(self.d.current_coll, self.d.base_coll)
 
             self.sum.name = self.d.context.active_object.name  # save sum object
@@ -424,7 +426,7 @@ class MathSyntaxAnalyser:
         # TODO
         elif action == '#ACTION_INTEGRAL_INIT':
             gen_calculate(self.parameters, self.d.text_scale, self.levels)
-            gen_position(self.parameters, True)
+            gen_move_position(self.parameters)
 
             # move prod and integral symbol
             self.d.context.active_object.location.y -= 0.3 * self.parameters.scale

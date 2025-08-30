@@ -35,7 +35,7 @@ class Parameters:
 def change_font(mode):
     # TODO change mode names
     font_mode = {
-        'math': 'Kelvinch-Roman.ot',
+        'math': 'Kelvinch-Roman.otf',
         'mathcal': 'latinmodern-math.otf',
     }
 
