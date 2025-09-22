@@ -43,7 +43,7 @@ ll_table = {
     ('MORE_TERM', 'dollar'):           ['TERM', 'MORE_TERM'],
     ('MORE_TERM', '\('):               ['TERM', 'MORE_TERM'],
     ('MORE_TERM', '\['):               ['TERM', 'MORE_TERM'],
-    ('MORE_TERM', 'item'):             ['epsilon'], # TODO?
+    ('MORE_TERM', 'item'):             ['epsilon'],
     ('MORE_TERM', 'end'):              ['epsilon'],
     ('MORE_TERM', 'END'):              ['epsilon'],
 
@@ -64,11 +64,16 @@ ll_table = {
     # <BLOCK> -> begin { text } TODO end { text }
 
     # <BLOCK> -> begin { itemize } <ITEMIZE> end { itemize }
-    # <ITEMIZE> -> item <MORE_TERM> <ITEMIZE>
-    # <ITEMIZE> -> item [ <MORE_TERM> ] <MORE_TERM> <ITEMIZE> -> will change the bullet point
+    # <ITEMIZE> -> item <ITEM>
     # <ITEMIZE> -> epsilon
-    ('ITEMIZE', 'item'):            ['item', '#ACTION_ADD_ITEM', 'MORE_TERM', 'ITEMIZE'],
+    ('ITEMIZE', 'item'):            ['item', 'ITEM'],
     ('ITEMIZE', 'epsilon'):         ['#ACTION_NEW_LINE'],
+
+    # <ITEM> -> [ <MORE_TERM> ] <MORE_TERM> <ITEMIZE>
+    # <ITEM> -> <MORE_TERM> <ITEMIZE>
+    ('ITEM', '['):               ['[', '#ACTION_SAVE_ITEM', ']', '#ACTION_ADD_ITEM', 'MORE_TERM', 'ITEMIZE'],
+    # TODO other types
+    ('ITEM', '_TEXT'):           ['#ACTION_ADD_ITEM', 'MORE_TERM', 'ITEMIZE'],
 
     # --- BLOCK ---
     # <BLOCK> -> begin { text } <BLOCK_CONTENT> end { text }

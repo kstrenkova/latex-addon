@@ -3,6 +3,15 @@
 # Created By  : Katarina Strenkova
 # ---------------------------------------------------------------------------
 
+# TODO cleanup
+special_token_type = {
+    "COMMAND",
+    "_CLOSE_CURLY",
+    "_OPEN_CURLY",
+    "_OPEN_ANGLE",
+    "_CLOSE_ANGLE"
+}
+
 space_sizes = {
     '!': -0.1,
     ',': 0.15,

@@ -26,10 +26,11 @@ class SyntaxAnalyser:
         self.d = Defaults(context, custom_prop)
         self.parameters = Parameters(custom_prop.text_scale, 0.0, 0.0, 0.0)
         self.block_type = ''
+        self.item_type = ''
 
     def choose_rule(self, stack_top, token):
         # TODO clean lookup
-        if token.type in {"COMMAND", "_CLOSE_CURLY", "_OPEN_CURLY"}:
+        if token.type in special_token_type:
             key = token.value
         else:
             key = token.type
@@ -100,8 +101,16 @@ class SyntaxAnalyser:
             print("The end block value doesn't match the begin block value.")
             return False
 
+        elif action == '#ACTION_SAVE_ITEM':
+            token = self.lex.get_token()
+            self.item_type = token.value
+            return True
+
         elif action == '#ACTION_ADD_ITEM':
-            gen_bullet_point(self.parameters, self.d, '\u2022')
+            item = '\u2022' if self.item_type == '' else self.item_type
+            print("ITEM TYPE:", item)
+            gen_bullet_point(self.parameters, self.d, item)
+            self.item_type = ''
             return True
 
         # MATH INLINE MODE
@@ -179,10 +188,7 @@ class SyntaxAnalyser:
 
             # terminal
             elif not (stack_top.isupper() and stack_top != '$'):
-                #TODO cleanup
-                terminal = token.value if token.type in ["COMMAND", "_OPEN_CURLY", "_CLOSE_CURLY"] else token.type
-
-                if stack_top == terminal:
+                if stack_top == token.value:
                     self.stack.pop()
                     self.lex.get_token()
                 else:
