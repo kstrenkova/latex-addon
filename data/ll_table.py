@@ -55,25 +55,24 @@ ll_table = {
     # --- COMMAND ---
     # <COMMAND> ->
 
-    # itemize
-    # \begin{itemize}
-    # \item skdaslkd
-    # \item hehe
-    # \end{itemize}
-
     # <BLOCK> -> begin { text } TODO end { text }
 
     # <BLOCK> -> begin { itemize } <ITEMIZE> end { itemize }
     # <ITEMIZE> -> item <ITEM>
     # <ITEMIZE> -> epsilon
-    ('ITEMIZE', 'item'):            ['item', 'ITEM'],
-    ('ITEMIZE', 'epsilon'):         ['#ACTION_NEW_LINE'],
+    ('ITEMIZE', 'item'):         ['item', 'ITEM'],
+    ('ITEMIZE', 'epsilon'):      ['#ACTION_NEW_LINE'],
 
     # <ITEM> -> [ <MORE_TERM> ] <MORE_TERM> <ITEMIZE>
     # <ITEM> -> <MORE_TERM> <ITEMIZE>
     ('ITEM', '['):               ['[', '#ACTION_SAVE_ITEM', ']', '#ACTION_ADD_ITEM', 'MORE_TERM', 'ITEMIZE'],
     # TODO other types
     ('ITEM', '_TEXT'):           ['#ACTION_ADD_ITEM', 'MORE_TERM', 'ITEMIZE'],
+
+    # <ENUM> -> item <MORE_TERM> <ENUM>
+    # <ENUM> -> epsilon
+    ('ENUM', 'item'):            ['item', '#ACTION_ADD_ENUM', 'MORE_TERM', 'ENUM'],
+    ('ENUM', 'epsilon'):         ['#ACTION_END_ENUM', '#ACTION_NEW_LINE'],
 
     # --- BLOCK ---
     # <BLOCK> -> begin { text } <BLOCK_CONTENT> end { text }
@@ -82,6 +81,7 @@ ll_table = {
         # '#ACTION_BLOCK_INIT',
         # 'MORE_TERM',
         'ITEMIZE', # TODO temporary ITEMIZE, uncomment to print items
+        # 'ENUM', # TODO temporary ENUM, uncomment to print numbered items
         'end', '{', '#ACTION_BLOCK_END', '}',
     ],
 }

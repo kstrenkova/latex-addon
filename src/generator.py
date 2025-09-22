@@ -704,6 +704,7 @@ def gen_matrix_center(param, collection, xy_size):
 
 
 def gen_bullet_point(param, defaults, text):
+    # TODO scale
     gen_text(text, defaults.base_font, defaults.current_coll)
     param.line -= 1.0
     param.height = param.line

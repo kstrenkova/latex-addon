@@ -17,6 +17,13 @@ from ..data.characters_db import *
 # TODO decide which mathfont to implement
 # TODO next fun thing -> itemize, enumerate
 
+
+class ItemizeState:
+    def __init__(self):
+        self.bullet_type = '\u2022'
+        self.bullet_number = 1
+
+
 class SyntaxAnalyser:
     def __init__(self, lex, context, custom_prop):
         self.stack = ['$', 'PROG']
@@ -26,7 +33,6 @@ class SyntaxAnalyser:
         self.d = Defaults(context, custom_prop)
         self.parameters = Parameters(custom_prop.text_scale, 0.0, 0.0, 0.0)
         self.block_type = ''
-        self.item_type = ''
 
     def choose_rule(self, stack_top, token):
         # TODO clean lookup
@@ -35,7 +41,7 @@ class SyntaxAnalyser:
         else:
             key = token.type
 
-        if (token.type, token.value) != ('COMMAND', 'item') and stack_top == 'ITEMIZE':
+        if (token.type, token.value) != ('COMMAND', 'item') and stack_top in ['ITEMIZE', 'ENUM']:
             key = "epsilon"
 
         if stack_top == "PROG":
@@ -102,15 +108,35 @@ class SyntaxAnalyser:
             return False
 
         elif action == '#ACTION_SAVE_ITEM':
+            its = ItemizeState()
             token = self.lex.get_token()
-            self.item_type = token.value
+            its.bullet_type = token.value
+            self.state_stack.append(its)
             return True
 
         elif action == '#ACTION_ADD_ITEM':
-            item = '\u2022' if self.item_type == '' else self.item_type
-            print("ITEM TYPE:", item)
+            if self.state_stack and isinstance(self.state_stack[-1], ItemizeState):
+                its = self.state_stack.pop()
+                item = its.bullet_type
+            else:
+                item = '\u2022'
             gen_bullet_point(self.parameters, self.d, item)
-            self.item_type = ''
+            return True
+
+        elif action == '#ACTION_ADD_ENUM':
+            if self.state_stack and isinstance(self.state_stack[-1], ItemizeState):
+                its = self.state_stack[-1]
+                its.bullet_number += 1
+            else:
+                its = ItemizeState()
+                self.state_stack.append(its)
+
+            item = str(its.bullet_number) + '.'
+            gen_bullet_point(self.parameters, self.d, item)
+            return True
+
+        elif action == '#ACTION_END_ENUM':
+            self.state_stack.pop()
             return True
 
         # MATH INLINE MODE
@@ -188,7 +214,10 @@ class SyntaxAnalyser:
 
             # terminal
             elif not (stack_top.isupper() and stack_top != '$'):
-                if stack_top == token.value:
+                #TODO cleanup
+                terminal = token.value if token.type in special_token_type else token.type
+
+                if stack_top == terminal:
                     self.stack.pop()
                     self.lex.get_token()
                 else:

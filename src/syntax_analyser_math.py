@@ -98,7 +98,7 @@ class MathSyntaxAnalyser:
 
     def choose_rule(self, stack_top, token):
         # TODO clean lookup
-        if token.type in ["COMMAND", "_CLOSE_CURLY", "_OPEN_CURLY", "_OPEN_ANGLE", "_CLOSE_ANGLE"]:
+        if token.type in special_token_type:
             key = token.value
         else:
             key = token.type
