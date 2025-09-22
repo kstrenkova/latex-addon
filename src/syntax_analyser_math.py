@@ -50,6 +50,7 @@ class FractionState:
         self.nwidth = 0
         self.dwidth = 0
 
+
 # class for square root
 class SqrtState:
     def __init__(self, parent_coll, init_params):
@@ -59,6 +60,7 @@ class SqrtState:
 
 
 # class for matrix
+# TODO matrix brackets are not moved properly
 class MatrixState:
     def __init__(self, parent_coll, init_params):
         self.parent_coll = parent_coll
@@ -67,6 +69,7 @@ class MatrixState:
         self.mx_coll = ''
         self.obj_array = [[]]
         self.row_num = 0
+        self.brackets = "matrix"
 
 
 class MathSyntaxAnalyser:
@@ -81,7 +84,6 @@ class MathSyntaxAnalyser:
 
         self.sum = Sum()
         self.levels = Levels([], 0)
-        self.ms_brackets = "matrix"
 
     def math_mode_end(self, stack_top, token):
         if stack_top != '$':
@@ -184,7 +186,6 @@ class MathSyntaxAnalyser:
             return True
 
         elif action == "#ACTION_EI_SINGLE":
-            # TODO when this is last before $, it makes the text smaller
             eis = self.state_stack.pop()
             self.levels.ei_array.pop()
 
@@ -220,7 +221,6 @@ class MathSyntaxAnalyser:
             return True
 
         elif action == '#ACTION_EI_FINAL':
-            # TODO when this is last before $, it makes the text smaller
             eis = self.state_stack.pop()
 
             # calculate final width
@@ -438,7 +438,10 @@ class MathSyntaxAnalyser:
         elif action == '#ACTION_VALIDATE_MATRIX_TYPE':
             token = self.lex.get_token()
             if token.type == '_TEXT' and token.value in matrix_brackets:
-                self.ms_brackets = token.value
+                # saving state of the matrix
+                ms = MatrixState(self.d.current_coll, self.parameters.create_copy())
+                ms.brackets = token.value
+                self.state_stack.append(ms)
                 return True
             else:
                 print("There are no matrix bracket type ", token.value)
@@ -447,15 +450,13 @@ class MathSyntaxAnalyser:
             gen_calculate(self.parameters, self.d.text_scale, self.levels)
 
             # saving state of the matrix
-            ms = MatrixState(self.d.current_coll, self.parameters.create_copy())
+            ms = self.state_stack[-1]
             ms.xy_size.append(ms.init_params.width) # array for matrix parameters
 
             # matrix collection
             mx_coll = bpy.data.collections.new("MatrixBodyCollection")
             bpy.data.collections[self.d.current_coll].children.link(mx_coll)
             ms.mx_coll = mx_coll.name
-
-            self.state_stack.append(ms)
 
             # first matrix cell collection
             self.d.current_coll = gen_new_collection("MatrixCellCollection", ms.mx_coll)
@@ -498,9 +499,9 @@ class MathSyntaxAnalyser:
 
             # get matrix parameters
             ms.xy_size = gen_matrix_param(True, ms.parent_coll, ms.xy_size)
-            bracket_type = matrix_brackets[self.ms_brackets]
+            bracket_type = matrix_brackets[ms.brackets]
 
-            if not self.ms_brackets == 'matrix':
+            if not ms.brackets == 'matrix':
                 # generate left bracket of matrix
                 gen_text(bracket_type[0], change_font('math'), self.d.current_coll)
                 gen_brackets(self.d.context, self.parameters, ms.parent_coll, self.d.base_coll, ms.xy_size, True)
@@ -545,6 +546,8 @@ class MathSyntaxAnalyser:
             print(f"STACK: {self.stack}")
 
             if self.math_mode_end(stack_top, token):
+                # recalculate position before changing modes
+                gen_calculate(self.parameters, self.d.text_scale, self.levels)
                 return True
 
             # actions

@@ -24,12 +24,15 @@ from .syntax_analyser import SyntaxAnalyser
 # custom properties
 class Custom_PT(bpy.types.PropertyGroup):
 
-    latex_text: bpy.props.StringProperty(name="Latex text", default="") # type: ignore
+    latex_text: bpy.props.StringProperty(
+        name="Latex text",
+        default=""
+    ) # type: ignore
 
     font_path: StringProperty(
         name = "Font",
         description="Choose a font:",
-        default="", # TODO maybe adding default
+        default="",
         maxlen=1024,
         subtype='FILE_PATH'
     ) # type: ignore
