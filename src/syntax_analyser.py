@@ -7,7 +7,7 @@ import bpy
 
 from .generator import *
 from .syntax_analyser_math import MathSyntaxAnalyser
-from .syntax_utils import Defaults, Parameters
+from .syntax_utils import Defaults, Parameters, preload_fonts
 
 # TODO get rid of ..data
 from ..data.ll_table import *
@@ -186,7 +186,8 @@ class SyntaxAnalyser:
         self.d.base_coll = collection.name
         self.d.current_coll = collection.name
 
-        # load base font
+        # preload fonts
+        preload_fonts()
         if self.d.base_font != "":
             self.d.base_font = bpy.data.fonts.load(self.d.base_font)
 

@@ -6,6 +6,8 @@
 import bpy
 import os.path
 
+FONT_CACHE = {}
+
 # class for defaults
 class Defaults:
     def __init__(self, context, custom_prop):
@@ -29,22 +31,47 @@ class Parameters:
         return copy
 
 
-# TODO or we could load all fonts first and then just use them :thinking:
-# -> depends on how many there are, but should definitely think about using cache at least
-# Change font to one that is included in the addon
+# Function returns font info
 def change_font(mode):
-    # TODO change mode names
+    return FONT_CACHE.get(mode)
+
+
+# Function preloads fonts used by the addon
+def preload_fonts():
     font_mode = {
-        'math': 'Kelvinch-Roman.otf',
-        'mathcal': 'latinmodern-math.otf',
+        'math': ('Kelvinch Regular', 'Kelvinch-Roman.otf'),
+        'mathcal': ('Latin Modern Math Regular', 'latinmodern-math.otf'),
     }
 
     src_dir = os.path.dirname(os.path.dirname(__file__))
-    font_file = os.path.join(src_dir, "data", "fonts", font_mode.get(mode))
-    font = bpy.data.fonts.load(font_file)
-    return font
+    fonts_dir = os.path.join(src_dir, "data", "fonts")
+
+    for mode, (font_name, filename) in font_mode.items():
+        if font_name in bpy.data.fonts:
+            font = bpy.data.fonts[font_name]
+        else:
+            font_file = os.path.join(fonts_dir, filename)
+            font = bpy.data.fonts.load(font_file)
+
+        font_size = get_font_scale(font)
+        FONT_CACHE[mode] = {'font': font, 'size': font_size}
+
+    print("FONT CACHE:", FONT_CACHE.items())
 
 
-# TODO check out fonttools, but the concern is if it's installed
-def scale_font():
-    print("This function will scale font!")
+def get_font_scale(font):
+    bpy.ops.object.text_add()
+    h_obj = bpy.context.active_object
+
+    h_obj.data.font = font
+    h_obj.data.body = 'H'
+    bpy.context.view_layer.update()
+
+    # base blender font size is 0.6820
+    size = 0.6820 / h_obj.dimensions.y
+
+    print(f"The height of the text object is: {h_obj.dimensions.y:.4f} Blender Units")
+
+    bpy.ops.object.delete(use_global=False)
+
+    return round(size, 4)

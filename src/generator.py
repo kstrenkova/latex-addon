@@ -15,12 +15,14 @@ from mathutils import Vector  # vertices
 def gen_text(text, font, collection):
     text_data = bpy.data.curves.new("Text", type='FONT')
     text_data.body = text
+
     if font != "":
-        text_data.font = font
+        text_data.font = font['font']
+        text_data.size = font['size']
 
     # changing size for bigger symbols, e.g. sum, integral
     if text in unicode_chars_big.values():
-        text_data.size = 2
+        text_data.size *= 1.5
 
     text_obj = bpy.data.objects.new("Text", text_data)
     bpy.data.collections[collection].objects.link(text_obj)
