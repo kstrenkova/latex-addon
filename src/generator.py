@@ -12,17 +12,17 @@ from mathutils import Vector  # vertices
 
 
 # function generates text in given font
-def gen_text(text, font, collection):
+def gen_text(text, font_info, collection):
     text_data = bpy.data.curves.new("Text", type='FONT')
     text_data.body = text
 
-    if font != "":
-        text_data.font = font['font']
-        text_data.size = font['size']
+    if font_info != "":
+        text_data.font = font_info['font']
+        text_data.size = font_info['size']
 
     # changing size for bigger symbols, e.g. sum, integral
     if text in unicode_chars_big.values():
-        text_data.size *= 1.5
+        text_data.size *= 2
 
     text_obj = bpy.data.objects.new("Text", text_data)
     bpy.data.collections[collection].objects.link(text_obj)
@@ -396,11 +396,7 @@ def gen_frac_den(param, collection):
 # function centers objects on x axis
 def gen_center(obj1, obj2, collection):
     # find wider text
-    if obj1 > obj2:
-        diff = obj1 - obj2
-    else:
-        diff = obj2 - obj1
-
+    diff = obj1 - obj2 if (obj1 > obj2) else obj2 - obj1
     move_by = diff / 2.0 # space between x positions div 2
 
     # move all objects
@@ -481,8 +477,7 @@ def gen_group_height(collection):
 
 # function returns the lowest y position
 def gen_min_y(collection):
-
-    bpy.ops.object.select_all(action='DESELECT') # deselect all objects
+    bpy.ops.object.select_all(action='DESELECT')  # deselect all objects
     is_init = False  # set initialisation flag
 
     # select all objects in collection
@@ -505,7 +500,6 @@ def gen_min_y(collection):
 
 # function positions matrix figure
 def gen_matrix_pos(context, obj_array, param):
-
     # return if matrix has no objects
     if not len(obj_array):
         return
@@ -521,7 +515,6 @@ def gen_matrix_pos(context, obj_array, param):
 
 # function centers matrix horizontally
 def gen_matrix_x(context, obj_array, param, max_cell_x):
-
     i = 0  # collumn number
     while i < max_cell_x:
 
@@ -567,7 +560,6 @@ def gen_matrix_x(context, obj_array, param, max_cell_x):
 
 # function moves matrix vertically
 def gen_matrix_y(obj_array, param, max_cell_x):
-
     is_init = False  # set initialisation flag
 
     # iterate through rows
@@ -633,7 +625,6 @@ def gen_matrix_y(obj_array, param, max_cell_x):
 
 # function calculates position of matrix brackets
 def gen_matrix_param(left, collection, xy_size):
-
     # left bracket
     if left:
         # get matrix height
@@ -656,7 +647,6 @@ def gen_matrix_param(left, collection, xy_size):
 
 # function generates matrix brackets
 def gen_brackets(context, param, collection, base_collection, xy_size, left):
-
     # xy_size -> y_min, y_max, x
 
     # move bracket to position

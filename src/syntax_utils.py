@@ -31,15 +31,15 @@ class Parameters:
         return copy
 
 
-# Function returns font info
+# function returns font info
 def change_font(mode):
-    return FONT_CACHE.get(mode)
+    return FONT_CACHE.get(mode) if (mode in FONT_CACHE) else ""
 
 
-# Function preloads fonts used by the addon
-def preload_fonts():
+# function preloads fonts used by the addon
+def preload_fonts(user_font_file):
     font_mode = {
-        'math': ('Kelvinch Regular', 'Kelvinch-Roman.otf'),
+        'math':    ('Kelvinch Regular', 'Kelvinch-Roman.otf'),
         'mathcal': ('Latin Modern Math Regular', 'latinmodern-math.otf'),
     }
 
@@ -48,17 +48,25 @@ def preload_fonts():
 
     for mode, (font_name, filename) in font_mode.items():
         if font_name in bpy.data.fonts:
-            font = bpy.data.fonts[font_name]
+            font = bpy.data.fonts[font_name]  # get preloaded font
         else:
+            # load font
             font_file = os.path.join(fonts_dir, filename)
             font = bpy.data.fonts.load(font_file)
 
         font_size = get_font_scale(font)
         FONT_CACHE[mode] = {'font': font, 'size': font_size}
 
+    # loading font specified by user
+    if user_font_file != "":
+        user_font = bpy.data.fonts.load(user_font_file)
+        font_size = get_font_scale(user_font)
+        FONT_CACHE['user'] = {'font': user_font, 'size': font_size}
+
     print("FONT CACHE:", FONT_CACHE.items())
 
-
+# function that gets font scale needed to make all fonts the
+# same height
 def get_font_scale(font):
     bpy.ops.object.text_add()
     h_obj = bpy.context.active_object
@@ -67,7 +75,7 @@ def get_font_scale(font):
     h_obj.data.body = 'H'
     bpy.context.view_layer.update()
 
-    # base blender font size is 0.6820
+    # base blender font size is 0.6820 (for H)
     size = 0.6820 / h_obj.dimensions.y
 
     print(f"The height of the text object is: {h_obj.dimensions.y:.4f} Blender Units")

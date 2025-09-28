@@ -7,7 +7,7 @@ import bpy
 
 from .generator import *
 from .syntax_analyser_math import MathSyntaxAnalyser
-from .syntax_utils import Defaults, Parameters, preload_fonts
+from .syntax_utils import Defaults, Parameters, preload_fonts, change_font
 
 # TODO get rid of ..data
 from ..data.ll_table import *
@@ -70,7 +70,7 @@ class SyntaxAnalyser:
         # <CONST> actions
         if action == '#ACTION_GENERATE_TEXT':
             token = self.lex.get_token()
-            gen_text(token.value, self.d.base_font, self.d.current_coll)
+            gen_text(token.value, change_font('user'), self.d.current_coll)
             self.parameters.height = self.parameters.line
             gen_move_position(self.parameters)
             return True
@@ -186,10 +186,7 @@ class SyntaxAnalyser:
         self.d.base_coll = collection.name
         self.d.current_coll = collection.name
 
-        # preload fonts
-        preload_fonts()
-        if self.d.base_font != "":
-            self.d.base_font = bpy.data.fonts.load(self.d.base_font)
+        preload_fonts(self.d.base_font)
 
         # parsing loop
         while self.stack:

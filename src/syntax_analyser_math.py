@@ -119,7 +119,7 @@ class MathSyntaxAnalyser:
         # <CONST> actions
         if action == '#ACTION_GENERATE_TEXT':
             token = self.lex.get_token()
-            gen_text(token.value, self.d.base_font, self.d.current_coll)
+            gen_text(token.value, change_font('user'), self.d.current_coll)
             gen_calculate(self.parameters, self.d.text_scale, self.levels)
             gen_move_position(self.parameters)
             return True
