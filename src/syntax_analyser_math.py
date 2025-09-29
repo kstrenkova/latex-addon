@@ -105,7 +105,7 @@ class MathSyntaxAnalyser:
         else:
             key = token.type
 
-        if (token.type != '_UNDERSCORE' and stack_top == 'IX') or \
+        if (token.type != 'underscore' and stack_top == 'IX') or \
             (token.type != '_CARET' and stack_top == 'EXP'):
             key = "epsilon"
 
@@ -405,6 +405,19 @@ class MathSyntaxAnalyser:
             gen_collection(self.d.current_coll, self.d.base_coll)
             return True
 
+        elif action == '#ACTION_LIM_INIT':
+            print("Inside limits.")
+            # Generate lim in a special collection
+            #   -> or we save the lim object like sum for example
+            # Add a new collection that will have everything under lim
+            # Center lim and all the under-text
+            # move it so that the most left corner is correctly starting the lim
+            return True
+
+        elif action == '#ACTION_LIM_FINAL':
+            print('Centering LIM.')
+            return True
+
         # <MATRIX> actions
         elif action == '#ACTION_VALIDATE_MATRIX_TYPE':
             token = self.lex.get_token()
@@ -528,7 +541,7 @@ class MathSyntaxAnalyser:
                     return False
 
             # terminal
-            elif not (stack_top.isupper() and stack_top != '$'):
+            elif not stack_top.isupper():
                 if stack_top == token.value:
                     self.stack.pop()
                     self.lex.get_token()

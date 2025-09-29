@@ -108,6 +108,7 @@ math_ll_table = {
     ('TERM', 'sum'):              ['COMMAND'],
     ('TERM', 'prod'):             ['COMMAND'],
     ('TERM', 'int'):              ['COMMAND'],
+    ('TERM', 'lim'):              ['COMMAND'],
     ('TERM', 'mathcal'):          ['COMMAND'],
     ('TERM', '_SPACE_COMMAND'):   ['COMMAND'],
     ('TERM', '_MATH_SYMBOL'):     ['COMMAND'],
@@ -130,6 +131,7 @@ math_ll_table = {
     ('MORE_TERM', 'sum'):              ['TERM', 'MORE_TERM'],
     ('MORE_TERM', 'prod'):             ['TERM', 'MORE_TERM'],
     ('MORE_TERM', 'int'):              ['TERM', 'MORE_TERM'],
+    ('MORE_TERM', 'lim'):              ['TERM', 'MORE_TERM'],
     ('MORE_TERM', 'mathcal'):          ['TERM', 'MORE_TERM'],
     ('MORE_TERM', '_SPACE_COMMAND'):   ['TERM', 'MORE_TERM'],
     ('MORE_TERM', '_MATH_SYMBOL'):     ['TERM', 'MORE_TERM'],
@@ -170,23 +172,29 @@ math_ll_table = {
 
     # --- COMMAND ---
     # <COMMAND> -> { <MORE_TERM> }
-    ('COMMAND', '{'):                  ['{', 'MORE_TERM', '}'],
+    ('COMMAND', '{'):        ['{', 'MORE_TERM', '}'],
     # <COMMAND> -> sqrt <SQRT>
-    ('COMMAND', 'sqrt'):               ['sqrt', 'SQRT'],
+    ('COMMAND', 'sqrt'):     ['sqrt', 'SQRT'],
     # <COMMAND> -> frac <FRAC>
-    ('COMMAND', 'frac'):               ['frac', 'FRAC'],
+    ('COMMAND', 'frac'):     ['frac', 'FRAC'],
 
 
     # <COMMAND> -> sum <SUM> TODO
-    ('COMMAND', 'sum'):                ['sum', '#ACTION_SUM_INIT'],
-    ('COMMAND', 'prod'):               ['prod', '#ACTION_PROD_INIT'],
-    ('COMMAND', 'int'):                ['int', '#ACTION_INTEGRAL_INIT'],
+    ('COMMAND', 'sum'):      ['sum', '#ACTION_SUM_INIT'],
+    ('COMMAND', 'prod'):     ['prod', '#ACTION_PROD_INIT'],
+    ('COMMAND', 'int'):      ['int', '#ACTION_INTEGRAL_INIT'],
+
+    # <COMMAND> -> lim _ { <MORE_TERM> }
+    ('COMMAND', 'lim'): [
+        'lim', '_', '{', '#ACTION_LIM_INIT',
+        'MORE_TERM', '}', '#ACTION_LIM_FINAL'
+    ],
 
     # TODO rule: mathcal { LETTER }
-    ('COMMAND', 'mathcal'):            ['mathcal', '{', '#ACTION_GENERATE_MATH_LETTER', '}'],
+    ('COMMAND', 'mathcal'):  ['mathcal', '{', '#ACTION_GENERATE_MATH_LETTER', '}'],
 
-    ('COMMAND', '_SPACE_COMMAND'):     ['#ACTION_SPACE'],
-    ('COMMAND', '_MATH_SYMBOL'):       ['#ACTION_MATH_SYMBOL'],
+    ('COMMAND', '_SPACE_COMMAND'): ['#ACTION_SPACE'],
+    ('COMMAND', '_MATH_SYMBOL'):   ['#ACTION_MATH_SYMBOL'],
 
     # --- BLOCK ---
     # <BLOCK> -> begin { text } <MATRIX> end { text }
@@ -238,9 +246,6 @@ math_ll_table = {
         '{', '#ACTION_FRAC_INIT', 'MORE_TERM', '}', '#ACTION_FRAC_UP',
         '{', 'MORE_TERM', '}', '#ACTION_FRAC_DOWN'
     ],
-
-    # --- LIM ---
-    # <LIM> -> lim _ { text }
 
     # --- MATRIX ---
     # <MATRIX> -> TODO

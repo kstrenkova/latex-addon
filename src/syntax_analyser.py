@@ -211,7 +211,7 @@ class SyntaxAnalyser:
                     return False
 
             # terminal
-            elif not (stack_top.isupper() and stack_top != '$'):
+            elif not stack_top.isupper():
                 #TODO cleanup
                 terminal = token.value if token.type in special_token_type else token.type
 
