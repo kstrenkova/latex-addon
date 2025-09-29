@@ -15,9 +15,9 @@ from ..data.characters_db import *
 
 # class for levels
 class Levels:
-    def __init__(self, ei_array, frac):
-        self.ei_array = ei_array
-        self.frac = frac
+    def __init__(self):
+        self.ei_array = []
+        self.frac = 0
         self.sqrt = False
 
 
@@ -83,7 +83,7 @@ class MathSyntaxAnalyser:
         self.state_stack = []
 
         self.sum = Sum()
-        self.levels = Levels([], 0)
+        self.levels = Levels()
 
     def math_mode_end(self, stack_top, token):
         if stack_top != '$':
@@ -176,13 +176,10 @@ class MathSyntaxAnalyser:
 
             # exponent or index collection
             coll_name = 'ExponentCollection' if token.type == '_CARET' else 'IndexCollection'
-            eicoll = bpy.data.collections.new(coll_name)
-            bpy.data.collections[self.d.current_coll].children.link(eicoll)
-            eis.eicoll = eicoll.name
+            eis.eicoll = gen_new_collection(coll_name, eis.parent_coll)
+            self.d.current_coll = eis.eicoll
 
             self.state_stack.append(eis)
-
-            self.d.current_coll = eicoll.name
             return True
 
         elif action == "#ACTION_EI_SINGLE":
@@ -210,11 +207,8 @@ class MathSyntaxAnalyser:
 
             # exponent or index collection
             coll_name = 'ExponentCollection' if token.type == '_CARET' else 'IndexCollection'
-            eicoll = bpy.data.collections.new(coll_name)
-            bpy.data.collections[eis.parent_coll].children.link(eicoll)
-            eis.eicoll2 = eicoll.name
-
-            self.d.current_coll = eicoll.name
+            eis.eicoll2 = gen_new_collection(coll_name, eis.parent_coll)
+            self.d.current_coll = eis.eicoll2
 
             # return width for the second index or exponent
             self.parameters.width = eis.init_params.width
@@ -224,8 +218,7 @@ class MathSyntaxAnalyser:
             eis = self.state_stack.pop()
 
             # calculate final width
-            sec_width = gen_group_width(self.d.current_coll)
-            fin_width = max(eis.width, sec_width)
+            fin_width = max(eis.width, gen_group_width(eis.parent_coll))
 
             self.parameters.width = fin_width + 0.1 * self.parameters.scale
             self.levels.ei_array.pop()
@@ -252,15 +245,13 @@ class MathSyntaxAnalyser:
             self.parameters.width += sqrt_width * self.parameters.scale
 
             # square root collection
-            sqcoll = bpy.data.collections.new("SqrtCollection")
-            bpy.data.collections[sqs.parent_coll].children.link(sqcoll)
-            sqs.sqcoll = sqcoll.name
+            sqs.sqcoll = gen_new_collection("SqrtCollection", sqs.parent_coll)
+            self.d.current_coll = sqs.sqcoll
 
             self.state_stack.append(sqs)
-
-            self.d.current_coll = sqcoll.name
             return True
 
+        # TODO remove duplicity
         elif action == '#ACTION_SQRT_INIT_WITH_INDEX':
             self.levels.ei_array.pop()
             self.parameters.width += 0.1 # space before index
@@ -275,13 +266,10 @@ class MathSyntaxAnalyser:
             self.parameters.width += 0.4 * self.parameters.scale
 
             # square root collection
-            sqcoll = bpy.data.collections.new("SqrtCollection")
-            bpy.data.collections[sqs.parent_coll].children.link(sqcoll)
-            sqs.sqcoll = sqcoll.name
+            sqs.sqcoll = gen_new_collection("SqrtCollection", sqs.parent_coll)
+            self.d.current_coll = sqs.sqcoll
 
             self.state_stack.append(sqs)
-
-            self.d.current_coll = sqcoll.name
             return True
 
         elif action == '#ACTION_SQRT_CREATE':
@@ -298,9 +286,9 @@ class MathSyntaxAnalyser:
             sq_coll_obj = bpy.data.collections.get(sqs.sqcoll)
             if len(sq_coll_obj.all_objects):
                 use_param = True
-                sqrt_param['x_pos'] = gen_group_width(sqs.parent_coll)
-                sqrt_param['y_min'] = gen_min_y(sqs.parent_coll)
-                sqrt_param['y_max'] = gen_group_height(sqs.parent_coll)
+                sqrt_param['x_pos'] = gen_group_width(sqs.sqcoll)
+                sqrt_param['y_min'] = gen_min_y(sqs.sqcoll)
+                sqrt_param['y_max'] = gen_group_height(sqs.sqcoll)
 
             # generating sqrt symbol
             gen_sqrt_sym(self.d.context)
@@ -319,20 +307,15 @@ class MathSyntaxAnalyser:
             # increasing level of fraction
             self.levels.frac += 1
             self.parameters.width += 0.1 * self.parameters.scale  # space before fraction
-
             gen_calculate(self.parameters, self.d.text_scale, self.levels)
 
-            parent_coll = bpy.data.collections[self.d.current_coll]
-            fs = FractionState(parent_coll, self.parameters.create_copy())
+            fs = FractionState(self.d.current_coll, self.parameters.create_copy())
 
             # numerator collection
-            ncoll = bpy.data.collections.new("NumeratorCollection")
-            bpy.data.collections[self.d.current_coll].children.link(ncoll)
-            fs.ncoll = ncoll.name
+            fs.ncoll = gen_new_collection("NumeratorCollection", fs.parent_coll)
+            self.d.current_coll = fs.ncoll
 
             self.state_stack.append(fs)
-
-            self.d.current_coll = ncoll.name
             return True
 
         elif action == '#ACTION_FRAC_UP':
@@ -347,11 +330,8 @@ class MathSyntaxAnalyser:
             gen_frac_num(self.parameters, fs.ncoll)
 
             # denominator collection
-            dcoll = bpy.data.collections.new("DenominatorCollection")
-            fs.parent_coll.children.link(dcoll)
-            fs.dcoll = dcoll.name
-
-            self.d.current_coll = dcoll.name
+            fs.dcoll = gen_new_collection("DenominatorCollection", fs.parent_coll)
+            self.d.current_coll = fs.dcoll
 
             # reloading last width
             self.parameters.width = fs.init_params.width
@@ -387,8 +367,8 @@ class MathSyntaxAnalyser:
             gen_join_collections(fs.dcoll, fs.ncoll)
 
             # join denominator collection into parent collection
-            gen_join_collections(fs.ncoll, fs.parent_coll.name)
-            self.d.current_coll = fs.parent_coll.name
+            gen_join_collections(fs.ncoll, fs.parent_coll)
+            self.d.current_coll = fs.parent_coll
 
             # set back line width
             self.parameters.width = line_length + 0.2 * self.parameters.scale  # space
@@ -398,21 +378,9 @@ class MathSyntaxAnalyser:
             return True
 
         # <SUM> actions
-        elif action == '#ACTION_SUM_INIT':
-            gen_text(unicode_chars_big['sum'], change_font('math'), self.d.current_coll)
-
-            gen_calculate(self.parameters, self.d.text_scale, self.levels)
-            self.parameters.height -= 0.4 * self.parameters.scale  # move lower
-            gen_move_position(self.parameters)
-            gen_collection(self.d.current_coll, self.d.base_coll)
-
-            self.sum.name = self.d.context.active_object.name  # save sum object
-            self.sum.bool = True
-            return True
-
-        # TODO erase repeating code <SUM> actions -> PROD
-        elif action == '#ACTION_PROD_INIT':
-            gen_text(unicode_chars_big['prod'], change_font('math'), self.d.current_coll)
+        elif action in ['#ACTION_SUM_INIT', '#ACTION_PROD_INIT']:
+            c = 'sum' if (action == '#ACTION_SUM_INIT') else 'prod'
+            gen_text(unicode_chars_big[c], change_font('math'), self.d.current_coll)
 
             gen_calculate(self.parameters, self.d.text_scale, self.levels)
             self.parameters.height -= 0.4 * self.parameters.scale  # move lower
@@ -425,6 +393,9 @@ class MathSyntaxAnalyser:
 
         # TODO
         elif action == '#ACTION_INTEGRAL_INIT':
+            c = 'sum' if (action == '#ACTION_SUM_INIT') else 'prod'
+            gen_text(unicode_chars_big['int'], change_font('math'), self.d.current_coll)
+
             gen_calculate(self.parameters, self.d.text_scale, self.levels)
             gen_move_position(self.parameters)
 
@@ -453,10 +424,8 @@ class MathSyntaxAnalyser:
             ms = self.state_stack[-1]
             ms.xy_size.append(ms.init_params.width) # array for matrix parameters
 
-            # matrix collection
-            mx_coll = bpy.data.collections.new("MatrixBodyCollection")
-            bpy.data.collections[self.d.current_coll].children.link(mx_coll)
-            ms.mx_coll = mx_coll.name
+            # matrix body collection
+            ms.mx_coll = gen_new_collection("MatrixBodyCollection", ms.parent_coll)
 
             # first matrix cell collection
             self.d.current_coll = gen_new_collection("MatrixCellCollection", ms.mx_coll)

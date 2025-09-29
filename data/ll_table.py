@@ -107,6 +107,7 @@ math_ll_table = {
     ('TERM', 'frac'):             ['COMMAND'],
     ('TERM', 'sum'):              ['COMMAND'],
     ('TERM', 'prod'):             ['COMMAND'],
+    ('TERM', 'int'):              ['COMMAND'],
     ('TERM', 'mathcal'):          ['COMMAND'],
     ('TERM', '_SPACE_COMMAND'):   ['COMMAND'],
     ('TERM', '_MATH_SYMBOL'):     ['COMMAND'],
@@ -128,6 +129,7 @@ math_ll_table = {
     ('MORE_TERM', 'frac'):             ['TERM', 'MORE_TERM'],
     ('MORE_TERM', 'sum'):              ['TERM', 'MORE_TERM'],
     ('MORE_TERM', 'prod'):             ['TERM', 'MORE_TERM'],
+    ('MORE_TERM', 'int'):              ['TERM', 'MORE_TERM'],
     ('MORE_TERM', 'mathcal'):          ['TERM', 'MORE_TERM'],
     ('MORE_TERM', '_SPACE_COMMAND'):   ['TERM', 'MORE_TERM'],
     ('MORE_TERM', '_MATH_SYMBOL'):     ['TERM', 'MORE_TERM'],
@@ -237,10 +239,14 @@ math_ll_table = {
         '{', 'MORE_TERM', '}', '#ACTION_FRAC_DOWN'
     ],
 
+    # --- LIM ---
+    # <LIM> -> lim _ { text }
+
     # --- MATRIX ---
     # <MATRIX> -> TODO
     # <MATRIX> -> enter <MATRIX>
     # <MATRIX> -> & <MATRIX>
+    # <MATRIX> -> <CONST> <MATRIX>
     ('MATRIX', '_TEXT'):            ['CONST', 'MATRIX'],
     ('MATRIX', '_SPECIAL_CHAR'):    ['CONST', 'MATRIX'],
     ('MATRIX', '_ENTER'):           ['#ACTION_MATRIX_NEW_ROW', 'MATRIX'],
