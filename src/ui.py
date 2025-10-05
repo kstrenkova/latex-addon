@@ -7,10 +7,8 @@ import bpy
 
 from bpy.props import (StringProperty,
                        BoolProperty,
-                       IntProperty,
                        FloatProperty,
                        FloatVectorProperty,
-                       EnumProperty,
                        PointerProperty,
                        )
 
@@ -59,6 +57,9 @@ class Custom_PT(bpy.types.PropertyGroup):
         subtype='EULER'
     ) # type: ignore
 
+    one_object: bpy.props.BoolProperty(
+        name="Generate as one object"
+    ) # type: ignore
 
 # main addon panel
 class OBJECT_PT_ME(bpy.types.Panel):
@@ -87,6 +88,8 @@ class OBJECT_PT_ME(bpy.types.Panel):
         col2 = row.column()
         col2.prop(cus_pt,'text_rotation')
 
+        layout.prop(cus_pt, "one_object")
+
         row2 = layout.row(align=True)
         props = row2.operator("wm.addtextop")
 
@@ -100,27 +103,22 @@ class WM_OT_AddText(bpy.types.Operator):
         scene = context.scene
         cus_pt = scene.custom_prop
 
-        # create lexical analyser
+        # create lexical analyser and main syntax analyser
         lex = LexicalAnalyser(cus_pt.latex_text, 0)
-
-        # create main syntax analyser
         syntax = SyntaxAnalyser(lex, context, cus_pt)
 
+        # parse latex text
         if not syntax.parse():
             warn_msg = 'Latex text was not fully generated. Check system console for more info on this matter.'
             self.report({'WARNING'}, warn_msg)
 
-        # all objects in mathematical equation
+        # all objects in latex text
         all_obj = context.selected_objects
 
-        # add empty object
-        bpy.ops.object.empty_add(type='PLAIN_AXES', location=(0,0,0))
-        empty_obj = context.object
-
-        # customize mathematical equation
+        # customize latex text
         for obj in all_obj:
             # set thickness
-            if "Text" in obj.name:
+            if obj.type == 'FONT':
                 # for text change extrude parameter
                 obj.data.extrude = cus_pt.text_thickness / 2.0
             else:
@@ -128,26 +126,21 @@ class WM_OT_AddText(bpy.types.Operator):
                 obj.modifiers["Solidify"].thickness = cus_pt.text_thickness
                 obj.modifiers["Solidify"].offset = 0.0
 
+        if len(all_obj) > 1 and cus_pt.one_object:
+            generate_one_object(context, cus_pt)
+        else:
+            # add empty object
+            bpy.ops.object.empty_add(type='PLAIN_AXES', location=(0,0,0))
+            empty_obj = bpy.context.active_object
+
             # set empty object as parent
-            obj.parent = empty_obj
+            for obj in all_obj:
+                obj.parent = empty_obj
 
-        # move all objects by moving empty object
-        empty_obj.location.x = cus_pt.text_location.x
-        empty_obj.location.y = cus_pt.text_location.y
-        empty_obj.location.z = cus_pt.text_location.z
-
-        # rotate all objects by rotating empty object
-        empty_obj.rotation_euler.x = cus_pt.text_rotation.x
-        empty_obj.rotation_euler.y = cus_pt.text_rotation.y
-        empty_obj.rotation_euler.z = cus_pt.text_rotation.z
-
-        # apply transformation
-        bpy.data.objects[empty_obj.name].select_set(True)
-        bpy.ops.object.transform_apply(location=True, rotation=True)
-
-        # delete empty object
-        bpy.data.objects[empty_obj.name].select_set(True)
-        bpy.ops.object.delete()
+            empty_obj.location = cus_pt.text_location                     # move empty object
+            empty_obj.rotation_euler = cus_pt.text_rotation               # rotate empty object
+            bpy.ops.object.transform_apply(location=True, rotation=True)  # apply transformation
+            bpy.ops.object.delete()                                       # delete empty object
 
         return {'FINISHED'}
 
@@ -158,6 +151,44 @@ all_classes = [
     OBJECT_PT_ME,
     WM_OT_AddText
 ]
+
+
+# function generates the final latex text as one object
+def generate_one_object(context, cus_pt):
+    all_obj = context.selected_objects
+    all_converted_obj = []
+
+    for obj in all_obj:
+        bpy.ops.object.select_all(action='DESELECT')
+        obj.select_set(True)
+        bpy.context.view_layer.objects.active = obj
+
+        # convert text objects to meshes
+        if obj.type == 'FONT':
+            bpy.ops.object.convert(target='MESH')
+
+        all_converted_obj.append(bpy.context.active_object)
+
+    # select all latex text objects
+    for obj in all_converted_obj:
+        obj.select_set(True)
+
+    # join all objects into one
+    bpy.context.view_layer.objects.active = all_converted_obj[0]
+    bpy.ops.object.join()
+
+    final_obj = bpy.context.active_object
+    final_obj.name = "Latex Text"
+    final_obj.location = cus_pt.text_location                     # move object
+    final_obj.rotation_euler = cus_pt.text_rotation               # rotate object
+    bpy.ops.object.transform_apply(location=True, rotation=True)  # apply transformation
+
+    # delete base latex collection
+    for collection in list(final_obj.users_collection):
+        if "LatexCollection" in collection.name:
+            bpy.context.scene.collection.objects.link(final_obj)
+            collection.objects.unlink(final_obj)
+            bpy.data.collections.remove(collection)
 
 
 def register():
