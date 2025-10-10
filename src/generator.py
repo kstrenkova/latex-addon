@@ -127,9 +127,6 @@ def gen_sqrt_sym(context):
     # set 3D cursor back
     bpy.context.scene.cursor.location = cursor_3D
 
-    # add solidify modifier
-    bpy.ops.object.modifier_add(type='SOLIDIFY')
-
     # recalculate normals in editmode
     bpy.ops.object.editmode_toggle()
     bpy.ops.mesh.normals_make_consistent(inside=False)
@@ -233,9 +230,6 @@ def gen_frac_line(context, param, x_pos):
 
     # set 3D cursor back
     bpy.context.scene.cursor.location = cursor_3D
-
-    # add solidify modifier
-    bpy.ops.object.modifier_add(type='SOLIDIFY')
 
     # location of line
     bpy.context.active_object.location.x = param.width
