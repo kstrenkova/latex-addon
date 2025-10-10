@@ -149,70 +149,62 @@ def gen_sqrt_move(context, param, sqrt_param, move):
 
     # data of created sqrt symbol
     obj_data = context.active_object.data
+    vertices = obj_data.vertices
 
-    # finding most right vertices
-    max_x = obj_data.vertices[0].co.x
-    for i in obj_data.vertices:
-        max_x = max(i.co.x, max_x)
+    # common parameters
+    text_height = param.height - (0.2 * param.scale)
+
+    # find vertex extremes
+    x_coords = [v.co.x for v in vertices]
+    y_coords = [v.co.y for v in vertices]
+    max_x = max(x_coords)
+    max_y = max(y_coords)
+    min_y = min(y_coords)
 
     # changing length of the upper line of sqrt
-    for i in obj_data.vertices:
-        new_location = i.co
-        if i.co.x == max_x:
-            new_location[0] = sqrt_param['x_pos'] - param.width  # x position
-        i.co = new_location
+    for v in vertices:
+        if v.co.x == max_x:
+            v.co.x = sqrt_param['x_pos'] - param.width  # x position
 
-    # finding the heighest vertices
-    max_y = obj_data.vertices[0].co.y
-    for i in obj_data.vertices:
-        max_y = max(i.co.y, max_y)
+    line_size_top = 0.05929052829742433 * param.scale  # size of upper line
+    move_by_top = sqrt_param['y_max'] - text_height + (0.2 * param.scale)  # y location and space
 
-    line_size = 0.05929052829742433 * param.scale  # size of upper line
-    text_height =  param.height - (0.2 * param.scale)  # text height
-    move_by = sqrt_param['y_max'] - text_height + (0.2 * param.scale)  # y location and space
+    # if height of sqrt is not correct
+    if (max_y - 0.06) <= move_by_top:
+        threshold_top = max_y - (0.06 * param.scale)
 
-    # leave function if height of sqrt is right
-    if (max_y - 0.06) > (sqrt_param['y_max'] - text_height + (0.2 * param.scale)):
-        return
+        # changing height of sqrt symbol
+        for v in vertices:
+            if v.co.y == max_y:
+                v.co.y = move_by_top + line_size_top
+            elif v.co.y >= threshold_top:
+                v.co.y = move_by_top
 
-    # changing height of sqrt symbol
-    for i in obj_data.vertices:
-        new_location = i.co
-        if i.co.y == max_y:
-            new_location[1] = move_by + line_size  # y position upper vertices
-        elif i.co.y >= (max_y - (0.06 * param.scale)):
-            new_location[1] = move_by  # y position lower vertices
-        i.co = new_location
+    line_size_bottom = 0.14427322149276733 * param.scale  #  space between lowest points
+    move_by_bottom = sqrt_param['y_min'] - text_height
 
-    # finding the lowest vertices
-    min_y = obj_data.vertices[0].co.y
-    for i in obj_data.vertices:
-        min_y = min(i.co.y, min_y)
+    # if low point of sqrt is not correct
+    if min_y >= move_by_bottom:
+        threshold_bottom = min_y + (0.15 * param.scale)
 
-    line_size = 0.14427322149276733 * param.scale  #  space between lowest points
-    move_by = sqrt_param['y_min'] - text_height
-
-    # leave function if low point of sqrt is right
-    if min_y < (sqrt_param['y_min'] - text_height):
-        return
-
-    # changing lowest point of sqrt symbol
-    for i in obj_data.vertices:
-        new_location = i.co
-        if i.co.y == min_y:
-            new_location[1] = move_by  # y position upper vertice
-        elif i.co.y <= (min_y + (0.15 * param.scale)):
-            new_location[1] = move_by + line_size # y position lower vertice
-        i.co = new_location
+        # changing lowest point of sqrt symbol
+        for v in vertices:
+            if v.co.y == min_y:
+                v.co.y = move_by_bottom
+            elif v.co.y <= threshold_bottom:
+                v.co.y = move_by_bottom + line_size_bottom
 
 
 # function generates line for fractions
 def gen_frac_line(context, param, x_pos):
+    # calculate line height
+    line_height = 0.025 * param.scale
+
     verts = [
-        Vector((0.0, -0.025 * param.scale, 0.0)),
-        Vector((0.0, 0.025 * param.scale, 0.0)),
-        Vector((1.0, 0.025 * param.scale, 0.0)),
-        Vector((1.0, -0.025 * param.scale, 0.0))
+        Vector((0.0, -line_height, 0.0)),
+        Vector((0.0, line_height, 0.0)),
+        Vector((1.0, line_height, 0.0)),
+        Vector((1.0, -line_height, 0.0))
     ]
     edges = []
     faces = [[0, 1, 2, 3]]
@@ -221,26 +213,16 @@ def gen_frac_line(context, param, x_pos):
     mesh.from_pydata(verts, edges, faces)
     object_data_add(context, mesh)
 
-    # location of 3D cursor
-    cursor_3D = bpy.context.scene.cursor.location
-
-    # set origin for fraction line
-    bpy.context.scene.cursor.location += Vector((0.0, 0.0, 0.0))
-    bpy.ops.object.origin_set(type='ORIGIN_CURSOR')
-
-    # set 3D cursor back
-    bpy.context.scene.cursor.location = cursor_3D
-
     # location of line
-    bpy.context.active_object.location.x = param.width
-    bpy.context.active_object.location.y = param.height + 0.3 * param.scale
-    bpy.context.active_object.location.z = 0.0
-
-    # data of created fraction line
-    obj_data = bpy.context.object.data
+    line_obj = context.active_object
+    line_obj.location = Vector((
+        param.width,
+        param.height + 0.3 * param.scale,
+        0.0
+    ))
 
     # moving fraction line
-    for i in obj_data.vertices:
+    for i in bpy.context.object.data.vertices:
         new_location = i.co
         if i.co.x == 1.0:
             new_location[0] = x_pos - param.width + 0.1 * param.scale  # x position
@@ -249,6 +231,16 @@ def gen_frac_line(context, param, x_pos):
 
 # function calculates the scaling and height of text
 def gen_calculate(param, text_scale, levels):
+    # height factors
+    first_exp = 0.75
+    nested_exp = 0.5
+    first_ix = 0.5
+    nested_ix = 0.25
+
+    # scale factors
+    scale_low = 0.65
+    scale_nested = 0.45
+
     lvl_exp = 0  # exponent lvl
     lvl_ix = 0  # index lvl
 
@@ -262,45 +254,32 @@ def gen_calculate(param, text_scale, levels):
         # deciding scaling
         if (lvl_exp + lvl_ix) == 0:
             # depending on fraction level
-            if levels.frac < 2:
-                param.scale = 0.65 * text_scale
-            else:
-                param.scale = 0.45 * text_scale
+            param.scale = (scale_low if levels.frac < 2 else scale_nested) * text_scale
         else:
-            param.scale = 0.45 * text_scale
-
-        # specific scaling in sqrt
-        if levels.sqrt:
-            param.width += 0.1 * text_scale
-            param.scale = 0.15 * text_scale #TODO
+            param.scale = scale_nested * text_scale
 
         # adding number of exponent or index
         if item == "exp":
             lvl_exp += 1
-            if lvl_exp == 1:
-                param.height += (0.75 * param.scale)  # first lvl exponent
-            else:
-                param.height += (0.5 * param.scale)
+            factor = first_exp if lvl_exp == 1 else nested_exp
+            param.height += factor * param.scale
         else:
             lvl_ix += 1
-            if lvl_ix == 1:
-                param.height -= (0.5 * param.scale)  # first lvl index
-            else:
-                param.height -= (0.25 * param.scale)
+            factor = first_ix if lvl_ix == 1 else nested_ix
+            param.height -= factor * param.scale
 
 
 # function moves sum symbol according to given parameters
 def gen_move_sum(param, collection, sum):
-    # save sum symbol
     sum_symbol = bpy.data.objects[sum.name]
 
     # get corners of bounding box
     bbox = [sum_symbol.matrix_world @ Vector(corner) for corner in sum_symbol.bound_box]
 
     # parameters of objects in collection
-    min_x = gen_min_x(collection)
-    min_y = gen_min_y(collection)
-    max_y = gen_group_height(collection)
+    min_x = gen_bound(collection, 'x', 'min')
+    min_y = gen_bound(collection, 'y', 'min')
+    max_y = gen_bound(collection, 'y', 'max')
 
     # iterate through objects
     for obj in bpy.data.collections[collection].all_objects:
@@ -314,19 +293,14 @@ def gen_move_sum(param, collection, sum):
             obj.location.y += bbox[0].y - max_y - 0.25 * param.scale
 
     # center text above sum symbol
-    exp_ix_width = gen_group_width(collection)
-    gen_center_sum(collection, exp_ix_width, bbox[4].x)  # sum width
+    gen_center_sum(collection, bbox[4].x)  # sum width
 
 
 # function centers exponent and index for sum symbol
-def gen_center_sum(collection, exp_ix_width, sum_width):
-    # find bigger width and calculate movement size
-    if exp_ix_width > sum_width:
-        diff = exp_ix_width - sum_width
-        move_by = (-1) * diff / 2.0
-    else:
-        diff = sum_width - exp_ix_width
-        move_by = diff / 2.0
+def gen_center_sum(collection, sum_width):
+    # calculate movement size
+    exp_ix_width = gen_bound(collection, 'x', 'max')
+    move_by = (sum_width - exp_ix_width) / 2.0
 
     # move all objects
     for obj in bpy.data.collections[collection].all_objects:
@@ -335,55 +309,38 @@ def gen_center_sum(collection, exp_ix_width, sum_width):
 
 # move sum symbol if index or exponent is longer then symbol
 def gen_fin_sum(context, sum, up_collection, down_collection):
-    # save sum symbol
     sum_symbol = bpy.data.objects[sum.name]
 
     # get corners of bounding box
     bbox = [sum_symbol.matrix_world @ Vector(corner) for corner in sum_symbol.bound_box]
+    sum_width = bbox[4].x
 
     # find biggest width
-    up_width = gen_group_width(up_collection)
-    down_width = gen_group_width(down_collection)
-    fin_width = max(up_width, down_width, bbox[4].x)  # sum symbol width
-    diff = fin_width - bbox[4].x
+    fin_width = max(
+        gen_bound(up_collection, 'x', 'max'),
+        gen_bound(down_collection, 'x', 'max'),
+        sum_width
+    )
+
+    diff = fin_width - sum_width
 
     # index or exponent is longer than sum symbol
     if diff > 0:
-        # select all objects
-        bpy.data.objects[sum.name].select_set(True)  # sum symbol
-        for item in sum.array:
-             bpy.data.objects[item].select_set(True)
+        obj_move = [sum_symbol] + [bpy.data.objects[item] for item in sum.array]
+        for obj in obj_move:
+            obj.location.x += diff  # move objects
 
-        # move objects
-        for obj in context.selected_objects:
-            obj.location.x += diff
-
-        fin_width += diff
-
-    return fin_width
+    return fin_width + diff
 
 
-# function moves objects in fraction numerator
-def gen_frac_num(param, collection):
-    # get lowest point in collection
-    min_y = gen_min_y(collection)
-    move_by = param.height - min_y + 0.6 * param.scale
-
-    # select and move all objects in numerator
-    for obj in bpy.data.collections[collection].all_objects:
-        obj.select_set(True)
-        obj.location.y += move_by
-
-
-# function moves objects in fraction denominator
-def gen_frac_den(param, collection):
-    # get highest point in collection
-    max_y = gen_group_height(collection)
-    move_by = param.height - max_y + 0.1 * param.scale
+# function moves objects in fraction
+def gen_frac_move(param, collection, mode):
+    # get highest or lowest point in collection
+    y = gen_bound(collection, 'y', 'max') if mode == "den" else gen_bound(collection, 'y', 'min')
+    move_by = param.height - y + (0.1 if mode == "den" else 0.6) * param.scale
 
     # select and move all objects in denominator
     for obj in bpy.data.collections[collection].all_objects:
-        obj.select_set(True)
         obj.location.y += move_by
 
 
@@ -391,105 +348,39 @@ def gen_frac_den(param, collection):
 def gen_center(obj1, obj2, collection):
     # find wider text
     diff = obj1 - obj2 if (obj1 > obj2) else obj2 - obj1
-    move_by = diff / 2.0 # space between x positions div 2
+    move_by = diff / 2.0  # space between x positions div 2
 
     # move all objects
     for obj in bpy.data.collections[collection].all_objects:
         obj.location.x += move_by
 
 
-# function returns the furthest x position
-def gen_group_width(collection):
-    bpy.ops.object.select_all(action='DESELECT') # deselect all objects
-    is_init = False  # set initialisation flag
-
-    # select all objects in collection
-    for obj in bpy.data.collections[collection].all_objects:
-        obj.select_set(True)
-        # get corners of bounding box
-        bbox = [obj.matrix_world @ Vector(corner) for corner in obj.bound_box]
-        if not is_init:
-            max_x = bbox[4].x
-            is_init = True
-        else:
-            max_x = max(max_x, bbox[4].x)  # finding max x position
-
-    # no objects selected
-    if not is_init:
-        return 0
-
-    return max_x
-
-
-# function returns the closest x position
-def gen_min_x(collection):
-
-    bpy.ops.object.select_all(action='DESELECT') # deselect all objects
-    is_init = False  # set initialisation flag
-
-    # select all objects in collection
-    for obj in bpy.data.collections[collection].all_objects:
-        obj.select_set(True)
-        # get corners of bounding box
-        bbox = [obj.matrix_world @ Vector(corner) for corner in obj.bound_box]
-        if not is_init:
-            min_x = bbox[0].x
-            is_init = True
-        else:
-            min_x = min(min_x, bbox[0].x)  # finding min x position
-
-    # no objects selected
-    if not is_init:
-        return 0
-
-    return min_x
-
-
-# function returns the highest y position
-def gen_group_height(collection):
-
-    bpy.ops.object.select_all(action='DESELECT') # deselect all objects
-    is_init = False  # set initialisation flag
-
-    # select all objects in collection
-    for obj in bpy.data.collections[collection].all_objects:
-        obj.select_set(True)
-        # get corners of bounding box
-        bbox = [obj.matrix_world @ Vector(corner) for corner in obj.bound_box]
-        if not is_init:
-            max_y = bbox[2].y
-            is_init = True
-        else:
-            max_y = max(max_y, bbox[2].y)  # finding max y position
-
-    # no objects selected
-    if not is_init:
-        return 0
-
-    return max_y
-
-
-# function returns the lowest y position
-def gen_min_y(collection):
+# function returns extreme for set axis and type )min/max)
+def gen_bound(collection, axis, ftype):
     bpy.ops.object.select_all(action='DESELECT')  # deselect all objects
-    is_init = False  # set initialisation flag
-
-    # select all objects in collection
-    for obj in bpy.data.collections[collection].all_objects:
-        obj.select_set(True)
-        # get corners of bounding box
-        bbox = [obj.matrix_world @ Vector(corner) for corner in obj.bound_box]
-        if not is_init:
-            min_y = bbox[0].y
-            is_init = True
-        else:
-            min_y = min(min_y, bbox[0].y)  # finding min y position
-
-    # no objects selected
-    if not is_init:
+    objects = bpy.data.collections[collection].all_objects
+    if not objects:
         return 0
 
-    return min_y
+    # determine which corner index to check
+    if axis == 'x' and ftype == 'max':
+        corner_index = 4
+    elif axis == 'y' and ftype == 'max':
+        corner_index = 2
+    else:
+        corner_index = 0
+
+    func = max if ftype == 'max' else min
+
+    # save position of all objects
+    positions = []
+    for obj in objects:
+        obj.select_set(True)
+        bbox = [obj.matrix_world @ Vector(corner) for corner in obj.bound_box]
+        positions.append(getattr(bbox[corner_index], axis))
+
+    # return max or min from all positions
+    return func(positions)
 
 
 # function positions matrix figure
@@ -520,7 +411,7 @@ def gen_matrix_x(context, obj_array, param, max_cell_x):
                 cell_width = 0
             else:
                 collection = row[i]
-                cell_width = gen_group_width(collection)
+                cell_width = gen_bound(collection, 'x', 'max')
 
             max_width = max(max_width, cell_width)
 
@@ -534,7 +425,7 @@ def gen_matrix_x(context, obj_array, param, max_cell_x):
                 collection = row[i+1]
 
                 # select objects and find minimum x position
-                min_x = gen_min_x(collection)
+                min_x = gen_bound(collection, 'x', 'min')
 
             # set x position
             for obj in context.selected_objects:
@@ -546,7 +437,7 @@ def gen_matrix_x(context, obj_array, param, max_cell_x):
             # center objects in row
             if len(row) > i:
                 collection = row[i]
-                cell_width = gen_group_width(collection)
+                cell_width = gen_bound(collection, 'x', 'max')
                 gen_center(cell_width, max_width, collection)
 
         i += 1  # next collumn
@@ -566,14 +457,14 @@ def gen_matrix_y(obj_array, param, max_cell_x):
                 # first collumn
                 if i == 0:
                     collection = row[i]
-                    cell_height = gen_group_height(collection)
+                    cell_height = gen_bound(collection, 'y', 'max')
                     max_height = cell_height
                 # less collumns than maximum
                 elif i >= len(row):
                     cell_height = max_height
                 else:
                     collection = row[i]
-                    cell_height = gen_group_height(collection)
+                    cell_height = gen_bound(collection, 'y', 'max')
 
                 max_height = max(max_height, cell_height)
                 i += 1  # next cell
@@ -604,14 +495,14 @@ def gen_matrix_y(obj_array, param, max_cell_x):
                 # first collumn
                 if i == 0:
                     collection = row[i]
-                    cell_height = gen_min_y(collection)
+                    cell_height = gen_bound(collection, 'y', 'min')
                     min_height = cell_height
                 # less collumns than maximum
                 elif i >= len(row):
                     cell_height = min_height
                 else:
                     collection = row[i]
-                    cell_height = gen_min_y(collection)
+                    cell_height = gen_bound(collection, 'y', 'min')
 
                 min_height = min(min_height, cell_height)
                 i += 1  # next cell
@@ -622,8 +513,8 @@ def gen_matrix_param(left, collection, xy_size):
     # left bracket
     if left:
         # get matrix height
-        min_y = gen_min_y(collection)
-        max_y = gen_group_height(collection)
+        min_y = gen_bound(collection, 'y', 'min')
+        max_y = gen_bound(collection, 'y', 'max')
         xy_size.insert(0, max_y)
         xy_size.insert(0, min_y)
     # right bracket
@@ -633,7 +524,7 @@ def gen_matrix_param(left, collection, xy_size):
         # get x_min
         x_min = xy_size.pop()
         # get matrix width
-        matrix_width = gen_group_width(collection) + bracket_width - x_min
+        matrix_width = gen_bound(collection, 'x', 'max') + bracket_width - x_min
         xy_size.append(matrix_width)
 
     return xy_size

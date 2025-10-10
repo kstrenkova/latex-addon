@@ -105,7 +105,7 @@ class MathSyntaxAnalyser:
         else:
             key = token.type
 
-        if (token.type != 'underscore' and stack_top == 'IX') or \
+        if (token.type != '_UNDERSCORE' and stack_top == 'IX') or \
             (token.type != '_CARET' and stack_top == 'EXP'):
             key = "epsilon"
 
@@ -172,7 +172,7 @@ class MathSyntaxAnalyser:
         elif action == '#ACTION_EI_INIT':
             token = self.lex.get_token()
             eis = ExpIxState(self.d.current_coll, self.parameters.create_copy())
-            eis.width = gen_group_width(self.d.current_coll)
+            eis.width = gen_bound(self.d.current_coll, 'x', 'max')
 
             # exponent or index collection
             coll_name = 'ExponentCollection' if token.type == '_CARET' else 'IndexCollection'
@@ -218,7 +218,7 @@ class MathSyntaxAnalyser:
             eis = self.state_stack.pop()
 
             # calculate final width
-            fin_width = max(eis.width, gen_group_width(eis.parent_coll))
+            fin_width = max(eis.width, gen_bound(eis.parent_coll, 'x', 'max'))
 
             self.parameters.width = fin_width + 0.1 * self.parameters.scale
             self.levels.ei_array.pop()
@@ -286,9 +286,9 @@ class MathSyntaxAnalyser:
             sq_coll_obj = bpy.data.collections.get(sqs.sqcoll)
             if len(sq_coll_obj.all_objects):
                 use_param = True
-                sqrt_param['x_pos'] = gen_group_width(sqs.sqcoll)
-                sqrt_param['y_min'] = gen_min_y(sqs.sqcoll)
-                sqrt_param['y_max'] = gen_group_height(sqs.sqcoll)
+                sqrt_param['x_pos'] = gen_bound(sqs.sqcoll, 'x', 'max')
+                sqrt_param['y_min'] = gen_bound(sqs.sqcoll, 'y', 'min')
+                sqrt_param['y_max'] = gen_bound(sqs.sqcoll, 'y', 'max')
 
             # generating sqrt symbol
             gen_sqrt_sym(self.d.context)
@@ -323,11 +323,11 @@ class MathSyntaxAnalyser:
 
             # gets the furthest x position
             if len(bpy.data.collections[self.d.current_coll].all_objects):
-                fs.nwidth = gen_group_width(self.d.current_coll)
+                fs.nwidth = gen_bound(self.d.current_coll, 'x', 'max')
 
             # move numerator objects
             gen_calculate(self.parameters, self.d.text_scale, self.levels)
-            gen_frac_num(self.parameters, fs.ncoll)
+            gen_frac_move(self.parameters, fs.ncoll, "num")
 
             # denominator collection
             fs.dcoll = gen_new_collection("DenominatorCollection", fs.parent_coll)
@@ -342,11 +342,11 @@ class MathSyntaxAnalyser:
 
             # gets the furthest x position
             if len(bpy.data.collections[self.d.current_coll].all_objects):
-                fs.dwidth = gen_group_width(self.d.current_coll)
+                fs.dwidth = gen_bound(self.d.current_coll, 'x', 'max')
 
             # move denominator objects
             gen_calculate(self.parameters, self.d.text_scale, self.levels)
-            gen_frac_den(self.parameters, fs.dcoll)
+            gen_frac_move(self.parameters, fs.dcoll, "den")
 
             # finding longer text width
             if fs.dwidth > fs.nwidth:
@@ -495,7 +495,7 @@ class MathSyntaxAnalyser:
             gen_matrix_center(self.parameters, ms.parent_coll, ms.xy_size)
 
             # set width of parameters
-            self.parameters.width = gen_group_width(ms.mx_coll) + 0.25
+            self.parameters.width = gen_bound(ms.mx_coll, 'x', 'max') + 0.25
 
             # link objects to matrix collection
             for collection in bpy.data.collections:
