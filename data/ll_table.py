@@ -183,12 +183,7 @@ math_ll_table = {
     ('COMMAND', 'sum'):      ['sum', '#ACTION_SUM_INIT'],
     ('COMMAND', 'prod'):     ['prod', '#ACTION_PROD_INIT'],
     ('COMMAND', 'int'):      ['int', '#ACTION_INTEGRAL_INIT'],
-
-    # <COMMAND> -> lim _ { <MORE_TERM> }
-    ('COMMAND', 'lim'): [
-        'lim', '_', '{', '#ACTION_LIM_INIT',
-        'MORE_TERM', '}', '#ACTION_LIM_FINAL'
-    ],
+    ('COMMAND', 'lim'):      ['lim', '#ACTION_LIM_INIT'],
 
     # TODO rule: mathcal { LETTER }
     ('COMMAND', 'mathcal'):  ['mathcal', '{', '#ACTION_GENERATE_MATH_LETTER', '}'],

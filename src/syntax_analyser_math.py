@@ -194,7 +194,7 @@ class MathSyntaxAnalyser:
             # join collection into parent collection
             gen_join_collections(eis.eicoll, eis.parent_coll)
             self.d.current_coll = eis.parent_coll
-            self.sum.bool = False
+            self.sum = Sum()
             return True
 
         elif action == '#ACTION_EI_BOTH':
@@ -232,7 +232,7 @@ class MathSyntaxAnalyser:
             gen_join_collections(eis.eicoll, eis.parent_coll)
             gen_join_collections(eis.eicoll2, eis.parent_coll)
             self.d.current_coll = eis.parent_coll  # set current collection
-            self.sum.bool = False
+            self.sum = Sum()
             return True
 
         # <SQRT> actions
@@ -393,29 +393,27 @@ class MathSyntaxAnalyser:
 
         # TODO
         elif action == '#ACTION_INTEGRAL_INIT':
-            c = 'sum' if (action == '#ACTION_SUM_INIT') else 'prod'
             gen_text(unicode_chars_big['int'], change_font('math'), self.d.current_coll)
 
             gen_calculate(self.parameters, self.d.text_scale, self.levels)
             gen_move_position(self.parameters)
 
-            # move prod and integral symbol
+            # move integral symbol
             self.d.context.active_object.location.y -= 0.3 * self.parameters.scale
             self.parameters.width -= 0.2 * self.parameters.scale
             gen_collection(self.d.current_coll, self.d.base_coll)
             return True
 
+        # TODO erase repetition and bring the lower text closer to the LIM
         elif action == '#ACTION_LIM_INIT':
-            print("Inside limits.")
-            # Generate lim in a special collection
-            #   -> or we save the lim object like sum for example
-            # Add a new collection that will have everything under lim
-            # Center lim and all the under-text
-            # move it so that the most left corner is correctly starting the lim
-            return True
+            gen_text("lim", change_font('math'), self.d.current_coll)
 
-        elif action == '#ACTION_LIM_FINAL':
-            print('Centering LIM.')
+            gen_calculate(self.parameters, self.d.text_scale, self.levels)
+            gen_move_position(self.parameters)
+            gen_collection(self.d.current_coll, self.d.base_coll)
+
+            self.sum.name = self.d.context.active_object.name  # save lim object
+            self.sum.bool = True
             return True
 
         # <MATRIX> actions
