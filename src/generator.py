@@ -270,8 +270,8 @@ def gen_calculate(param, text_scale, levels):
 
 
 # function moves sum symbol according to given parameters
-def gen_move_sum(param, collection, sum):
-    sum_symbol = bpy.data.objects[sum.name]
+def gen_move_sum(param, collection, sum_name):
+    sum_symbol = bpy.data.objects[sum_name]
 
     # get corners of bounding box
     bbox = [sum_symbol.matrix_world @ Vector(corner) for corner in sum_symbol.bound_box]
@@ -282,9 +282,10 @@ def gen_move_sum(param, collection, sum):
     max_y = gen_bound(collection, 'y', 'max')
 
     # iterate through objects
+    op_array = []
     for obj in bpy.data.collections[collection].all_objects:
         # add object to array
-        sum.array.append(obj.name)
+        op_array.append(obj.name)
         # move object depending on index or exponent mode
         obj.location.x += bbox[0].x - min_x
         if "ExponentCollection" in collection:
@@ -308,8 +309,8 @@ def gen_center_sum(collection, sum_width):
 
 
 # move sum symbol if index or exponent is longer then symbol
-def gen_fin_sum(context, sum, up_collection, down_collection):
-    sum_symbol = bpy.data.objects[sum.name]
+def gen_fin_sum(sum_name, up_collection, down_collection):
+    sum_symbol = bpy.data.objects[sum_name]
 
     # get corners of bounding box
     bbox = [sum_symbol.matrix_world @ Vector(corner) for corner in sum_symbol.bound_box]
@@ -326,7 +327,9 @@ def gen_fin_sum(context, sum, up_collection, down_collection):
 
     # index or exponent is longer than sum symbol
     if diff > 0:
-        obj_move = [sum_symbol] + [bpy.data.objects[item] for item in sum.array]
+        up_objects = bpy.data.collections[up_collection].all_objects
+        down_objects = bpy.data.collections[down_collection].all_objects
+        obj_move = [sum_symbol] + list(up_objects) + list(down_objects)
         for obj in obj_move:
             obj.location.x += diff  # move objects
 
@@ -355,7 +358,7 @@ def gen_center(obj1, obj2, collection):
         obj.location.x += move_by
 
 
-# function returns extreme for set axis and type )min/max)
+# function returns extreme for set axis and type (min/max)
 def gen_bound(collection, axis, ftype):
     bpy.ops.object.select_all(action='DESELECT')  # deselect all objects
     objects = bpy.data.collections[collection].all_objects

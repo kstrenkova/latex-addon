@@ -179,15 +179,16 @@ math_ll_table = {
     ('COMMAND', 'frac'):     ['frac', 'FRAC'],
 
 
-    # <COMMAND> -> sum <SUM> TODO
-    ('COMMAND', 'sum'):      ['sum', '#ACTION_SUM_INIT'],
-    ('COMMAND', 'prod'):     ['prod', '#ACTION_PROD_INIT'],
-    ('COMMAND', 'int'):      ['int', '#ACTION_INTEGRAL_INIT'],
-    ('COMMAND', 'lim'):      ['lim', '#ACTION_LIM_INIT'],
+    # <COMMAND> -> RANGE_OPERATORS
+    ('COMMAND', 'sum'):      ['#ACTION_RANGE_OP_INIT'],
+    ('COMMAND', 'prod'):     ['#ACTION_RANGE_OP_INIT'],
+    ('COMMAND', 'int'):      ['#ACTION_RANGE_OP_INIT'],
+    ('COMMAND', 'lim'):      ['#ACTION_RANGE_OP_INIT'],
 
     # TODO rule: mathcal { LETTER }
     ('COMMAND', 'mathcal'):  ['mathcal', '{', '#ACTION_GENERATE_MATH_LETTER', '}'],
 
+    # <COMMAND> -> space_commands
     ('COMMAND', '_SPACE_COMMAND'): ['#ACTION_SPACE'],
     ('COMMAND', '_MATH_SYMBOL'):   ['#ACTION_MATH_SYMBOL'],
 

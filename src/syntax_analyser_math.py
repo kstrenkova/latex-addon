@@ -19,15 +19,7 @@ class Levels:
         self.ei_array = []
         self.frac = 0
         self.sqrt = False
-
-
-# class fot sum
-# TODO make it general for prod as well
-class Sum:
-    def __init__(self):
-        self.bool = False
-        self.name = ''
-        self.array = []
+        self.sym_name = ''
 
 
 # class for index and exponent
@@ -74,15 +66,12 @@ class MatrixState:
 
 class MathSyntaxAnalyser:
     def __init__(self, lex, defaults, parameters):
-        self.lex = lex
-        self.d = defaults
-        self.parameters = parameters
-        self.d.base_coll = self.d.current_coll
-
         self.stack = ['$', 'PROG']
         self.state_stack = []
 
-        self.sum = Sum()
+        self.lex = lex
+        self.d = defaults
+        self.parameters = parameters
         self.levels = Levels()
 
     def math_mode_end(self, stack_top, token):
@@ -186,15 +175,15 @@ class MathSyntaxAnalyser:
             eis = self.state_stack.pop()
             self.levels.ei_array.pop()
 
-            if self.sum.bool:
-                gen_move_sum(self.parameters, eis.eicoll, self.sum)
+            if self.levels.sym_name != '':
+                gen_move_sum(self.parameters, eis.eicoll, self.levels.sym_name)
                 space = 0.1 * self.parameters.scale
-                self.parameters.width = gen_fin_sum(self.d.context, self.sum, eis.eicoll, eis.eicoll) + space
+                self.parameters.width = gen_fin_sum(self.levels.sym_name, eis.eicoll, eis.eicoll) + space
 
             # join collection into parent collection
             gen_join_collections(eis.eicoll, eis.parent_coll)
             self.d.current_coll = eis.parent_coll
-            self.sum = Sum()
+            self.levels.sym_name = ''
             return True
 
         elif action == '#ACTION_EI_BOTH':
@@ -202,8 +191,8 @@ class MathSyntaxAnalyser:
             self.levels.ei_array.pop()
             eis = self.state_stack[-1]
 
-            if self.sum.bool:
-                gen_move_sum(self.parameters, eis.eicoll, self.sum)
+            if self.levels.sym_name != '':
+                gen_move_sum(self.parameters, eis.eicoll, self.levels.sym_name)
 
             # exponent or index collection
             coll_name = 'ExponentCollection' if token.type == '_CARET' else 'IndexCollection'
@@ -223,16 +212,16 @@ class MathSyntaxAnalyser:
             self.parameters.width = fin_width + 0.1 * self.parameters.scale
             self.levels.ei_array.pop()
 
-            if self.sum.bool:
-                gen_move_sum(self.parameters, eis.eicoll2, self.sum)
+            if self.levels.sym_name != '':
+                gen_move_sum(self.parameters, eis.eicoll2, self.levels.sym_name)
                 space = 0.1 * self.parameters.scale
-                self.parameters.width = gen_fin_sum(self.d.context, self.sum, eis.eicoll, eis.eicoll2) + space
+                self.parameters.width = gen_fin_sum(self.levels.sym_name, eis.eicoll, eis.eicoll2) + space
 
             # join collection into parent collection
             gen_join_collections(eis.eicoll, eis.parent_coll)
             gen_join_collections(eis.eicoll2, eis.parent_coll)
             self.d.current_coll = eis.parent_coll  # set current collection
-            self.sum = Sum()
+            self.levels.sym_name = ''
             return True
 
         # <SQRT> actions
@@ -377,43 +366,23 @@ class MathSyntaxAnalyser:
             self.levels.frac -= 1
             return True
 
-        # <SUM> actions
-        elif action in ['#ACTION_SUM_INIT', '#ACTION_PROD_INIT']:
-            c = 'sum' if (action == '#ACTION_SUM_INIT') else 'prod'
-            gen_text(unicode_chars_big[c], change_font('math'), self.d.current_coll)
+        # <RANGE_OP> functions
+        elif action == '#ACTION_RANGE_OP_INIT':
+            token = self.lex.get_token()
+            c = token.value if token.value not in unicode_chars_big else unicode_chars_big[token.value]
+            gen_text(c, change_font('math'), self.d.current_coll)
 
             gen_calculate(self.parameters, self.d.text_scale, self.levels)
-            self.parameters.height -= 0.4 * self.parameters.scale  # move lower
+            if token.value != 'lim':
+                # TODO sum, prod was 0.4
+                self.parameters.height -= 0.3 * self.parameters.scale  # move lower
             gen_move_position(self.parameters)
             gen_collection(self.d.current_coll, self.d.base_coll)
 
-            self.sum.name = self.d.context.active_object.name  # save sum object
-            self.sum.bool = True
-            return True
-
-        # TODO
-        elif action == '#ACTION_INTEGRAL_INIT':
-            gen_text(unicode_chars_big['int'], change_font('math'), self.d.current_coll)
-
-            gen_calculate(self.parameters, self.d.text_scale, self.levels)
-            gen_move_position(self.parameters)
-
-            # move integral symbol
-            self.d.context.active_object.location.y -= 0.3 * self.parameters.scale
-            self.parameters.width -= 0.2 * self.parameters.scale
-            gen_collection(self.d.current_coll, self.d.base_coll)
-            return True
-
-        # TODO erase repetition and bring the lower text closer to the LIM
-        elif action == '#ACTION_LIM_INIT':
-            gen_text("lim", change_font('math'), self.d.current_coll)
-
-            gen_calculate(self.parameters, self.d.text_scale, self.levels)
-            gen_move_position(self.parameters)
-            gen_collection(self.d.current_coll, self.d.base_coll)
-
-            self.sum.name = self.d.context.active_object.name  # save lim object
-            self.sum.bool = True
+            # check if the next token is for creating exponent or index
+            ntoken = self.lex.peek_token()
+            if (ntoken.type == '_UNDERSCORE' or ntoken.type == '_CARET') and token.value != 'int':
+                self.levels.sym_name = self.d.context.active_object.name  # save symbol
             return True
 
         # <MATRIX> actions
