@@ -13,6 +13,11 @@ ll_table = {
     ('TERM', '_TEXT'):            ['CONST'],
     ('TERM', '_ENTER'):           ['CONST'],
 
+    # <TERM> -> <COMMAND>
+    ('TERM', 'textbf'):           ['COMMAND'],
+    ('TERM', 'textit'):           ['COMMAND'],
+    ('TERM', 'texttt'):           ['COMMAND'],
+
     # <TERM> -> <MATH_MODE>
     ('TERM', 'dollar'):           ['MATH_MODE'],
     ('TERM', '\('):               ['MATH_MODE'],
@@ -39,6 +44,9 @@ ll_table = {
     # <MORE_TERM> -> <TERM> <MORE_TERM>
     ('MORE_TERM', '_TEXT'):            ['TERM', 'MORE_TERM'],
     ('MORE_TERM', '_ENTER'):           ['TERM', 'MORE_TERM'],
+    ('MORE_TERM', 'textbf'):           ['TERM', 'MORE_TERM'],
+    ('MORE_TERM', 'textit'):           ['TERM', 'MORE_TERM'],
+    ('MORE_TERM', 'texttt'):           ['TERM', 'MORE_TERM'],
     ('MORE_TERM', 'begin'):            ['TERM', 'MORE_TERM'],
     ('MORE_TERM', 'dollar'):           ['TERM', 'MORE_TERM'],
     ('MORE_TERM', '\('):               ['TERM', 'MORE_TERM'],
@@ -53,7 +61,10 @@ ll_table = {
     ('CONST', '_ENTER'):               ['#ACTION_NEW_LINE'],
 
     # --- COMMAND ---
-    # <COMMAND> ->
+    # <COMMAND> -> change_font
+    ('COMMAND', 'textbf'):             ['#ACTION_TEXTBF'],
+    ('COMMAND', 'textit'):             ['#ACTION_TEXTBF'],
+    ('COMMAND', 'texttt'):             ['#ACTION_TEXTBF'],
 
     # <BLOCK> -> begin { text } TODO end { text }
 

@@ -13,7 +13,7 @@ class Defaults:
     def __init__(self, context, custom_prop):
         self.context = context
         self.text_scale = custom_prop.text_scale
-        self.base_font = custom_prop.font_path
+        self.base_font = custom_prop.base_font
         self.base_coll = ""
         self.current_coll = ""
 
@@ -36,6 +36,8 @@ def change_font(mode):
     return FONT_CACHE.get(mode) if (mode in FONT_CACHE) else ""
 
 
+# TODO should I add an option to preload fonts and then choose
+# from them by using enumerate? :thinking:
 # function preloads fonts used by the addon
 def preload_fonts(user_font_file):
     font_mode = {
@@ -63,6 +65,12 @@ def preload_fonts(user_font_file):
         font_size = get_font_scale(user_font)
         FONT_CACHE['user'] = {'font': user_font, 'size': font_size}
 
+    user_bold_font_file = "bold"
+    if user_bold_font_file != "":
+        user_font = bpy.data.fonts.load(user_bold_font_file)
+        font_size = get_font_scale(user_font)
+        FONT_CACHE['bold'] = {'font': user_font, 'size': font_size}
+
     print("FONT CACHE:", FONT_CACHE.items())
 
 # function that gets font scale needed to make all fonts the
@@ -77,9 +85,6 @@ def get_font_scale(font):
 
     # base blender font size is 0.6820 (for H)
     size = 0.6820 / h_obj.dimensions.y
-
-    print(f"The height of the text object is: {h_obj.dimensions.y:.4f} Blender Units")
-
     bpy.ops.object.delete(use_global=False)
 
     return round(size, 4)

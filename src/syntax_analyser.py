@@ -107,6 +107,7 @@ class SyntaxAnalyser:
             print("The end block value doesn't match the begin block value.")
             return False
 
+        # <ITEMIZE> actions
         elif action == '#ACTION_SAVE_ITEM':
             its = ItemizeState()
             token = self.lex.get_token()
@@ -123,6 +124,7 @@ class SyntaxAnalyser:
             gen_bullet_point(self.parameters, self.d, item)
             return True
 
+        # <ENUMERATE> actions
         elif action == '#ACTION_ADD_ENUM':
             if self.state_stack and isinstance(self.state_stack[-1], ItemizeState):
                 its = self.state_stack[-1]
@@ -137,6 +139,11 @@ class SyntaxAnalyser:
 
         elif action == '#ACTION_END_ENUM':
             self.state_stack.pop()
+            return True
+
+        elif action == '#ACTION_TEXTBF':
+            print("Time to do bold text")
+            # Change the font to a bolde version
             return True
 
         # MATH INLINE MODE

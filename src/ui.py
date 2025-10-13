@@ -7,6 +7,7 @@ import bpy
 
 from bpy.props import (StringProperty,
                        BoolProperty,
+                       EnumProperty,
                        FloatProperty,
                        FloatVectorProperty,
                        PointerProperty,
@@ -19,46 +20,78 @@ from .lexical_analyser import LexicalAnalyser
 from .syntax_analyser import SyntaxAnalyser
 
 
+def get_loaded_fonts(self, context):
+    items = []
+    for font in bpy.data.fonts:
+        items.append((font.name, font.name, font.filepath))
+    return items
+
+
 # custom properties
 class Custom_PT(bpy.types.PropertyGroup):
 
-    latex_text: bpy.props.StringProperty(
+    latex_text: StringProperty(
         name="Latex text",
         default=""
     ) # type: ignore
 
+    show_font: BoolProperty(
+        name="",
+        description="Choose custom fonts for your text",
+        default=False
+    ) # type: ignore
+
     font_path: StringProperty(
-        name = "Font",
-        description="Choose a font:",
+        name = "",
+        description="Load font by giving a path to it",
         default="",
         maxlen=1024,
         subtype='FILE_PATH'
     ) # type: ignore
 
-    text_scale: bpy.props.FloatProperty(
+    base_font: EnumProperty(
+        name = "Base",
+        description="Choose a font for basic text",
+        items=get_loaded_fonts
+    ) # type: ignore
+
+    bold_font: EnumProperty(
+        name = "Bold",
+        description="Choose a font for bold text",
+        items=get_loaded_fonts
+    ) # type: ignore
+
+    italic_font: EnumProperty(
+        name = "Italic",
+        description="Choose a font for italic text",
+        items=get_loaded_fonts
+    ) # type: ignore
+
+    text_scale: FloatProperty(
         name="Scale:",
         default=1.0,
         min=0.01
     ) # type: ignore
 
-    text_thickness: bpy.props.FloatProperty(
+    text_thickness: FloatProperty(
         name="Thickness:",
         default=0.0,
         min=0.0
     ) # type: ignore
 
-    text_location: bpy.props.FloatVectorProperty(
+    text_location: FloatVectorProperty(
         name="Location",
         subtype='XYZ'
     ) # type: ignore
 
-    text_rotation: bpy.props.FloatVectorProperty(
+    text_rotation: FloatVectorProperty(
         name="Rotation",
         subtype='EULER'
     ) # type: ignore
 
-    one_object: bpy.props.BoolProperty(
-        name="Generate as one object"
+    one_object: BoolProperty(
+        name="Generate as one object",
+        default=False
     ) # type: ignore
 
 # main addon panel
@@ -76,7 +109,23 @@ class OBJECT_PT_ME(bpy.types.Panel):
         cus_pt = scene.custom_prop
 
         layout.prop(cus_pt, "latex_text")
-        layout.prop(cus_pt, "font_path")
+
+        row = layout.row()
+        row.label(text="Custom Fonts")
+        row.prop(cus_pt, "show_font", emboss=False,
+                 icon="TRIA_DOWN" if cus_pt.show_font else "TRIA_RIGHT")
+
+        # collapse font area
+        if cus_pt.show_font:
+            box = layout.box()
+            box.prop(cus_pt, "font_path")
+            box.operator("wm.loadfont")
+
+            box2 = layout.box()
+            box2.prop(cus_pt, "base_font")
+            box2.prop(cus_pt, "bold_font")
+            box2.prop(cus_pt, "italic_font")
+
         layout.prop(cus_pt, "text_scale")
         layout.prop(cus_pt, "text_thickness")
 
@@ -91,7 +140,20 @@ class OBJECT_PT_ME(bpy.types.Panel):
         layout.prop(cus_pt, "one_object")
 
         row2 = layout.row(align=True)
-        props = row2.operator("wm.addtextop")
+        row2.operator("wm.addtextop")
+
+
+# load font
+# TODO when the font is already loaded, don't load
+class WM_OT_LoadFont(bpy.types.Operator):
+    bl_label = "Load font"
+    bl_idname = "wm.loadfont"
+
+    def execute(self, context):
+        scene = context.scene
+        props = scene.custom_prop
+        bpy.data.fonts.load(props.font_path)
+        return {'FINISHED'}
 
 
 # add text
@@ -148,6 +210,7 @@ class WM_OT_AddText(bpy.types.Operator):
 all_classes = [
     Custom_PT,
     OBJECT_PT_ME,
+    WM_OT_LoadFont,
     WM_OT_AddText
 ]
 
@@ -198,7 +261,7 @@ def generate_one_object(context, cus_pt):
 def register():
     for cls in all_classes:
         bpy.utils.register_class(cls)
-    bpy.types.Scene.custom_prop = bpy.props.PointerProperty(type=Custom_PT)
+    bpy.types.Scene.custom_prop = PointerProperty(type=Custom_PT)
 
 
 def unregister():
