@@ -7,6 +7,7 @@ import bpy
 
 from bpy_extras.object_utils import object_data_add  # add sqrt symbol
 from ..data.characters_db import unicode_chars_big
+from .syntax_utils import change_font
 
 from mathutils import Vector  # vertices
 
@@ -588,7 +589,7 @@ def gen_matrix_center(param, collection, xy_size):
 
 def gen_bullet_point(param, defaults, text):
     # TODO scale
-    gen_text(text, defaults.base_font, defaults.current_coll)
+    gen_text(text, change_font('base'), defaults.current_coll)
     param.line -= 1.0
     param.height = param.line
 

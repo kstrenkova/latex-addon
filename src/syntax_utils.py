@@ -13,9 +13,13 @@ class Defaults:
     def __init__(self, context, custom_prop):
         self.context = context
         self.text_scale = custom_prop.text_scale
-        self.base_font = custom_prop.base_font
         self.base_coll = ""
         self.current_coll = ""
+        self.fonts = [
+            custom_prop.base_font,
+            custom_prop.bold_font,
+            custom_prop.italic_font
+        ]
 
 
 # class for parameters
@@ -36,10 +40,8 @@ def change_font(mode):
     return FONT_CACHE.get(mode) if (mode in FONT_CACHE) else ""
 
 
-# TODO should I add an option to preload fonts and then choose
-# from them by using enumerate? :thinking:
 # function preloads fonts used by the addon
-def preload_fonts(user_font_file):
+def preload_fonts(user_fonts):
     font_mode = {
         'math':    ('Kelvinch Regular', 'Kelvinch-Roman.otf'),
         'mathcal': ('Latin Modern Math Regular', 'latinmodern-math.otf'),
@@ -59,13 +61,16 @@ def preload_fonts(user_font_file):
         font_size = get_font_scale(font)
         FONT_CACHE[mode] = {'font': font, 'size': font_size}
 
-    # loading font specified by user
-    if user_font_file != "":
-        user_font = bpy.data.fonts.load(user_font_file)
+    user_mode = ['base', 'bold', 'italic']
+
+    # load fonts specified by user
+    for mode, font in zip(user_mode, user_fonts):
+        user_font = bpy.data.fonts[font]
         font_size = get_font_scale(user_font)
-        FONT_CACHE['user'] = {'font': user_font, 'size': font_size}
+        FONT_CACHE[mode] = {'font': user_font, 'size': font_size}
 
     print("FONT CACHE:", FONT_CACHE.items())
+
 
 # function that gets font scale needed to make all fonts the
 # same height

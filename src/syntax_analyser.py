@@ -193,7 +193,7 @@ class SyntaxAnalyser:
         self.d.base_coll = collection.name
         self.d.current_coll = collection.name
 
-        preload_fonts(self.d.base_font)
+        preload_fonts(self.d.fonts)
 
         # parsing loop
         while self.stack:

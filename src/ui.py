@@ -95,6 +95,7 @@ class Custom_PT(bpy.types.PropertyGroup):
         default=False
     ) # type: ignore
 
+
 # main addon panel
 class OBJECT_PT_ME(bpy.types.Panel):
     bl_label = "Latex Text"
@@ -145,7 +146,6 @@ class OBJECT_PT_ME(bpy.types.Panel):
 
 
 # load font
-# TODO when the font is already loaded, don't load
 class WM_OT_LoadFont(bpy.types.Operator):
     bl_label = "Load font"
     bl_idname = "wm.loadfont"
@@ -158,7 +158,10 @@ class WM_OT_LoadFont(bpy.types.Operator):
         font_path = bpy.path.abspath(props.font_path)
         font_path_norm = os.path.normpath(font_path)
 
-        # compare font paths until you get an equal
+        # clean the user input to signal change
+        props.font_path = ""
+
+        # compare font paths until you get a match
         for font in bpy.data.fonts:
             if os.path.normpath(bpy.path.abspath(font.filepath)) == font_path_norm:
                 self.report({'INFO'}, f"Font already loaded: {font.name}")
