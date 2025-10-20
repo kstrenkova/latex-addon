@@ -51,6 +51,8 @@ ll_table = {
     ('MORE_TERM', 'dollar'):           ['TERM', 'MORE_TERM'],
     ('MORE_TERM', '\('):               ['TERM', 'MORE_TERM'],
     ('MORE_TERM', '\['):               ['TERM', 'MORE_TERM'],
+    # <MORE_TERM> -> epsilon
+    ('MORE_TERM', '}'):                ['epsilon'],
     ('MORE_TERM', 'item'):             ['epsilon'],
     ('MORE_TERM', 'end'):              ['epsilon'],
     ('MORE_TERM', 'END'):              ['epsilon'],
@@ -61,10 +63,10 @@ ll_table = {
     ('CONST', '_ENTER'):               ['#ACTION_NEW_LINE'],
 
     # --- COMMAND ---
-    # <COMMAND> -> change_font
-    ('COMMAND', 'textbf'):             ['#ACTION_TEXTBF'],
-    ('COMMAND', 'textit'):             ['#ACTION_TEXTBF'],
-    ('COMMAND', 'texttt'):             ['#ACTION_TEXTBF'],
+    # <COMMAND> -> change_font { MORE_TERM }
+    ('COMMAND', 'textbf'):             ['textbf', '#ACTION_BOLD_TEXT', '{', 'MORE_TERM', '}', '#ACTION_BASE_TEXT'],
+    ('COMMAND', 'textit'):             ['textit', '#ACTION_ITAL_TEXT', '{', 'MORE_TERM', '}', '#ACTION_BASE_TEXT'],
+    ('COMMAND', 'texttt'):             ['texttt', '#ACTION_BOLD_TEXT'], # TODO
 
     # <BLOCK> -> begin { text } TODO end { text }
 
@@ -171,6 +173,18 @@ math_ll_table = {
     # <CONST> -> exponent <EI_TERM> <IX>
     ('CONST', '_CARET'):               ['#ACTION_LEVEL_UP', '#ACTION_EI_INIT', 'EI_TERM', 'IX'],
 
+    # --- EI_TERM ---
+    # <EI_TERM> -> text
+    ('EI_TERM', '_TEXT'):           ['#ACTION_GENERATE_TEXT'],
+    # <EI_TERM> -> special_symbols
+    ('EI_TERM', '_SPECIAL_CHAR'):   ['#ACTION_GENERATE_TEXT'],
+    # <EI_TERM> -> { <MORE_TERM> }
+    ('EI_TERM', '{'):               ['COMMAND'],
+    # <EI_TERM> -> <COMMAND>
+    ('EI_TERM', 'sqrt'):            ['COMMAND'],
+    ('EI_TERM', 'frac'):            ['COMMAND'],
+    ('EI_TERM', '_MATH_SYMBOL'):    ['COMMAND'],
+
     # <EXP> -> exponent <EI_TERM>
     # <EXP> -> epsilon
     ('EXP', '_CARET'):                 ['#ACTION_EI_BOTH', '#ACTION_LEVEL_UP', 'EI_TERM', '#ACTION_EI_FINAL'],
@@ -188,7 +202,6 @@ math_ll_table = {
     ('COMMAND', 'sqrt'):     ['sqrt', 'SQRT'],
     # <COMMAND> -> frac <FRAC>
     ('COMMAND', 'frac'):     ['frac', 'FRAC'],
-
 
     # <COMMAND> -> RANGE_OPERATORS
     ('COMMAND', 'sum'):      ['#ACTION_RANGE_OP_INIT'],
@@ -213,18 +226,6 @@ math_ll_table = {
         '#ACTION_MATRIX_CREATE',
         'end', '{', '#ACTION_VALIDATE_MATRIX_TYPE', '}'
     ],
-
-    # --- EI_TERM ---
-    # <EI_TERM> -> text
-    ('EI_TERM', '_TEXT'):           ['#ACTION_GENERATE_TEXT'],
-    # <EI_TERM> -> special_symbols
-    ('EI_TERM', '_SPECIAL_CHAR'):   ['#ACTION_GENERATE_TEXT'],
-    # <EI_TERM> -> { <MORE_TERM> }
-    ('EI_TERM', '{'):               ['COMMAND'],
-    # <EI_TERM> -> <COMMAND>
-    ('EI_TERM', 'sqrt'):            ['COMMAND'],
-    ('EI_TERM', 'frac'):            ['COMMAND'],
-    ('EI_TERM', '_MATH_SYMBOL'):    ['COMMAND'],
 
     # --- SQRT ---
     # <SQRT> -> [ <MORE_TERM> ] { <MORE_TERM> }

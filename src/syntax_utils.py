@@ -8,18 +8,20 @@ import os.path
 
 FONT_CACHE = {}
 
+
 # class for defaults
 class Defaults:
     def __init__(self, context, custom_prop):
-        self.context = context
-        self.text_scale = custom_prop.text_scale
         self.base_coll = ""
         self.current_coll = ""
+        self.context = context
         self.fonts = [
             custom_prop.base_font,
             custom_prop.bold_font,
             custom_prop.italic_font
         ]
+        self.user_font = 'base'
+        self.text_scale = custom_prop.text_scale
 
 
 # class for parameters

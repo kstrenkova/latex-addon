@@ -13,7 +13,6 @@ from .syntax_utils import Defaults, Parameters, preload_fonts, change_font
 from ..data.ll_table import *
 from ..data.characters_db import *
 
-# TODO decide if bold and italic will be font change or object warp
 # TODO decide which mathfont to implement
 # TODO next fun thing -> itemize, enumerate
 
@@ -70,7 +69,7 @@ class SyntaxAnalyser:
         # <CONST> actions
         if action == '#ACTION_GENERATE_TEXT':
             token = self.lex.get_token()
-            gen_text(token.value, change_font('user'), self.d.current_coll)
+            gen_text(token.value, change_font(self.d.user_font), self.d.current_coll)
             self.parameters.height = self.parameters.line
             gen_move_position(self.parameters)
             return True
@@ -141,9 +140,17 @@ class SyntaxAnalyser:
             self.state_stack.pop()
             return True
 
-        elif action == '#ACTION_TEXTBF':
-            print("Time to do bold text")
-            # Change the font to a bolde version
+        # FONT CHANGES
+        elif action == '#ACTION_BASE_TEXT':
+            self.d.user_font = 'base'
+            return True
+
+        elif action == '#ACTION_BOLD_TEXT':
+            self.d.user_font = 'bold'
+            return True
+
+        elif action == '#ACTION_ITAL_TEXT':
+            self.d.user_font = 'italic'
             return True
 
         # MATH INLINE MODE
