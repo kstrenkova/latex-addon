@@ -4,6 +4,7 @@
 # ---------------------------------------------------------------------------
 
 import bpy
+import os
 
 from bpy.props import (StringProperty,
                        BoolProperty,
@@ -43,7 +44,7 @@ class Custom_PT(bpy.types.PropertyGroup):
 
     font_path: StringProperty(
         name = "",
-        description="Load font by giving a path to it",
+        description="Specify a path to a font you want to get loaded",
         default="",
         maxlen=1024,
         subtype='FILE_PATH'
@@ -152,7 +153,20 @@ class WM_OT_LoadFont(bpy.types.Operator):
     def execute(self, context):
         scene = context.scene
         props = scene.custom_prop
-        bpy.data.fonts.load(props.font_path)
+
+        # get the absolute path of the new font
+        font_path = bpy.path.abspath(props.font_path)
+        font_path_norm = os.path.normpath(font_path)
+
+        # compare font paths until you get an equal
+        for font in bpy.data.fonts:
+            if os.path.normpath(bpy.path.abspath(font.filepath)) == font_path_norm:
+                self.report({'INFO'}, f"Font already loaded: {font.name}")
+                return {'FINISHED'}
+
+        # load new font
+        font = bpy.data.fonts.load(font_path)
+        self.report({'INFO'}, f"New font loaded: {font.name}")
         return {'FINISHED'}
 
 

@@ -65,12 +65,6 @@ def preload_fonts(user_font_file):
         font_size = get_font_scale(user_font)
         FONT_CACHE['user'] = {'font': user_font, 'size': font_size}
 
-    user_bold_font_file = "bold"
-    if user_bold_font_file != "":
-        user_font = bpy.data.fonts.load(user_bold_font_file)
-        font_size = get_font_scale(user_font)
-        FONT_CACHE['bold'] = {'font': user_font, 'size': font_size}
-
     print("FONT CACHE:", FONT_CACHE.items())
 
 # function that gets font scale needed to make all fonts the
