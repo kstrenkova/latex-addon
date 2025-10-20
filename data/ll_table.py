@@ -14,6 +14,7 @@ ll_table = {
     ('TERM', '_ENTER'):           ['CONST'],
 
     # <TERM> -> <COMMAND>
+    ('TERM', 'par'):              ['COMMAND'],
     ('TERM', 'textbf'):           ['COMMAND'],
     ('TERM', 'textit'):           ['COMMAND'],
     ('TERM', 'texttt'):           ['COMMAND'],
@@ -44,6 +45,7 @@ ll_table = {
     # <MORE_TERM> -> <TERM> <MORE_TERM>
     ('MORE_TERM', '_TEXT'):            ['TERM', 'MORE_TERM'],
     ('MORE_TERM', '_ENTER'):           ['TERM', 'MORE_TERM'],
+    ('MORE_TERM', 'par'):              ['TERM', 'MORE_TERM'],
     ('MORE_TERM', 'textbf'):           ['TERM', 'MORE_TERM'],
     ('MORE_TERM', 'textit'):           ['TERM', 'MORE_TERM'],
     ('MORE_TERM', 'texttt'):           ['TERM', 'MORE_TERM'],
@@ -63,6 +65,8 @@ ll_table = {
     ('CONST', '_ENTER'):               ['#ACTION_NEW_LINE'],
 
     # --- COMMAND ---
+    ('COMMAND', 'par'):                ['par', '#ACTION_PARAGRAPH'],
+
     # <COMMAND> -> change_font { MORE_TERM }
     ('COMMAND', 'textbf'):             ['textbf', '#ACTION_BOLD_TEXT', '{', 'MORE_TERM', '}', '#ACTION_BASE_TEXT'],
     ('COMMAND', 'textit'):             ['textit', '#ACTION_ITAL_TEXT', '{', 'MORE_TERM', '}', '#ACTION_BASE_TEXT'],

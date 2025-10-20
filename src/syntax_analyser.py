@@ -15,6 +15,7 @@ from ..data.characters_db import *
 
 # TODO decide which mathfont to implement
 # TODO next fun thing -> itemize, enumerate
+# TODO text should have spaces in beetween words
 
 
 class ItemizeState:
@@ -80,6 +81,11 @@ class SyntaxAnalyser:
                 self.lex.get_token()
             self.parameters.line -= 1.0
             self.parameters.width = 0.0
+            return True
+
+        elif action == '#ACTION_PARAGRAPH':
+            self.parameters.line -= 1.0
+            self.parameters.width = 1.0  # TODO research what the default value should be (for itemize as well)
             return True
 
         # <BLOCK> actions

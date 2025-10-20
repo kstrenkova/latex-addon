@@ -151,8 +151,7 @@ class WM_OT_LoadFont(bpy.types.Operator):
     bl_idname = "wm.loadfont"
 
     def execute(self, context):
-        scene = context.scene
-        props = scene.custom_prop
+        props = context.scene.custom_prop
 
         # get the absolute path of the new font
         font_path = bpy.path.abspath(props.font_path)
@@ -179,8 +178,7 @@ class WM_OT_AddText(bpy.types.Operator):
     bl_idname = "wm.addtextop"
 
     def execute(self, context):
-        scene = context.scene
-        cus_pt = scene.custom_prop
+        cus_pt = context.scene.custom_prop
 
         # create lexical analyser and main syntax analyser
         lex = LexicalAnalyser(cus_pt.latex_text, 0)
