@@ -169,6 +169,7 @@ class SyntaxAnalyser:
 
             latex_coll = self.d.base_coll
             self.d.current_coll = gen_new_collection("MathematicalEqCollection", self.d.base_coll)
+            self.d.base_coll = self.d.current_coll
 
             # activate the collection for mathematical equations
             self.set_active_collection(latex_coll, self.d.current_coll)
