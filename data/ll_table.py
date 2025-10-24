@@ -234,16 +234,15 @@ math_ll_table = {
     ('COMMAND', 'int'):      ['#ACTION_RANGE_OP_INIT'],
     ('COMMAND', 'lim'):      ['#ACTION_RANGE_OP_INIT'],
 
-    # <COMMAND> -> <FONT_CAPITAL>
-    # <FONT_CAPITAL> -> mathbb { <LETTERS> }
-    # <FONT_CAPITAL> -> mathcal { <LETTERS> }
-    # <FONT_CAPITAL> -> mathfrak { <LETTERS> }
+    # <COMMAND> -> <MATH_FONT>
+    ('COMMAND', 'mathbb'):    ['mathbb', '{', '#ACTION_MATH_FONT_MATHBB', 'MATH_FONT', '}'],
+    ('COMMAND', 'mathcal'):   ['mathcal', '{', '#ACTION_MATH_FONT_MATHCAL', 'MATH_FONT', '}'],
+    ('COMMAND', 'mathfrak'):  ['mathfrak', '{', '#ACTION_MATH_FONT_MATHFRAK', 'MATH_FONT', '}'],
 
-    # TODO rule: mathcal { LETTER }
-    # TODO it doesnt have to be one letter, but all the Letters must be capital
-    ('COMMAND', 'mathbb'):    ['mathbb', '{', '#ACTION_GENERATE_MATH_LETTER_MATHBB', '}'],
-    ('COMMAND', 'mathcal'):   ['mathcal', '{', '#ACTION_GENERATE_MATH_LETTER', '}'],
-    ('COMMAND', 'mathfrak'):  ['mathfrak', '{', '#ACTION_GENERATE_MATH_LETTER_MATHFRAK', '}'],
+    # <MATH_FONT> -> text <MATH_FONT>
+    # <MATH_FONT> -> epsilon
+    ('MATH_FONT', '_TEXT'):   ['#ACTION_GENERATE_MATH_LETTER', 'MATH_FONT'],
+    ('MATH_FONT', '}'):       ['#ACTION_REMOVE_MATH_FONT'],
 
     # <COMMAND> -> space_commands
     ('COMMAND', '_SPACE_COMMAND'): ['#ACTION_SPACE'],

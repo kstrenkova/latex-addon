@@ -146,39 +146,30 @@ class MathSyntaxAnalyser:
             gen_move_position(self.parameters)
             return True
 
-        # TODO erase repetition for math fonts
+        # <MATH_FONT>
+        elif action.startswith('#ACTION_MATH_FONT'):
+            mfont = action.removeprefix('#ACTION_MATH_FONT_').lower()
+            self.state_stack.append(mfont)
+            return True
+
+        elif action == '#ACTION_REMOVE_MATH_FONT':
+            self.state_stack.pop()
+            return True
+
         elif action == '#ACTION_GENERATE_MATH_LETTER':
             token = self.lex.get_token()
+            mfont = self.state_stack[-1]
 
-            if token.value in unicode_mathcal_font:
-                gen_text(unicode_mathcal_font[token.value], change_font('mathfont'), self.d.current_coll)
-                gen_calculate(self.parameters, self.d.text_scale, self.levels)
-                gen_move_position(self.parameters)
-                return True
+            for letter in token.value:
+                if letter.isupper():
+                    gen_text(unicode_fonts[mfont][letter], change_font('math'), self.d.current_coll)
+                    gen_calculate(self.parameters, self.d.text_scale, self.levels)
+                    gen_move_position(self.parameters)
+                else:
+                    print("Function", mfont, "doesn't support the letter", letter, "!")
+                    return False
 
-            print("Function mathcal doesn't support the letter", token.value, "!")
-
-        elif action == '#ACTION_GENERATE_MATH_LETTER_MATHBB':
-            token = self.lex.get_token()
-
-            if token.value in unicode_mathbb_font:
-                gen_text(unicode_mathbb_font[token.value], change_font('mathfont'), self.d.current_coll)
-                gen_calculate(self.parameters, self.d.text_scale, self.levels)
-                gen_move_position(self.parameters)
-                return True
-
-            print("Function mathcal doesn't support the letter", token.value, "!")
-
-        elif action == '#ACTION_GENERATE_MATH_LETTER_MATHFRAK':
-            token = self.lex.get_token()
-
-            if token.value in unicode_mathfrak_font:
-                gen_text(unicode_mathfrak_font[token.value], change_font('mathfont'), self.d.current_coll)
-                gen_calculate(self.parameters, self.d.text_scale, self.levels)
-                gen_move_position(self.parameters)
-                return True
-
-            print("Function mathcal doesn't support the letter", token.value, "!")
+            return True
 
         # <TERM_EI> actions
         elif action == '#ACTION_EI_INIT':

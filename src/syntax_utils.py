@@ -45,9 +45,8 @@ def change_font(mode):
 # function preloads fonts used by the addon
 def preload_fonts(user_fonts):
     font_mode = {
-        'math':     ('Kelvinch Regular', 'Kelvinch-Roman.otf'),
-        'mathcal':  ('Latin Modern Math Regular', 'latinmodern-math.otf'),
-        'mathfont': ('XITS Math', 'xits-math.otf')
+        'math':     ('STIX Two Math Regular', 'STIXTwoMath-Regular.ttf'),
+        # 'mathcal':  ('Latin Modern Math Regular', 'latinmodern-math.otf')
     }
 
     src_dir = os.path.dirname(os.path.dirname(__file__))
