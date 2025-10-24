@@ -42,10 +42,10 @@ class SyntaxAnalyser:
             key = token.type
 
         if (token.type, token.value) != ('COMMAND', 'item') and stack_top in ['ITEMIZE', 'ENUM']:
-            key = "epsilon"
+            key = 'epsilon'
 
-        if stack_top == "PROG":
-            key = "_ANY"
+        if stack_top == 'PROG':
+            key = '_ANY'
 
         print("KEY:", key)
         rule = ll_table.get((stack_top, key))
@@ -73,6 +73,7 @@ class SyntaxAnalyser:
             gen_text(token.value, change_font(self.d.user_font), self.d.current_coll)
             self.parameters.height = self.parameters.line
             gen_move_position(self.parameters)
+            self.parameters.width += BASE_SPACE * self.parameters.scale  # space between text
             return True
 
         if action == '#ACTION_NEW_LINE':
@@ -226,7 +227,6 @@ class SyntaxAnalyser:
             # actions
             elif stack_top.startswith('#'):
                 action = self.stack.pop()
-                print(f"Before action CT {token.value}")
                 if not self.execute_action(action):
                     print(f"Action error: {action}")
                     return False

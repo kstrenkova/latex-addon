@@ -597,7 +597,7 @@ def gen_bullet_point(param, defaults, text):
 
     bbox = [obj.matrix_world @ Vector(corner) for corner in obj.bound_box]
     obj_dimension = bbox[4].x * param.scale
-    param.width = 1.3 - obj_dimension # space before bullet point
+    param.width = 1.3 - obj_dimension  # space before bullet point
 
     gen_move_position(param)
-    param.width += 0.3 # space after bullet point
+    param.width += 0.3  # space after bullet point

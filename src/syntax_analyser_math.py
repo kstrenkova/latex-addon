@@ -61,7 +61,7 @@ class MatrixState:
         self.mx_coll = ''
         self.obj_array = [[]]
         self.row_num = 0
-        self.brackets = "matrix"
+        self.brackets = 'matrix'
 
 
 class MathSyntaxAnalyser:
@@ -96,10 +96,10 @@ class MathSyntaxAnalyser:
 
         if (token.type != '_UNDERSCORE' and stack_top == 'IX') or \
             (token.type != '_CARET' and stack_top == 'EXP'):
-            key = "epsilon"
+            key = 'epsilon'
 
-        if stack_top == "PROG":
-            key = "_ANY"
+        if stack_top == 'PROG':
+            key = '_ANY'
 
         rule = math_ll_table.get((stack_top, key))
         return rule
@@ -114,17 +114,17 @@ class MathSyntaxAnalyser:
             return True
 
         elif action == '#ACTION_LEVEL_DOWN':
-            self.levels.ei_array.append("ix")
+            self.levels.ei_array.append('ix')
             gen_calculate(self.parameters, self.d.text_scale, self.levels)
             return True
 
         elif action == '#ACTION_LEVEL_UP':
-            self.levels.ei_array.append("exp")
+            self.levels.ei_array.append('exp')
             gen_calculate(self.parameters, self.d.text_scale, self.levels)
             return True
 
         elif action == '#ACTION_LEVEL_UP_SQRT':
-            self.levels.ei_array.append("exp")
+            self.levels.ei_array.append('exp')
             self.levels.sqrt = True
             gen_calculate(self.parameters, self.d.text_scale, self.levels)
             self.levels.sqrt = False
@@ -146,11 +146,34 @@ class MathSyntaxAnalyser:
             gen_move_position(self.parameters)
             return True
 
+        # TODO erase repetition for math fonts
         elif action == '#ACTION_GENERATE_MATH_LETTER':
             token = self.lex.get_token()
 
-            if token.value in unicode_math_font:
-                gen_text(unicode_math_font[token.value], change_font('mathcal'), self.d.current_coll)
+            if token.value in unicode_mathcal_font:
+                gen_text(unicode_mathcal_font[token.value], change_font('mathfont'), self.d.current_coll)
+                gen_calculate(self.parameters, self.d.text_scale, self.levels)
+                gen_move_position(self.parameters)
+                return True
+
+            print("Function mathcal doesn't support the letter", token.value, "!")
+
+        elif action == '#ACTION_GENERATE_MATH_LETTER_MATHBB':
+            token = self.lex.get_token()
+
+            if token.value in unicode_mathbb_font:
+                gen_text(unicode_mathbb_font[token.value], change_font('mathfont'), self.d.current_coll)
+                gen_calculate(self.parameters, self.d.text_scale, self.levels)
+                gen_move_position(self.parameters)
+                return True
+
+            print("Function mathcal doesn't support the letter", token.value, "!")
+
+        elif action == '#ACTION_GENERATE_MATH_LETTER_MATHFRAK':
+            token = self.lex.get_token()
+
+            if token.value in unicode_mathfrak_font:
+                gen_text(unicode_mathfrak_font[token.value], change_font('mathfont'), self.d.current_coll)
                 gen_calculate(self.parameters, self.d.text_scale, self.levels)
                 gen_move_position(self.parameters)
                 return True
@@ -171,13 +194,13 @@ class MathSyntaxAnalyser:
             self.state_stack.append(eis)
             return True
 
-        elif action == "#ACTION_EI_SINGLE":
+        elif action == '#ACTION_EI_SINGLE':
             eis = self.state_stack.pop()
             self.levels.ei_array.pop()
 
             if self.levels.sym_name != '':
                 gen_move_sum(self.parameters, eis.eicoll, self.levels.sym_name)
-                space = 0.1 * self.parameters.scale
+                space = MIN_SPACE * self.parameters.scale
                 self.parameters.width = gen_fin_sum(self.levels.sym_name, eis.eicoll, eis.eicoll) + space
 
             # join collection into parent collection
@@ -209,12 +232,12 @@ class MathSyntaxAnalyser:
             # calculate final width
             fin_width = max(eis.width, gen_bound(eis.parent_coll, 'x', 'max'))
 
-            self.parameters.width = fin_width + 0.1 * self.parameters.scale
+            self.parameters.width = fin_width + MIN_SPACE * self.parameters.scale
             self.levels.ei_array.pop()
 
             if self.levels.sym_name != '':
                 gen_move_sum(self.parameters, eis.eicoll2, self.levels.sym_name)
-                space = 0.1 * self.parameters.scale
+                space = MIN_SPACE * self.parameters.scale
                 self.parameters.width = gen_fin_sum(self.levels.sym_name, eis.eicoll, eis.eicoll2) + space
 
             # join collection into parent collection
@@ -229,9 +252,7 @@ class MathSyntaxAnalyser:
             # saving parameters
             gen_calculate(self.parameters, self.d.text_scale, self.levels)
             sqs = SqrtState(self.d.current_coll, self.parameters.create_copy())
-
-            sqrt_width = 0.855927586555481  # width of square root symbol
-            self.parameters.width += sqrt_width * self.parameters.scale
+            self.parameters.width += SQRT_WIDTH * self.parameters.scale
 
             # square root collection
             sqs.sqcoll = gen_new_collection("SqrtCollection", sqs.parent_coll)
@@ -243,15 +264,12 @@ class MathSyntaxAnalyser:
         # TODO remove duplicity
         elif action == '#ACTION_SQRT_INIT_WITH_INDEX':
             self.levels.ei_array.pop()
-            self.parameters.width += 0.1 # space before index
+            self.parameters.width += MIN_SPACE  # space before index
 
             # saving parameters
             gen_calculate(self.parameters, self.d.text_scale, self.levels)
             sqs = SqrtState(self.d.current_coll, self.parameters.create_copy())
-
-            sqrt_width = 0.855927586555481  # width of square root symbol
-
-            sqs.init_params.width -= (sqrt_width - 0.4) * self.parameters.scale
+            sqs.init_params.width -= (SQRT_WIDTH - 0.4) * self.parameters.scale
             self.parameters.width += 0.4 * self.parameters.scale
 
             # square root collection
@@ -266,9 +284,9 @@ class MathSyntaxAnalyser:
 
             use_param = False
             sqrt_param = {
-                "x_pos": 0,
-                "y_min": 0,
-                "y_max": 0
+                'x_pos': 0,
+                'y_min': 0,
+                'y_max': 0
             }
 
             # gets parameters of text under square root
@@ -295,7 +313,7 @@ class MathSyntaxAnalyser:
         elif action == '#ACTION_FRAC_INIT':
             # increasing level of fraction
             self.levels.frac += 1
-            self.parameters.width += 0.1 * self.parameters.scale  # space before fraction
+            self.parameters.width += MIN_SPACE * self.parameters.scale  # space before fraction
             gen_calculate(self.parameters, self.d.text_scale, self.levels)
 
             fs = FractionState(self.d.current_coll, self.parameters.create_copy())
@@ -316,7 +334,7 @@ class MathSyntaxAnalyser:
 
             # move numerator objects
             gen_calculate(self.parameters, self.d.text_scale, self.levels)
-            gen_frac_move(self.parameters, fs.ncoll, "num")
+            gen_frac_move(self.parameters, fs.ncoll, 'num')
 
             # denominator collection
             fs.dcoll = gen_new_collection("DenominatorCollection", fs.parent_coll)
@@ -335,7 +353,7 @@ class MathSyntaxAnalyser:
 
             # move denominator objects
             gen_calculate(self.parameters, self.d.text_scale, self.levels)
-            gen_frac_move(self.parameters, fs.dcoll, "den")
+            gen_frac_move(self.parameters, fs.dcoll, 'den')
 
             # finding longer text width
             if fs.dwidth > fs.nwidth:
@@ -375,7 +393,7 @@ class MathSyntaxAnalyser:
             gen_calculate(self.parameters, self.d.text_scale, self.levels)
             if token.value != 'lim':
                 # TODO sum, prod was 0.4
-                self.parameters.height -= 0.3 * self.parameters.scale  # move lower
+                self.parameters.height -= BASE_SPACE * self.parameters.scale  # move lower
             gen_move_position(self.parameters)
             gen_collection(self.d.current_coll, self.d.base_coll)
 
@@ -395,7 +413,7 @@ class MathSyntaxAnalyser:
                 self.state_stack.append(ms)
                 return True
             else:
-                print("There are no matrix bracket type ", token.value)
+                print("There are no matrix bracket type!", token.value)
 
         elif action == '#ACTION_MATRIX_INIT':
             gen_calculate(self.parameters, self.d.text_scale, self.levels)
@@ -492,7 +510,9 @@ class MathSyntaxAnalyser:
         while self.stack:
             stack_top = self.stack[-1]
             token = self.lex.peek_token()
-            print(f"STACK: {self.stack}")
+            print(f"[M] STACK: {self.stack}")
+            print(f"[M] Token type: '{token.type}'")
+            print(f"[M] Token value: '{token.value}'")
 
             if self.math_mode_end(stack_top, token):
                 # recalculate position before changing modes
@@ -502,7 +522,6 @@ class MathSyntaxAnalyser:
             # actions
             elif stack_top.startswith('#'):
                 action = self.stack.pop()
-                print(f"V: {token.value}")
                 if not self.execute_action(action):
                     print(f"Action error: {action}")
                     return False
@@ -518,8 +537,6 @@ class MathSyntaxAnalyser:
 
             # non-terminal
             else:
-                print(f"Token type: '{token.type}'")
-                print(f"Token value: '{token.value}'")
                 rule = self.choose_rule(stack_top, token)
 
                 if rule:

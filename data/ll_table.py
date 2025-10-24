@@ -72,8 +72,6 @@ ll_table = {
     ('COMMAND', 'textit'):             ['textit', '#ACTION_ITAL_TEXT', '{', 'MORE_TERM', '}', '#ACTION_BASE_TEXT'],
     ('COMMAND', 'texttt'):             ['texttt', '#ACTION_BOLD_TEXT'], # TODO
 
-    # <BLOCK> -> begin { text } TODO end { text }
-
     # <BLOCK> -> begin { itemize } <ITEMIZE> end { itemize }
     # <ITEMIZE> -> item <ITEM>
     # <ITEMIZE> -> epsilon
@@ -101,6 +99,25 @@ ll_table = {
         # 'ENUM', # TODO temporary ENUM, uncomment to print numbered items
         'end', '{', '#ACTION_BLOCK_END', '}',
     ],
+
+    # TODO LL(1) with semantic predicates
+    # BLOCK template
+    ('BLOCK', 'begin'): [
+        'begin', '{', 'ENV_NAME', '}',
+        'BLOCK_BODY',
+        'end', '{', '#ACTION_BLOCK_VERIFY', '}',
+    ],
+
+    # ENV_NAME
+    ('ENV_NAME', 'enumerate'):    ['enumerate', '#ACTION_SET_ENV(enumerate)'],
+    ('ENV_NAME', 'itemize'):      ['itemize',   '#ACTION_SET_ENV(itemize)'],
+    ('ENV_NAME', 'math'):         ['math',      '#ACTION_SET_ENV(math)'],
+
+    # BLOCK_BODY
+    ('BLOCK_BODY', 'item'):       ['#ACTION_CHECK_ENV(list)', 'ITEMIZE'],
+    ('BLOCK_BODY', '_ANY'):       ['MORE_TERM'],
+    ('BLOCK_BODY', 'end'):        [],
+    # TODO nested blocks
 }
 
 math_ll_table = {
@@ -126,7 +143,9 @@ math_ll_table = {
     ('TERM', 'prod'):             ['COMMAND'],
     ('TERM', 'int'):              ['COMMAND'],
     ('TERM', 'lim'):              ['COMMAND'],
+    ('TERM', 'mathbb'):           ['COMMAND'],
     ('TERM', 'mathcal'):          ['COMMAND'],
+    ('TERM', 'mathfrak'):         ['COMMAND'],
     ('TERM', '_SPACE_COMMAND'):   ['COMMAND'],
     ('TERM', '_MATH_SYMBOL'):     ['COMMAND'],
 
@@ -149,7 +168,9 @@ math_ll_table = {
     ('MORE_TERM', 'prod'):             ['TERM', 'MORE_TERM'],
     ('MORE_TERM', 'int'):              ['TERM', 'MORE_TERM'],
     ('MORE_TERM', 'lim'):              ['TERM', 'MORE_TERM'],
+    ('MORE_TERM', 'mathbb'):           ['TERM', 'MORE_TERM'],
     ('MORE_TERM', 'mathcal'):          ['TERM', 'MORE_TERM'],
+    ('MORE_TERM', 'mathfrak'):         ['TERM', 'MORE_TERM'],
     ('MORE_TERM', '_SPACE_COMMAND'):   ['TERM', 'MORE_TERM'],
     ('MORE_TERM', '_MATH_SYMBOL'):     ['TERM', 'MORE_TERM'],
     ('MORE_TERM', 'begin'):            ['TERM', 'MORE_TERM'],
@@ -191,13 +212,13 @@ math_ll_table = {
 
     # <EXP> -> exponent <EI_TERM>
     # <EXP> -> epsilon
-    ('EXP', '_CARET'):                 ['#ACTION_EI_BOTH', '#ACTION_LEVEL_UP', 'EI_TERM', '#ACTION_EI_FINAL'],
-    ('EXP', 'epsilon'):                ['#ACTION_EI_SINGLE'],
+    ('EXP', '_CARET'):              ['#ACTION_EI_BOTH', '#ACTION_LEVEL_UP', 'EI_TERM', '#ACTION_EI_FINAL'],
+    ('EXP', 'epsilon'):             ['#ACTION_EI_SINGLE'],
 
     # <IX> -> index <EI_TERM>
     # <IX> -> epsilon
-    ('IX', '_UNDERSCORE'):             ['#ACTION_EI_BOTH', '#ACTION_LEVEL_DOWN', 'EI_TERM', '#ACTION_EI_FINAL'],
-    ('IX', 'epsilon'):                 ['#ACTION_EI_SINGLE'],
+    ('IX', '_UNDERSCORE'):          ['#ACTION_EI_BOTH', '#ACTION_LEVEL_DOWN', 'EI_TERM', '#ACTION_EI_FINAL'],
+    ('IX', 'epsilon'):              ['#ACTION_EI_SINGLE'],
 
     # --- COMMAND ---
     # <COMMAND> -> { <MORE_TERM> }
@@ -213,23 +234,20 @@ math_ll_table = {
     ('COMMAND', 'int'):      ['#ACTION_RANGE_OP_INIT'],
     ('COMMAND', 'lim'):      ['#ACTION_RANGE_OP_INIT'],
 
+    # <COMMAND> -> <FONT_CAPITAL>
+    # <FONT_CAPITAL> -> mathbb { <LETTERS> }
+    # <FONT_CAPITAL> -> mathcal { <LETTERS> }
+    # <FONT_CAPITAL> -> mathfrak { <LETTERS> }
+
     # TODO rule: mathcal { LETTER }
-    ('COMMAND', 'mathcal'):  ['mathcal', '{', '#ACTION_GENERATE_MATH_LETTER', '}'],
+    # TODO it doesnt have to be one letter, but all the Letters must be capital
+    ('COMMAND', 'mathbb'):    ['mathbb', '{', '#ACTION_GENERATE_MATH_LETTER_MATHBB', '}'],
+    ('COMMAND', 'mathcal'):   ['mathcal', '{', '#ACTION_GENERATE_MATH_LETTER', '}'],
+    ('COMMAND', 'mathfrak'):  ['mathfrak', '{', '#ACTION_GENERATE_MATH_LETTER_MATHFRAK', '}'],
 
     # <COMMAND> -> space_commands
     ('COMMAND', '_SPACE_COMMAND'): ['#ACTION_SPACE'],
     ('COMMAND', '_MATH_SYMBOL'):   ['#ACTION_MATH_SYMBOL'],
-
-    # --- BLOCK ---
-    # <BLOCK> -> begin { text } <MATRIX> end { text }
-    # TODO connect BLOCK from main syntax with MATRIX BLOCK
-    ('BLOCK', 'begin'): [
-        'begin', '{', '#ACTION_VALIDATE_MATRIX_TYPE', '}',
-        '#ACTION_MATRIX_INIT',
-        'MATRIX',
-        '#ACTION_MATRIX_CREATE',
-        'end', '{', '#ACTION_VALIDATE_MATRIX_TYPE', '}'
-    ],
 
     # --- SQRT ---
     # <SQRT> -> [ <MORE_TERM> ] { <MORE_TERM> }
@@ -257,6 +275,17 @@ math_ll_table = {
     ('FRAC', '{'): [
         '{', '#ACTION_FRAC_INIT', 'MORE_TERM', '}', '#ACTION_FRAC_UP',
         '{', 'MORE_TERM', '}', '#ACTION_FRAC_DOWN'
+    ],
+
+    # --- BLOCK ---
+    # <BLOCK> -> begin { text } <MATRIX> end { text }
+    # TODO connect BLOCK from main syntax with MATRIX BLOCK
+    ('BLOCK', 'begin'): [
+        'begin', '{', '#ACTION_VALIDATE_MATRIX_TYPE', '}',
+        '#ACTION_MATRIX_INIT',
+        'MATRIX',
+        '#ACTION_MATRIX_CREATE',
+        'end', '{', '#ACTION_VALIDATE_MATRIX_TYPE', '}'
     ],
 
     # --- MATRIX ---
