@@ -20,8 +20,8 @@ from ..data.characters_db import *
 
 class ItemizeState:
     def __init__(self):
+        self.bullet_number = 0
         self.bullet_type = '\u2022'
-        self.bullet_number = 1
 
 
 class SyntaxAnalyser:
@@ -32,7 +32,7 @@ class SyntaxAnalyser:
         self.lex = lex
         self.d = Defaults(context, custom_prop)
         self.parameters = Parameters(custom_prop.text_scale, 0.0, 0.0, 0.0)
-        self.block_type = ''
+        self.block = ''
 
     def choose_rule(self, stack_top, token):
         # TODO clean lookup
@@ -43,6 +43,9 @@ class SyntaxAnalyser:
 
         if (token.type, token.value) != ('COMMAND', 'item') and stack_top in ['ITEMIZE', 'ENUM']:
             key = 'epsilon'
+
+        if stack_top == 'BLOCK_NAME':
+            key = token.value
 
         if stack_top == 'PROG':
             key = '_ANY'
@@ -58,17 +61,41 @@ class SyntaxAnalyser:
 
     def enter_block(self):
         # MATH INLINE MODE
-        if self.block_type == 'math':
+        if self.block == 'math':
             return self.execute_action('#ACTION_MATH_INLINE_MODE')
         # MATH DISPLAY MODE
-        elif self.block_type == 'equation':
+        elif self.block == 'equation':
             return self.execute_action('#ACTION_MATH_INLINE_MODE') # TODO
-        elif self.block_type == 'displaymath':
+        elif self.block == 'displaymath':
             return self.execute_action('#ACTION_MATH_INLINE_MODE') # TODO
+        else:
+            return True # TODO
 
     def execute_action(self, action):
+        # <BLOCK> actions
+        if action.startswith('#ACTION_BLOCK_SAVE'):
+            block = action.removeprefix('#ACTION_BLOCK_SAVE_')
+            if block not in block_type:
+                print("Block value", block, "is not correct or supported!")
+                return False
+
+            self.block = block
+            return True
+
+        elif action == '#ACTION_BLOCK_ENTER':
+            return self.enter_block()
+
+        elif action == '#ACTION_BLOCK_VERIFY':
+            token = self.lex.get_token()
+            if token.value != self.block:
+                print("Block value in begin", self.block, "doesn't match the value in end", token.value)
+                return False
+
+            self.block = ''
+            return True
+
         # <CONST> actions
-        if action == '#ACTION_GENERATE_TEXT':
+        elif action == '#ACTION_GENERATE_TEXT':
             token = self.lex.get_token()
             gen_text(token.value, change_font(self.d.user_font), self.d.current_coll)
             self.parameters.height = self.parameters.line
@@ -89,61 +116,31 @@ class SyntaxAnalyser:
             self.parameters.width = 1.0  # TODO research what the default value should be (for itemize as well)
             return True
 
-        # <BLOCK> actions
-        elif action == '#ACTION_BLOCK_BEGIN':
-            token = self.lex.get_token()
-
-            if token.type == '_TEXT' and token.value in block_type:
-                self.block_type = token.value
-                return True
-
-            print("This block value is not correct or supported!")
-            return False
-
-        elif action == '#ACTION_BLOCK_INIT':
-            return self.enter_block()
-
-        elif action == '#ACTION_BLOCK_END':
-            token = self.lex.get_token()
-
-            if token.type == '_TEXT' and token.value == self.block_type:
-                self.block_type = ''
-                return True
-
-            print("The end block value doesn't match the begin block value.")
-            return False
-
         # <ITEMIZE> actions
-        elif action == '#ACTION_SAVE_ITEM':
+        elif action == '#ACTION_INIT_ITEM':
             its = ItemizeState()
-            token = self.lex.get_token()
-            its.bullet_type = token.value
             self.state_stack.append(its)
             return True
 
+        elif action == '#ACTION_SAVE_ITEM':
+            token = self.lex.get_token()
+            its = self.state_stack[-1]
+            its.bullet_type = token.value
+            return True
+
         elif action == '#ACTION_ADD_ITEM':
-            if self.state_stack and isinstance(self.state_stack[-1], ItemizeState):
-                its = self.state_stack.pop()
+            its = self.state_stack[-1]
+            if self.block == 'itemize':
                 item = its.bullet_type
-            else:
-                item = '\u2022'
-            gen_bullet_point(self.parameters, self.d, item)
-            return True
-
-        # <ENUMERATE> actions
-        elif action == '#ACTION_ADD_ENUM':
-            if self.state_stack and isinstance(self.state_stack[-1], ItemizeState):
-                its = self.state_stack[-1]
+            elif self.block == 'enumerate':
                 its.bullet_number += 1
-            else:
-                its = ItemizeState()
-                self.state_stack.append(its)
+                item = str(its.bullet_number) + '.'
 
-            item = str(its.bullet_number) + '.'
             gen_bullet_point(self.parameters, self.d, item)
+            its.bullet_type = '\u2022'
             return True
 
-        elif action == '#ACTION_END_ENUM':
+        elif action == '#ACTION_END_ITEM':
             self.state_stack.pop()
             return True
 
@@ -235,6 +232,9 @@ class SyntaxAnalyser:
             elif not stack_top.isupper():
                 #TODO cleanup
                 terminal = token.value if token.type in special_token_type else token.type
+
+                if stack_top == 'enumerate' or stack_top == 'itemize':
+                    terminal = token.value
 
                 if stack_top == terminal:
                     self.stack.pop()

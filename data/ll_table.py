@@ -72,52 +72,35 @@ ll_table = {
     ('COMMAND', 'textit'):             ['textit', '#ACTION_ITAL_TEXT', '{', 'MORE_TERM', '}', '#ACTION_BASE_TEXT'],
     ('COMMAND', 'texttt'):             ['texttt', '#ACTION_BOLD_TEXT'], # TODO
 
-    # <BLOCK> -> begin { itemize } <ITEMIZE> end { itemize }
+    # TODO LL(1) with semantic predicates
+    # --- BLOCK ---
+    # <BLOCK> -> begin { <BLOCK_NAME> } <BLOCK_BODY> end { <BLOCK_NAME> }
+    ('BLOCK', 'begin'): [
+        'begin', '{', 'BLOCK_NAME', '}',
+        '#ACTION_BLOCK_ENTER',
+        'BLOCK_CONTENT',
+        'end', '{', '#ACTION_BLOCK_VERIFY', '}',
+    ],
+
+    ('BLOCK_NAME', 'enumerate'):    ['enumerate', '#ACTION_BLOCK_SAVE_enumerate'],
+    ('BLOCK_NAME', 'itemize'):      ['itemize',   '#ACTION_BLOCK_SAVE_itemize'],
+    ('BLOCK_NAME', 'math'):         ['math',      '#ACTION_BLOCK_SAVE_math'],
+
+    ('BLOCK_CONTENT', 'item'):         ['#ACTION_INIT_ITEM', 'ITEMIZE'],
+    ('BLOCK_CONTENT', '_ANY'):         ['MORE_TERM'],
+    ('BLOCK_CONTENT', 'end'):          [],
+    # TODO nested blocks
+
     # <ITEMIZE> -> item <ITEM>
     # <ITEMIZE> -> epsilon
     ('ITEMIZE', 'item'):         ['item', 'ITEM'],
-    ('ITEMIZE', 'epsilon'):      ['#ACTION_NEW_LINE'],
+    ('ITEMIZE', 'epsilon'):      ['#ACTION_END_ITEM', '#ACTION_NEW_LINE'],
 
     # <ITEM> -> [ <MORE_TERM> ] <MORE_TERM> <ITEMIZE>
     # <ITEM> -> <MORE_TERM> <ITEMIZE>
     ('ITEM', '['):               ['[', '#ACTION_SAVE_ITEM', ']', '#ACTION_ADD_ITEM', 'MORE_TERM', 'ITEMIZE'],
     # TODO other types
     ('ITEM', '_TEXT'):           ['#ACTION_ADD_ITEM', 'MORE_TERM', 'ITEMIZE'],
-
-    # <ENUM> -> item <MORE_TERM> <ENUM>
-    # <ENUM> -> epsilon
-    ('ENUM', 'item'):            ['item', '#ACTION_ADD_ENUM', 'MORE_TERM', 'ENUM'],
-    ('ENUM', 'epsilon'):         ['#ACTION_END_ENUM', '#ACTION_NEW_LINE'],
-
-    # --- BLOCK ---
-    # <BLOCK> -> begin { text } <BLOCK_CONTENT> end { text }
-    ('BLOCK', 'begin'): [
-        'begin', '{', '#ACTION_BLOCK_BEGIN', '}',
-        # '#ACTION_BLOCK_INIT',
-        # 'MORE_TERM',
-        'ITEMIZE', # TODO temporary ITEMIZE, uncomment to print items
-        # 'ENUM', # TODO temporary ENUM, uncomment to print numbered items
-        'end', '{', '#ACTION_BLOCK_END', '}',
-    ],
-
-    # TODO LL(1) with semantic predicates
-    # BLOCK template
-    ('BLOCK', 'begin'): [
-        'begin', '{', 'ENV_NAME', '}',
-        'BLOCK_BODY',
-        'end', '{', '#ACTION_BLOCK_VERIFY', '}',
-    ],
-
-    # ENV_NAME
-    ('ENV_NAME', 'enumerate'):    ['enumerate', '#ACTION_SET_ENV(enumerate)'],
-    ('ENV_NAME', 'itemize'):      ['itemize',   '#ACTION_SET_ENV(itemize)'],
-    ('ENV_NAME', 'math'):         ['math',      '#ACTION_SET_ENV(math)'],
-
-    # BLOCK_BODY
-    ('BLOCK_BODY', 'item'):       ['#ACTION_CHECK_ENV(list)', 'ITEMIZE'],
-    ('BLOCK_BODY', '_ANY'):       ['MORE_TERM'],
-    ('BLOCK_BODY', 'end'):        [],
-    # TODO nested blocks
 }
 
 math_ll_table = {
