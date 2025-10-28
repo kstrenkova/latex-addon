@@ -10,11 +10,11 @@ SQRT_WIDTH = 0.855927586555481
 
 # TODO cleanup
 special_token_type = {
-    "COMMAND",
-    "_CLOSE_CURLY",
-    "_OPEN_CURLY",
-    "_OPEN_ANGLE",
-    "_CLOSE_ANGLE"
+    'COMMAND',
+    '_CLOSE_CURLY',
+    '_OPEN_CURLY',
+    '_OPEN_ANGLE',
+    '_CLOSE_ANGLE'
 }
 
 space_sizes = {
@@ -37,17 +37,18 @@ matrix_brackets = {
 }
 
 char_type = {
-    '\\': "BACKSLASH",
-    '{': "_OPEN_CURLY",
-    '(': "_OPEN_BRACKET",
-    '[': "_OPEN_ANGLE",
-    '}': "_CLOSE_CURLY",
-    ')': "_CLOSE_BRACKET",
-    ']': "_CLOSE_ANGLE",
-    '^': "_CARET",
-    '_': "_UNDERSCORE",
-    '&': "_AMPERSAND",
-    '$': "dollar",
+    '\\': 'BACKSLASH',
+    '{': '_OPEN_CURLY',
+    '(': '_OPEN_BRACKET',
+    '[': '_OPEN_ANGLE',
+    '}': '_CLOSE_CURLY',
+    ')': '_CLOSE_BRACKET',
+    ']': '_CLOSE_ANGLE',
+    '|': '_PIPE',
+    '^': '_CARET',
+    '_': '_UNDERSCORE',
+    '&': '_AMPERSAND',
+    '$': 'dollar',
 }
 
 special_chars = [
@@ -70,6 +71,13 @@ block_type = [
     'itemize',
 
 ]
+
+epsilon_rules = {
+    # stack_top: token.type, token.value
+    'ITEMIZE': ('COMMAND', 'item'),
+    'IX':      ('_UNDERSCORE', '_'),
+    'EXP':     ('_CARET', '^')
+}
 
 unicode_chars = {
     # lower case greek alphabet

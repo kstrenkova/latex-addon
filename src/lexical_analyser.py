@@ -111,3 +111,18 @@ class LexicalAnalyser:
         token = self.get_token()
         self.return_token(token)
         return token
+
+    # function returns the full \verb command content
+    def get_verb_content(self):
+        content = ""
+        while not self.is_end() and self.get_char() != '|':
+            # do not add whitespace into content
+            if not self.get_char().isspace():
+                content += self.get_char()
+            self.position += 1
+
+        # check if pipe symbol was found
+        if self.is_end():
+            return "", "Missing | symbol!"
+
+        return content, ""

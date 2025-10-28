@@ -89,13 +89,9 @@ class MathSyntaxAnalyser:
 
     def choose_rule(self, stack_top, token):
         # TODO clean lookup
-        if token.type in special_token_type:
-            key = token.value
-        else:
-            key = token.type
+        key = token.value if (token.type in special_token_type) else token.type
 
-        if (token.type != '_UNDERSCORE' and stack_top == 'IX') or \
-            (token.type != '_CARET' and stack_top == 'EXP'):
+        if stack_top in epsilon_rules and epsilon_rules[stack_top] != (token.type, token.value):
             key = 'epsilon'
 
         if stack_top == 'PROG':

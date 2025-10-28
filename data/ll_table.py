@@ -12,12 +12,15 @@ ll_table = {
     # <TERM> -> <CONST>
     ('TERM', '_TEXT'):            ['CONST'],
     ('TERM', '_ENTER'):           ['CONST'],
+    ('TERM', '_SPECIAL_CHAR'):    ['CONST'],
+    ('TERM', '_PIPE'):            ['CONST'],
 
     # <TERM> -> <COMMAND>
     ('TERM', 'par'):              ['COMMAND'],
     ('TERM', 'textbf'):           ['COMMAND'],
     ('TERM', 'textit'):           ['COMMAND'],
     ('TERM', 'texttt'):           ['COMMAND'],
+    ('TERM', 'verb'):             ['COMMAND'],
 
     # <TERM> -> <MATH_MODE>
     ('TERM', 'dollar'):           ['MATH_MODE'],
@@ -45,10 +48,13 @@ ll_table = {
     # <MORE_TERM> -> <TERM> <MORE_TERM>
     ('MORE_TERM', '_TEXT'):            ['TERM', 'MORE_TERM'],
     ('MORE_TERM', '_ENTER'):           ['TERM', 'MORE_TERM'],
+    ('MORE_TERM', '_SPECIAL_CHAR'):    ['TERM', 'MORE_TERM'],
+    ('MORE_TERM', '_PIPE'):            ['TERM', 'MORE_TERM'],
     ('MORE_TERM', 'par'):              ['TERM', 'MORE_TERM'],
     ('MORE_TERM', 'textbf'):           ['TERM', 'MORE_TERM'],
     ('MORE_TERM', 'textit'):           ['TERM', 'MORE_TERM'],
     ('MORE_TERM', 'texttt'):           ['TERM', 'MORE_TERM'],
+    ('MORE_TERM', 'verb'):             ['TERM', 'MORE_TERM'],
     ('MORE_TERM', 'begin'):            ['TERM', 'MORE_TERM'],
     ('MORE_TERM', 'dollar'):           ['TERM', 'MORE_TERM'],
     ('MORE_TERM', '\('):               ['TERM', 'MORE_TERM'],
@@ -63,6 +69,8 @@ ll_table = {
     # <CONST> -> text
     ('CONST', '_TEXT'):                ['#ACTION_GENERATE_TEXT'],
     ('CONST', '_ENTER'):               ['#ACTION_NEW_LINE'],
+    ('CONST', '_SPECIAL_CHAR'):        ['#ACTION_GENERATE_TEXT'],
+    ('CONST', '_PIPE'):                ['#ACTION_GENERATE_TEXT'],
 
     # --- COMMAND ---
     ('COMMAND', 'par'):                ['par', '#ACTION_PARAGRAPH'],
@@ -71,6 +79,9 @@ ll_table = {
     ('COMMAND', 'textbf'):             ['textbf', '#ACTION_BOLD_TEXT', '{', 'MORE_TERM', '}', '#ACTION_BASE_TEXT'],
     ('COMMAND', 'textit'):             ['textit', '#ACTION_ITAL_TEXT', '{', 'MORE_TERM', '}', '#ACTION_BASE_TEXT'],
     ('COMMAND', 'texttt'):             ['texttt', '#ACTION_BOLD_TEXT'], # TODO
+
+    # <COMMAND> -> verb | <MORE_TERM> |
+    ('COMMAND', 'verb'):                ['verb', '|', '#ACTION_GENERATE_VERB', '|'],
 
     # TODO LL(1) with semantic predicates
     # --- BLOCK ---
@@ -88,7 +99,7 @@ ll_table = {
 
     ('BLOCK_CONTENT', 'item'):         ['#ACTION_INIT_ITEM', 'ITEMIZE'],
     ('BLOCK_CONTENT', '_ANY'):         ['MORE_TERM'],
-    ('BLOCK_CONTENT', 'end'):          [],
+    ('BLOCK_CONTENT', 'end'):          ['epsilon'],
     # TODO nested blocks
 
     # <ITEMIZE> -> item <ITEM>
@@ -275,6 +286,7 @@ math_ll_table = {
     # <MATRIX> -> enter <MATRIX>
     # <MATRIX> -> & <MATRIX>
     # <MATRIX> -> <CONST> <MATRIX>
+    # <MATRIX> -> <COMMAND> <MATRIX>
     ('MATRIX', '_TEXT'):            ['CONST', 'MATRIX'],
     ('MATRIX', '_SPECIAL_CHAR'):    ['CONST', 'MATRIX'],
     ('MATRIX', '_ENTER'):           ['#ACTION_MATRIX_NEW_ROW', 'MATRIX'],

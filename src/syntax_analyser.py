@@ -13,9 +13,8 @@ from .syntax_utils import Defaults, Parameters, preload_fonts, change_font
 from ..data.ll_table import *
 from ..data.characters_db import *
 
-# TODO decide which mathfont to implement
-# TODO next fun thing -> itemize, enumerate
-# TODO text should have spaces in beetween words
+# TODO checkout mathfonts not used only on upper letters
+# TODO new line should take the height of the object into account
 
 
 class ItemizeState:
@@ -36,15 +35,12 @@ class SyntaxAnalyser:
 
     def choose_rule(self, stack_top, token):
         # TODO clean lookup
-        if token.type in special_token_type:
-            key = token.value
-        else:
-            key = token.type
+        key = token.value if (token.type in special_token_type) else token.type
 
-        if (token.type, token.value) != ('COMMAND', 'item') and stack_top in ['ITEMIZE', 'ENUM']:
+        if stack_top in epsilon_rules and epsilon_rules[stack_top] != (token.type, token.value):
             key = 'epsilon'
 
-        if stack_top == 'BLOCK_NAME':
+        if stack_top == 'BLOCK_NAME' and token.type == '_TEXT':
             key = token.value
 
         if stack_top == 'PROG':
@@ -157,6 +153,20 @@ class SyntaxAnalyser:
             self.d.user_font = 'italic'
             return True
 
+        elif action == '#ACTION_GENERATE_VERB':
+            # get full \verb content
+            content, err = self.lex.get_verb_content()
+            if len(err) > 0:
+                print("Error in verb function:", err)
+                return False
+
+            # TODO remove duplicate code
+            gen_text(content, change_font('verb'), self.d.current_coll)
+            self.parameters.height = self.parameters.line
+            gen_move_position(self.parameters)
+            self.parameters.width += BASE_SPACE * self.parameters.scale  # space between text
+            return True
+
         # MATH INLINE MODE
         elif action == '#ACTION_MATH_INLINE_MODE':
             # When we use blocks we don't want to consume token and when we use symbols we do
@@ -231,16 +241,13 @@ class SyntaxAnalyser:
             # terminal
             elif not stack_top.isupper():
                 #TODO cleanup
-                terminal = token.value if token.type in special_token_type else token.type
-
-                if stack_top == 'enumerate' or stack_top == 'itemize':
-                    terminal = token.value
+                terminal = token.value if token.type != 'dollar' else token.type
 
                 if stack_top == terminal:
                     self.stack.pop()
                     self.lex.get_token()
                 else:
-                    print(f"Syntax Error: Expected '{stack_top}' but got '{token.value}'")
+                    print(f"Syntax Error: Expected '{stack_top}' but got '{terminal}'")
                     return False
 
             # non-terminal
