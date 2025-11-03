@@ -27,14 +27,8 @@ ll_table = {
     ('TERM', '\('):               ['MATH_MODE'],
     ('TERM', '\['):               ['MATH_MODE'],
 
-    # <MATH_MODE> -> $ <MATH_INLINE_PROG> $
-    # <MATH_MODE> -> \( <MATH_INLINE_PROG> \)
-    # <MATH_MODE> -> \[ <MATH_DISPLAY_PROG> \[
-    ('MATH_MODE', 'dollar'):      ['#ACTION_MATH_MODE_INLINE', 'dollar'],
-    ('MATH_MODE', '\('):          ['#ACTION_MATH_MODE_INLINE', '\)'],
-    ('MATH_MODE', '\['):          ['#ACTION_MATH_MODE_DISPLAY', '\]'],
-
-    ('TERM', 'begin'):                 ['BLOCK'],
+    # <TERM> -> <BLOCK>
+    ('TERM', 'begin'):            ['BLOCK'],
 
     # --- MORE_TERM ---
     # <MORE_TERM> -> <TERM> <MORE_TERM>
@@ -75,9 +69,16 @@ ll_table = {
     # <COMMAND> -> verb | <MORE_TERM> |
     ('COMMAND', 'verb'):               ['verb', '|', '#ACTION_GENERATE_VERB', '|'],
 
-    # TODO LL(1) with semantic predicates
+    # --- MATH_MODE ---
+    # <MATH_MODE> -> $ <MATH_INLINE_PROG> $
+    # <MATH_MODE> -> \( <MATH_INLINE_PROG> \)
+    # <MATH_MODE> -> \[ <MATH_DISPLAY_PROG> \[
+    ('MATH_MODE', 'dollar'):           ['#ACTION_MATH_MODE_INLINE', 'dollar'],
+    ('MATH_MODE', '\('):               ['#ACTION_MATH_MODE_INLINE', '\)'],
+    ('MATH_MODE', '\['):               ['#ACTION_MATH_MODE_DISPLAY', '\]'],
+
     # --- BLOCK ---
-    # <BLOCK> -> begin { TEXT } <BLOCK_CONTENT> end { TEXT }
+    # <BLOCK> -> begin { text } <BLOCK_CONTENT> end { text }
     ('BLOCK', 'begin'): [
         'begin', '{', '#ACTION_BLOCK_VERIFY_BEGIN', '}',
         '#ACTION_BLOCK_ENTER',
@@ -136,49 +137,49 @@ math_ll_table = {
 
     # --- MORE_TERM ---
     # <MORE_TERM> -> <TERM> <MORE_TERM>
-    ('MORE_TERM', '_TEXT'):            ['TERM', 'MORE_TERM'],
-    ('MORE_TERM', '_SPECIAL_CHAR'):    ['TERM', 'MORE_TERM'],
-    ('MORE_TERM', 'enter'):            ['TERM', 'MORE_TERM'],
-    ('MORE_TERM', '_UNDERSCORE'):      ['TERM', 'MORE_TERM'],
-    ('MORE_TERM', '_CARET'):           ['TERM', 'MORE_TERM'],
-    ('MORE_TERM', '['):                ['TERM', 'MORE_TERM'],
-    ('MORE_TERM', ']'):                ['TERM', 'MORE_TERM'],
-    ('MORE_TERM', '{'):                ['TERM', 'MORE_TERM'],
-    ('MORE_TERM', 'sqrt'):             ['TERM', 'MORE_TERM'],
-    ('MORE_TERM', 'frac'):             ['TERM', 'MORE_TERM'],
-    ('MORE_TERM', 'sum'):              ['TERM', 'MORE_TERM'],
-    ('MORE_TERM', 'prod'):             ['TERM', 'MORE_TERM'],
-    ('MORE_TERM', 'int'):              ['TERM', 'MORE_TERM'],
-    ('MORE_TERM', 'lim'):              ['TERM', 'MORE_TERM'],
-    ('MORE_TERM', 'mathbb'):           ['TERM', 'MORE_TERM'],
-    ('MORE_TERM', 'mathcal'):          ['TERM', 'MORE_TERM'],
-    ('MORE_TERM', 'mathfrak'):         ['TERM', 'MORE_TERM'],
-    ('MORE_TERM', '_SPACE_COMMAND'):   ['TERM', 'MORE_TERM'],
-    ('MORE_TERM', '_MATH_SYMBOL'):     ['TERM', 'MORE_TERM'],
-    ('MORE_TERM', 'begin'):            ['TERM', 'MORE_TERM'],
-    ('MORE_TERM', 'dollar'):           ['TERM', 'MORE_TERM'],
+    ('MORE_TERM', '_TEXT'):          ['TERM', 'MORE_TERM'],
+    ('MORE_TERM', '_SPECIAL_CHAR'):  ['TERM', 'MORE_TERM'],
+    ('MORE_TERM', 'enter'):          ['TERM', 'MORE_TERM'],
+    ('MORE_TERM', '_UNDERSCORE'):    ['TERM', 'MORE_TERM'],
+    ('MORE_TERM', '_CARET'):         ['TERM', 'MORE_TERM'],
+    ('MORE_TERM', '['):              ['TERM', 'MORE_TERM'],
+    ('MORE_TERM', ']'):              ['TERM', 'MORE_TERM'],
+    ('MORE_TERM', '{'):              ['TERM', 'MORE_TERM'],
+    ('MORE_TERM', 'sqrt'):           ['TERM', 'MORE_TERM'],
+    ('MORE_TERM', 'frac'):           ['TERM', 'MORE_TERM'],
+    ('MORE_TERM', 'sum'):            ['TERM', 'MORE_TERM'],
+    ('MORE_TERM', 'prod'):           ['TERM', 'MORE_TERM'],
+    ('MORE_TERM', 'int'):            ['TERM', 'MORE_TERM'],
+    ('MORE_TERM', 'lim'):            ['TERM', 'MORE_TERM'],
+    ('MORE_TERM', 'mathbb'):         ['TERM', 'MORE_TERM'],
+    ('MORE_TERM', 'mathcal'):        ['TERM', 'MORE_TERM'],
+    ('MORE_TERM', 'mathfrak'):       ['TERM', 'MORE_TERM'],
+    ('MORE_TERM', '_SPACE_COMMAND'): ['TERM', 'MORE_TERM'],
+    ('MORE_TERM', '_MATH_SYMBOL'):   ['TERM', 'MORE_TERM'],
+    ('MORE_TERM', 'begin'):          ['TERM', 'MORE_TERM'],
+    ('MORE_TERM', 'dollar'):         ['TERM', 'MORE_TERM'],
     # <MORE_TERM> -> epsilon
-    ('MORE_TERM', '}'):                ['epsilon'],
-    ('MORE_TERM', '$'):                ['epsilon'],
-    ('MORE_TERM', 'end'):              ['epsilon'],
-    ('MORE_TERM', 'dollar'):           ['epsilon'],
-    ('MORE_TERM', '\)'):               ['epsilon'],
-    ('MORE_TERM', '\]'):               ['epsilon'],
-    ('MORE_TERM', 'END'):              ['epsilon'],
+    ('MORE_TERM', '}'):              ['epsilon'],
+    ('MORE_TERM', '$'):              ['epsilon'],
+    ('MORE_TERM', 'end'):            ['epsilon'],
+    ('MORE_TERM', 'dollar'):         ['epsilon'],
+    ('MORE_TERM', '\)'):             ['epsilon'],
+    ('MORE_TERM', '\]'):             ['epsilon'],
+    ('MORE_TERM', 'END'):            ['epsilon'],
 
     # --- CONST ---
     # <CONST> -> text
-    ('CONST', '_TEXT'):                ['#ACTION_GENERATE_TEXT'],
-    ('CONST', '['):                    ['#ACTION_GENERATE_TEXT'],
-    ('CONST', ']'):                    ['#ACTION_GENERATE_TEXT'],
+    ('CONST', '_TEXT'):              ['#ACTION_GENERATE_TEXT'],
+    ('CONST', '['):                  ['#ACTION_GENERATE_TEXT'],
+    ('CONST', ']'):                  ['#ACTION_GENERATE_TEXT'],
     # <CONST> -> special_char
-    ('CONST', '_SPECIAL_CHAR'):        ['#ACTION_GENERATE_TEXT'],
+    ('CONST', '_SPECIAL_CHAR'):      ['#ACTION_GENERATE_TEXT'],
     # <CONST> -> enter
-    ('CONST', '_ENTER'):               ['enter'],
+    ('CONST', '_ENTER'):             ['enter'],
     # <CONST> -> index <EI_TERM> <EXP>
-    ('CONST', '_UNDERSCORE'):          ['#ACTION_LEVEL_DOWN', '#ACTION_EI_INIT', 'EI_TERM', 'EXP'],
+    ('CONST', '_UNDERSCORE'):        ['#ACTION_LEVEL_DOWN', '#ACTION_EI_INIT', 'EI_TERM', 'EXP'],
     # <CONST> -> exponent <EI_TERM> <IX>
-    ('CONST', '_CARET'):               ['#ACTION_LEVEL_UP', '#ACTION_EI_INIT', 'EI_TERM', 'IX'],
+    ('CONST', '_CARET'):             ['#ACTION_LEVEL_UP', '#ACTION_EI_INIT', 'EI_TERM', 'IX'],
 
     # --- EI_TERM ---
     # <EI_TERM> -> text
@@ -204,31 +205,33 @@ math_ll_table = {
 
     # --- COMMAND ---
     # <COMMAND> -> { <MORE_TERM> }
-    ('COMMAND', '{'):        ['{', 'MORE_TERM', '}'],
+    ('COMMAND', '{'):               ['{', 'MORE_TERM', '}'],
+
     # <COMMAND> -> sqrt <SQRT>
-    ('COMMAND', 'sqrt'):     ['sqrt', 'SQRT'],
+    ('COMMAND', 'sqrt'):            ['sqrt', 'SQRT'],
+
     # <COMMAND> -> frac <FRAC>
-    ('COMMAND', 'frac'):     ['frac', 'FRAC'],
+    ('COMMAND', 'frac'):            ['frac', 'FRAC'],
 
-    # <COMMAND> -> RANGE_OPERATORS
-    ('COMMAND', 'sum'):      ['#ACTION_RANGE_OP_INIT'],
-    ('COMMAND', 'prod'):     ['#ACTION_RANGE_OP_INIT'],
-    ('COMMAND', 'int'):      ['#ACTION_RANGE_OP_INIT'],
-    ('COMMAND', 'lim'):      ['#ACTION_RANGE_OP_INIT'],
+    # <COMMAND> -> range_operators
+    ('COMMAND', 'sum'):             ['#ACTION_RANGE_OP_INIT'],
+    ('COMMAND', 'prod'):            ['#ACTION_RANGE_OP_INIT'],
+    ('COMMAND', 'int'):             ['#ACTION_RANGE_OP_INIT'],
+    ('COMMAND', 'lim'):             ['#ACTION_RANGE_OP_INIT'],
 
-    # <COMMAND> -> <MATH_FONT>
-    ('COMMAND', 'mathbb'):    ['mathbb', '{', '#ACTION_MATH_FONT_MATHBB', 'MATH_FONT', '}'],
-    ('COMMAND', 'mathcal'):   ['mathcal', '{', '#ACTION_MATH_FONT_MATHCAL', 'MATH_FONT', '}'],
-    ('COMMAND', 'mathfrak'):  ['mathfrak', '{', '#ACTION_MATH_FONT_MATHFRAK', 'MATH_FONT', '}'],
+    # <COMMAND> -> command <MATH_FONT>
+    ('COMMAND', 'mathbb'):          ['mathbb',   '{', '#ACTION_MATH_FONT_MATHBB',   'MATH_FONT', '}'],
+    ('COMMAND', 'mathcal'):         ['mathcal',  '{', '#ACTION_MATH_FONT_MATHCAL',  'MATH_FONT', '}'],
+    ('COMMAND', 'mathfrak'):        ['mathfrak', '{', '#ACTION_MATH_FONT_MATHFRAK', 'MATH_FONT', '}'],
 
     # <MATH_FONT> -> text <MATH_FONT>
     # <MATH_FONT> -> epsilon
-    ('MATH_FONT', '_TEXT'):   ['#ACTION_GENERATE_MATH_LETTER', 'MATH_FONT'],
-    ('MATH_FONT', '}'):       ['#ACTION_REMOVE_MATH_FONT'],
+    ('MATH_FONT', '_TEXT'):         ['#ACTION_GENERATE_MATH_LETTER', 'MATH_FONT'],
+    ('MATH_FONT', '}'):             ['#ACTION_REMOVE_MATH_FONT'],
 
     # <COMMAND> -> space_commands
-    ('COMMAND', '_SPACE_COMMAND'): ['#ACTION_SPACE'],
-    ('COMMAND', '_MATH_SYMBOL'):   ['#ACTION_MATH_SYMBOL'],
+    ('COMMAND', '_SPACE_COMMAND'):  ['#ACTION_SPACE'],
+    ('COMMAND', '_MATH_SYMBOL'):    ['#ACTION_MATH_SYMBOL'],
 
     # --- SQRT ---
     # <SQRT> -> [ <MORE_TERM> ] { <MORE_TERM> }
@@ -260,7 +263,6 @@ math_ll_table = {
 
     # --- BLOCK ---
     # <BLOCK> -> begin { text } <MATRIX> end { text }
-    # TODO connect BLOCK from main syntax with MATRIX BLOCK
     ('BLOCK', 'begin'): [
         'begin', '{', '#ACTION_VALIDATE_MATRIX_TYPE', '}',
         '#ACTION_MATRIX_INIT',
