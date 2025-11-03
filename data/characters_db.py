@@ -17,16 +17,18 @@ special_token_type = {
     '_CLOSE_ANGLE'
 }
 
+# numeric values of space commands
 space_sizes = {
-    '!': -0.1,
-    ',': 0.15,
-    ':': 0.2,
-    ';': 0.25,
-    ' ': 0.3,
-    'quad': 0.6,
+    '!':    -0.1,
+    ',':     0.15,
+    ':':     0.2,
+    ';':     0.25,
+    ' ':     0.3,
+    'quad':  0.6,
     'qquad': 1.2
 }
 
+# all supported matrix bracket types
 matrix_brackets = {
     'matrix':  ('', ''),
     'bmatrix': ('[', ']'),
@@ -36,6 +38,7 @@ matrix_brackets = {
     'Vmatrix': ('||', '||')
 }
 
+# structural tokens that have syntactic meaning
 char_type = {
     '\\': 'BACKSLASH',
     '{': '_OPEN_CURLY',
@@ -51,6 +54,8 @@ char_type = {
     '$': 'dollar',
 }
 
+# characters that can be escaped with a backslash
+# to render literally (e.g., \{, \$, ...)
 special_chars = [
     '_OPEN_CURLY',
     '_CLOSE_CURLY',
@@ -60,6 +65,7 @@ special_chars = [
     'dollar',
 ]
 
+# block types and their setup actions
 block_actions = {
     # math mode
     'math':        '#ACTION_MATH_MODE_INLINE',
@@ -71,12 +77,23 @@ block_actions = {
     'itemize':      '#ACTION_INIT_ITEM'
 }
 
+# context-dependent epsilon productions
 epsilon_rules = {
     # stack_top: token.type, token.value
     'ITEMIZE': ('COMMAND', 'item'),
     'IX':      ('_UNDERSCORE', '_'),
     'EXP':     ('_CARET', '^')
 }
+
+# tokens that end math mode
+end_tokens = {
+    ('dollar', '$'),
+    ('COMMAND', '\)'),
+    ('COMMAND', '\]'),
+    ('COMMAND', 'end')
+}
+
+# UNICODE DATABASE
 
 unicode_chars = {
     # lower case greek alphabet

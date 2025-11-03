@@ -34,6 +34,7 @@ class SyntaxAnalyser:
         self.block = ''
 
 
+    # function returns the next rule
     def choose_rule(self, stack_top, token):
         # TODO clean lookup
         key = token.value if (token.type in special_token_type) else token.type
@@ -49,6 +50,8 @@ class SyntaxAnalyser:
         return rule
 
 
+    # function creates a new text object with given value and font,
+    # then moves it according to context
     def create_text_object(self, value, font_type):
         gen_text(value, change_font(font_type), self.d.current_coll)
         self.parameters.height = self.parameters.line
@@ -57,6 +60,7 @@ class SyntaxAnalyser:
         return True
 
 
+    # function sets the active collection
     def set_active_collection(self, base_coll, current_coll):
         view_layer = bpy.context.view_layer
         collection = view_layer.layer_collection.children[base_coll].children[current_coll]
@@ -64,6 +68,7 @@ class SyntaxAnalyser:
 
 
     # TODO add mode differences
+    # function calls the mathematical syntax analyser
     def enter_math_mode(self, mode):
         # When we use blocks we don't want to consume token and when we use symbols we do
         # How to change this to a clear version is the TODO
@@ -98,6 +103,7 @@ class SyntaxAnalyser:
         return True
 
 
+    # function executes given action
     def execute_action(self, action):
         # <BLOCK> actions
         if action == '#ACTION_BLOCK_ENTER':

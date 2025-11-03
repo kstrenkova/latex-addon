@@ -73,6 +73,7 @@ class LexicalAnalyser:
 
         return Token("COMMAND", name)
 
+    # function returns the next token
     def get_token(self):
         # <WHITESPACE>
         self.state_whitespace()
@@ -106,7 +107,7 @@ class LexicalAnalyser:
             if c == '\\':
                 self.position -= 1
 
-    # function checks the next token
+    # function checks the value of the next token
     def peek_token(self):
         token = self.get_token()
         self.return_token(token)

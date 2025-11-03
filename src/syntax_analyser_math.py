@@ -78,13 +78,6 @@ class MathSyntaxAnalyser:
         if stack_top != '$':
             return False
 
-        end_tokens = {
-            ('dollar', '$'),
-            ('COMMAND', '\)'),
-            ('COMMAND', '\]'),
-            ('COMMAND', 'end')
-        }
-
         return (token.type, token.value) in end_tokens
 
     def choose_rule(self, stack_top, token):
@@ -154,7 +147,9 @@ class MathSyntaxAnalyser:
             token = self.lex.get_token()
             mfont = self.state_stack[-1]
 
+            # divide token into letters
             for letter in token.value:
+                # only supports uppercase letters
                 if letter.isupper():
                     gen_text(unicode_fonts[mfont][letter], change_font('math'), self.d.current_coll)
                     gen_calculate(self.parameters, self.d.text_scale, self.levels)
@@ -183,6 +178,7 @@ class MathSyntaxAnalyser:
             eis = self.state_stack.pop()
             self.levels.ei_array.pop()
 
+            # move range operator symbol (sum, int, ...) if present
             if self.levels.sym_name != '':
                 gen_move_sum(self.parameters, eis.eicoll, self.levels.sym_name)
                 space = MIN_SPACE * self.parameters.scale
@@ -199,6 +195,7 @@ class MathSyntaxAnalyser:
             self.levels.ei_array.pop()
             eis = self.state_stack[-1]
 
+            # move range operator symbol (sum, int, ...) if present
             if self.levels.sym_name != '':
                 gen_move_sum(self.parameters, eis.eicoll, self.levels.sym_name)
 
@@ -220,6 +217,7 @@ class MathSyntaxAnalyser:
             self.parameters.width = fin_width + MIN_SPACE * self.parameters.scale
             self.levels.ei_array.pop()
 
+            # move range operator symbol (sum, int, ...) if present
             if self.levels.sym_name != '':
                 gen_move_sum(self.parameters, eis.eicoll2, self.levels.sym_name)
                 space = MIN_SPACE * self.parameters.scale

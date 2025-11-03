@@ -77,8 +77,8 @@ def preload_fonts(user_fonts):
     print("FONT CACHE:", FONT_CACHE.items())
 
 
-# function that gets font scale needed to make all fonts the
-# same height
+# function that gets font scale that is needed
+# to make all fonts the same height
 def get_font_scale(font):
     bpy.ops.object.text_add()
     h_obj = bpy.context.active_object
