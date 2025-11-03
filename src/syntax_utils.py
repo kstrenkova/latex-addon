@@ -46,9 +46,10 @@ def change_font(mode):
 def preload_fonts(user_fonts):
     font_mode = {
         'math':     ('STIX Two Math Regular', 'STIXTwoMath-Regular.ttf'),
+        'teletype': ('Latin Modern Math Regular', 'latinmodern-math.otf'),
         'verb':     ('Latin Modern Math Regular', 'latinmodern-math.otf')
         # 'mathcal':  ('Latin Modern Math Regular', 'latinmodern-math.otf')
-        # TODO add actual verb
+        # TODO add actual verb and teletype
     }
 
     src_dir = os.path.dirname(os.path.dirname(__file__))

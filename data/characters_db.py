@@ -60,17 +60,16 @@ special_chars = [
     'dollar',
 ]
 
-block_type = [
+block_actions = {
     # math mode
-    'displaymath',
-    'equation',
-    'math',
+    'math':        '#ACTION_MATH_MODE_INLINE',
+    'equation':    '#ACTION_MATH_MODE_DISPLAY',
+    'displaymath': '#ACTION_MATH_MODE_DISPLAY',
 
     # bullet points
-    'enumerate',
-    'itemize',
-
-]
+    'enumerate':    '#ACTION_INIT_ITEM',
+    'itemize':      '#ACTION_INIT_ITEM'
+}
 
 epsilon_rules = {
     # stack_top: token.type, token.value

@@ -30,17 +30,9 @@ ll_table = {
     # <MATH_MODE> -> $ <MATH_INLINE_PROG> $
     # <MATH_MODE> -> \( <MATH_INLINE_PROG> \)
     # <MATH_MODE> -> \[ <MATH_DISPLAY_PROG> \[
-    ('MATH_MODE', 'dollar'):      ['#ACTION_MATH_INLINE_MODE', 'dollar'],
-    ('MATH_MODE', '\('):          ['#ACTION_MATH_INLINE_MODE', '\)'],
-    ('MATH_MODE', '\['):          ['#ACTION_MATH_DISPLAY_MODE', '\]'],
-
-    # <TERM> -> $ <MATH_INLINE_PROG> $
-    # <TERM> -> \( <MATH_INLINE_PROG> \)
-    # <TERM> -> begin { math } <MATH_INLINE_PROG> end { math }
-
-    # <TERM> -> \[ <MATH_DISPLAY_PROG> \[
-    # <TERM> -> begin { equation } <MATH_DISPLAY_PROG> end { equation }
-    # <TERM> -> begin { displaymath } <MATH_DISPLAY_PROG> end { displaymath }
+    ('MATH_MODE', 'dollar'):      ['#ACTION_MATH_MODE_INLINE', 'dollar'],
+    ('MATH_MODE', '\('):          ['#ACTION_MATH_MODE_INLINE', '\)'],
+    ('MATH_MODE', '\['):          ['#ACTION_MATH_MODE_DISPLAY', '\]'],
 
     ('TERM', 'begin'):                 ['BLOCK'],
 
@@ -76,28 +68,24 @@ ll_table = {
     ('COMMAND', 'par'):                ['par', '#ACTION_PARAGRAPH'],
 
     # <COMMAND> -> change_font { MORE_TERM }
-    ('COMMAND', 'textbf'):             ['textbf', '#ACTION_BOLD_TEXT', '{', 'MORE_TERM', '}', '#ACTION_BASE_TEXT'],
-    ('COMMAND', 'textit'):             ['textit', '#ACTION_ITAL_TEXT', '{', 'MORE_TERM', '}', '#ACTION_BASE_TEXT'],
-    ('COMMAND', 'texttt'):             ['texttt', '#ACTION_BOLD_TEXT'], # TODO
+    ('COMMAND', 'textbf'):             ['textbf', '#ACTION_FONT_BOLD',     '{', 'MORE_TERM', '}', '#ACTION_FONT_BASE'],
+    ('COMMAND', 'textit'):             ['textit', '#ACTION_FONT_ITALIC',   '{', 'MORE_TERM', '}', '#ACTION_FONT_BASE'],
+    ('COMMAND', 'texttt'):             ['texttt', '#ACTION_FONT_TELETYPE', '{', 'MORE_TERM', '}', '#ACTION_FONT_BASE'],
 
     # <COMMAND> -> verb | <MORE_TERM> |
-    ('COMMAND', 'verb'):                ['verb', '|', '#ACTION_GENERATE_VERB', '|'],
+    ('COMMAND', 'verb'):               ['verb', '|', '#ACTION_GENERATE_VERB', '|'],
 
     # TODO LL(1) with semantic predicates
     # --- BLOCK ---
-    # <BLOCK> -> begin { <BLOCK_NAME> } <BLOCK_BODY> end { <BLOCK_NAME> }
+    # <BLOCK> -> begin { TEXT } <BLOCK_CONTENT> end { TEXT }
     ('BLOCK', 'begin'): [
-        'begin', '{', 'BLOCK_NAME', '}',
+        'begin', '{', '#ACTION_BLOCK_VERIFY_BEGIN', '}',
         '#ACTION_BLOCK_ENTER',
         'BLOCK_CONTENT',
-        'end', '{', '#ACTION_BLOCK_VERIFY', '}',
+        'end',   '{', '#ACTION_BLOCK_VERIFY_END',   '}',
     ],
 
-    ('BLOCK_NAME', 'enumerate'):    ['enumerate', '#ACTION_BLOCK_SAVE_enumerate'],
-    ('BLOCK_NAME', 'itemize'):      ['itemize',   '#ACTION_BLOCK_SAVE_itemize'],
-    ('BLOCK_NAME', 'math'):         ['math',      '#ACTION_BLOCK_SAVE_math'],
-
-    ('BLOCK_CONTENT', 'item'):         ['#ACTION_INIT_ITEM', 'ITEMIZE'],
+    ('BLOCK_CONTENT', 'item'):         ['ITEMIZE'],
     ('BLOCK_CONTENT', '_ANY'):         ['MORE_TERM'],
     ('BLOCK_CONTENT', 'end'):          ['epsilon'],
     # TODO nested blocks

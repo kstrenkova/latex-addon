@@ -33,15 +33,13 @@ class SyntaxAnalyser:
         self.parameters = Parameters(custom_prop.text_scale, 0.0, 0.0, 0.0)
         self.block = ''
 
+
     def choose_rule(self, stack_top, token):
         # TODO clean lookup
         key = token.value if (token.type in special_token_type) else token.type
 
         if stack_top in epsilon_rules and epsilon_rules[stack_top] != (token.type, token.value):
             key = 'epsilon'
-
-        if stack_top == 'BLOCK_NAME' and token.type == '_TEXT':
-            key = token.value
 
         if stack_top == 'PROG':
             key = '_ANY'
@@ -50,56 +48,87 @@ class SyntaxAnalyser:
         rule = ll_table.get((stack_top, key))
         return rule
 
+
+    def create_text_object(self, value, font_type):
+        gen_text(value, change_font(font_type), self.d.current_coll)
+        self.parameters.height = self.parameters.line
+        gen_move_position(self.parameters)
+        self.parameters.width += BASE_SPACE * self.parameters.scale  # space between text
+        return True
+
+
     def set_active_collection(self, base_coll, current_coll):
         view_layer = bpy.context.view_layer
         collection = view_layer.layer_collection.children[base_coll].children[current_coll]
         view_layer.active_layer_collection = collection
 
-    def enter_block(self):
-        # MATH INLINE MODE
-        if self.block == 'math':
-            return self.execute_action('#ACTION_MATH_INLINE_MODE')
-        # MATH DISPLAY MODE
-        elif self.block == 'equation':
-            return self.execute_action('#ACTION_MATH_INLINE_MODE') # TODO
-        elif self.block == 'displaymath':
-            return self.execute_action('#ACTION_MATH_INLINE_MODE') # TODO
-        else:
-            return True # TODO
+
+    # TODO add mode differences
+    def enter_math_mode(self, mode):
+        # When we use blocks we don't want to consume token and when we use symbols we do
+        # How to change this to a clear version is the TODO
+        token = self.lex.peek_token()
+        if token.value in ['$', '\(', '\[']:
+            self.lex.get_token()
+
+        latex_coll = self.d.base_coll
+        self.d.current_coll = gen_new_collection("MathematicalEqCollection", self.d.base_coll)
+        self.d.base_coll = self.d.current_coll
+
+        # activate the collection for mathematical equations
+        self.set_active_collection(latex_coll, self.d.current_coll)
+
+        # call math syntax analyser
+        math_syntax = MathSyntaxAnalyser(self.lex, self.d, self.parameters)
+
+        print("Entering math mode!")
+
+        if not math_syntax.parse():
+            warn_msg = 'Mathematical equation was not fully generated.'
+            # TODO self.report({'WARNING'}, warn_msg)
+            return False
+
+        self.d.base_coll = latex_coll
+        print("Returned from math mode!")
+
+        # join collection into parent collection
+        gen_join_collections(self.d.current_coll, self.d.base_coll)
+        gen_activate_collection(self.d.base_coll)
+        self.d.current_coll = latex_coll
+        return True
+
 
     def execute_action(self, action):
         # <BLOCK> actions
-        if action.startswith('#ACTION_BLOCK_SAVE'):
-            block = action.removeprefix('#ACTION_BLOCK_SAVE_')
-            if block not in block_type:
-                print("Block value", block, "is not correct or supported!")
-                return False
+        if action == '#ACTION_BLOCK_ENTER':
+            action = block_actions.get(self.block)
+            return self.execute_action(action)
 
-            self.block = block
-            return True
-
-        elif action == '#ACTION_BLOCK_ENTER':
-            return self.enter_block()
-
-        elif action == '#ACTION_BLOCK_VERIFY':
+        elif action == '#ACTION_BLOCK_VERIFY_BEGIN':
             token = self.lex.get_token()
-            if token.value != self.block:
-                print("Block value in begin", self.block, "doesn't match the value in end", token.value)
-                return False
+            if block_actions.get(token.value) is not None:
+                self.block = token.value
+                return True
 
-            self.block = ''
-            return True
+            print("Block value", token.value, "is not correct or supported!")
+            return False
+
+        elif action == '#ACTION_BLOCK_VERIFY_END':
+            token = self.lex.get_token()
+            if token.value == self.block:
+                self.block = ''
+                return True
+
+            print("Block value in begin", self.block, "doesn't match the value in end", token.value)
+            return False
 
         # <CONST> actions
         elif action == '#ACTION_GENERATE_TEXT':
             token = self.lex.get_token()
-            gen_text(token.value, change_font(self.d.user_font), self.d.current_coll)
-            self.parameters.height = self.parameters.line
-            gen_move_position(self.parameters)
-            self.parameters.width += BASE_SPACE * self.parameters.scale  # space between text
-            return True
+            return self.create_text_object(token.value, self.d.user_font)
 
-        if action == '#ACTION_NEW_LINE':
+        # TODO new line based on line height
+        elif action == '#ACTION_NEW_LINE':
             token = self.lex.peek_token()
             if token.type == '_ENTER':
                 self.lex.get_token()
@@ -140,70 +169,29 @@ class SyntaxAnalyser:
             self.state_stack.pop()
             return True
 
-        # FONT CHANGES
-        elif action == '#ACTION_BASE_TEXT':
-            self.d.user_font = 'base'
+        # <FONT CHANGE> actions
+        elif action.startswith('#ACTION_FONT_'):
+            self.d.user_font = action.removeprefix('#ACTION_FONT_').lower()
             return True
 
-        elif action == '#ACTION_BOLD_TEXT':
-            self.d.user_font = 'bold'
-            return True
-
-        elif action == '#ACTION_ITAL_TEXT':
-            self.d.user_font = 'italic'
-            return True
-
+        # verb command
         elif action == '#ACTION_GENERATE_VERB':
-            # get full \verb content
             content, err = self.lex.get_verb_content()
             if len(err) > 0:
-                print("Error in verb function:", err)
+                print("Error:", err)
                 return False
 
-            # TODO remove duplicate code
-            gen_text(content, change_font('verb'), self.d.current_coll)
-            self.parameters.height = self.parameters.line
-            gen_move_position(self.parameters)
-            self.parameters.width += BASE_SPACE * self.parameters.scale  # space between text
-            return True
+            return self.create_text_object(content, 'verb')
 
-        # MATH INLINE MODE
-        elif action == '#ACTION_MATH_INLINE_MODE':
-            # When we use blocks we don't want to consume token and when we use symbols we do
-            # How to change this to a clear version is the TODO
-            token = self.lex.peek_token()
-            if token.value in ['$', '\(', '\[']:
-                self.lex.get_token()
-
-            latex_coll = self.d.base_coll
-            self.d.current_coll = gen_new_collection("MathematicalEqCollection", self.d.base_coll)
-            self.d.base_coll = self.d.current_coll
-
-            # activate the collection for mathematical equations
-            self.set_active_collection(latex_coll, self.d.current_coll)
-
-            # call math syntax analyser
-            math_syntax = MathSyntaxAnalyser(self.lex, self.d, self.parameters)
-
-            print("Entering math mode!")
-
-            if not math_syntax.parse():
-                warn_msg = 'Mathematical equation was not fully generated. Check system console for more info on this matter.'
-                # TODO self.report({'WARNING'}, warn_msg)
-                return False
-
-            self.d.base_coll = latex_coll
-            print("Returned from math mode!")
-
-            # join collection into parent collection
-            gen_join_collections(self.d.current_coll, self.d.base_coll)
-            gen_activate_collection(self.d.base_coll)
-            self.d.current_coll = latex_coll
-            return True
+        # MATH MODE
+        elif action.startswith('#ACTION_MATH_MODE_'):
+            mode = action.removeprefix('#ACTION_MATH_MODE_').lower()
+            return self.enter_math_mode(mode)
 
         else:
             print(f"Unknown action: '{action}'")
             return False
+
 
     # main function for parsing process
     def parse(self):

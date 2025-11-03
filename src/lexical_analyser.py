@@ -121,8 +121,8 @@ class LexicalAnalyser:
                 content += self.get_char()
             self.position += 1
 
-        # check if pipe symbol was found
+        # error is pipe symbol was not found
         if self.is_end():
-            return "", "Missing | symbol!"
+            return "", "Missing | symbol in function \verb!"
 
         return content, ""
