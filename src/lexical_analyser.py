@@ -114,15 +114,16 @@ class LexicalAnalyser:
 
     # function returns the full \verb command content
     def get_verb_content(self):
-        content = ""
-        while not self.is_end() and self.get_char() != '|':
-            # do not add whitespace into content
-            if not self.get_char().isspace():
-                content += self.get_char()
+        content = []
+        while not self.is_end():
+            c = self.get_char()
+            if c == '|':
+                return ''.join(content), ""
+
+            # skip new lines but leave spaces
+            if c not in '\n\r':
+                content.append(c)
             self.position += 1
 
-        # error is pipe symbol was not found
-        if self.is_end():
-            return "", "Missing | symbol in function \verb!"
+        return "", "Missing | symbol in function \verb!"
 
-        return content, ""
