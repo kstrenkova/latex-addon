@@ -236,23 +236,15 @@ math_ll_table = {
     # --- SQRT ---
     # <SQRT> -> [ <MORE_TERM> ] { <MORE_TERM> }
     ('SQRT', '['): [
-        '[', '#ACTION_LEVEL_UP_SQRT', 'SQRT_CONTEXT', ']',
+        '[', '#ACTION_SQRT_INDEX_BEGIN',     'MORE_TERM', ']',
         '{', '#ACTION_SQRT_INIT_WITH_INDEX', 'MORE_TERM', '}',
-        '#ACTION_SQRT_CREATE',
+        '#ACTION_SQRT_CREATE'
     ],
     # <SQRT> -> { <MORE_TERM> }
     ('SQRT', '{'): [
         '{', '#ACTION_SQRT_INIT', 'MORE_TERM', '}',
-        '#ACTION_SQRT_CREATE',
+        '#ACTION_SQRT_CREATE'
     ],
-
-    # TODO finish up sqrt context
-    # --- SQRT_CONTEXT ---
-    # <SQRT_CONTEXT> -> <TERM> <SQRT_CONTEXT>
-    ('SQRT_CONTEXT', '_TEXT'):            ['TERM', 'SQRT_CONTEXT'],
-    ('SQRT_CONTEXT', '_SPECIAL_CHAR'):    ['TERM', 'SQRT_CONTEXT'],
-    # <SQRT_CONTEXT> -> epsilon
-    ('SQRT_CONTEXT', ']'):             ['epsilon'],
 
     # --- FRAC ---
     # <FRAC> -> { <MORE_TERM> } { <MORE_TERM> }

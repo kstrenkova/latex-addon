@@ -97,6 +97,11 @@ class MathSyntaxAnalyser:
         if stack_top == 'PROG':
             key = '_ANY'
 
+        # special rule for sqrt index context
+        if self.levels.sqrt and token.value == ']':
+            self.levels.sqrt = False
+            return ['epsilon']
+
         rule = math_ll_table.get((stack_top, key))
         return rule
 
@@ -117,13 +122,6 @@ class MathSyntaxAnalyser:
         elif action == '#ACTION_LEVEL_UP':
             self.levels.ei_array.append('exp')
             gen_calculate(self.parameters, self.d.text_scale, self.levels)
-            return True
-
-        elif action == '#ACTION_LEVEL_UP_SQRT':
-            self.levels.ei_array.append('exp')
-            self.levels.sqrt = True
-            gen_calculate(self.parameters, self.d.text_scale, self.levels)
-            self.levels.sqrt = False
             return True
 
         # <COMMAND> actions
@@ -235,29 +233,28 @@ class MathSyntaxAnalyser:
             return True
 
         # <SQRT> actions
-        elif action == '#ACTION_SQRT_INIT':
-            # saving parameters
+        elif action == ('#ACTION_SQRT_INDEX_BEGIN'):
+            self.levels.ei_array.append('exp')
+            self.levels.sqrt = True
             gen_calculate(self.parameters, self.d.text_scale, self.levels)
-            sqs = SqrtState(self.d.current_coll, self.parameters.create_copy())
-            self.parameters.width += SQRT_WIDTH * self.parameters.scale
-
-            # square root collection
-            sqs.sqcoll = gen_new_collection("SqrtCollection", sqs.parent_coll)
-            self.d.current_coll = sqs.sqcoll
-
-            self.state_stack.append(sqs)
             return True
 
-        # TODO remove duplicity
-        elif action == '#ACTION_SQRT_INIT_WITH_INDEX':
-            self.levels.ei_array.pop()
-            self.parameters.width += MIN_SPACE  # space before index
+        elif action.startswith('#ACTION_SQRT_INIT'):
+            with_index = len(action.removeprefix('#ACTION_SQRT_INIT'))
+
+            if with_index:
+                self.levels.ei_array.pop()
+                self.parameters.width += MIN_SPACE  # space before index
 
             # saving parameters
             gen_calculate(self.parameters, self.d.text_scale, self.levels)
             sqs = SqrtState(self.d.current_coll, self.parameters.create_copy())
-            sqs.init_params.width -= (SQRT_WIDTH - 0.4) * self.parameters.scale
-            self.parameters.width += 0.4 * self.parameters.scale
+
+            if with_index:
+                sqs.init_params.width -= (SQRT_WIDTH - 0.4) * self.parameters.scale
+                self.parameters.width += 0.4 * self.parameters.scale
+            else:
+                self.parameters.width += SQRT_WIDTH * self.parameters.scale
 
             # square root collection
             sqs.sqcoll = gen_new_collection("SqrtCollection", sqs.parent_coll)
