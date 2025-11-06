@@ -256,11 +256,11 @@ math_ll_table = {
     # --- BLOCK ---
     # <BLOCK> -> begin { text } <MATRIX> end { text }
     ('BLOCK', 'begin'): [
-        'begin', '{', '#ACTION_VALIDATE_MATRIX_TYPE', '}',
+        'begin', '{', '#ACTION_MATRIX_VERIFY_BEGIN', '}',
         '#ACTION_MATRIX_INIT',
         'MATRIX',
         '#ACTION_MATRIX_CREATE',
-        'end', '{', '#ACTION_VALIDATE_MATRIX_TYPE', '}'
+        'end',   '{', '#ACTION_MATRIX_VERIFY_END',   '}'
     ],
 
     # --- MATRIX ---
@@ -276,5 +276,6 @@ math_ll_table = {
     ('MATRIX', 'sqrt'):             ['COMMAND', 'MATRIX'],
     ('MATRIX', 'frac'):             ['COMMAND', 'MATRIX'],
     ('MATRIX', '_AMPERSAND'):       ['#ACTION_MATRIX_NEW_CELL', 'MATRIX'],
+    ('MATRIX', 'begin'):            ['BLOCK'],
     ('MATRIX', 'end'):              ['epsilon'],
 }

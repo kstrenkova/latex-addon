@@ -52,16 +52,25 @@ class SqrtState:
 
 
 # class for matrix
-# TODO matrix brackets are not moved properly
 class MatrixState:
     def __init__(self, parent_coll, init_params):
         self.parent_coll = parent_coll
         self.init_params = init_params
-        self.xy_size = []
+        self.size = MatrixSize()
         self.mx_coll = ''
         self.obj_array = [[]]
         self.row_num = 0
         self.brackets = 'matrix'
+
+
+# class for matrix dimensions
+class MatrixSize:
+    def __init__(self):
+        self.min_x = -1
+        self.min_y = -1
+        self.max_x = -1
+        self.max_y = -1
+        self.bracket_width = -1
 
 
 class MathSyntaxAnalyser:
@@ -386,23 +395,33 @@ class MathSyntaxAnalyser:
             return True
 
         # <MATRIX> actions
-        elif action == '#ACTION_VALIDATE_MATRIX_TYPE':
+        elif action == '#ACTION_MATRIX_VERIFY_BEGIN':
             token = self.lex.get_token()
             if token.type == '_TEXT' and token.value in matrix_brackets:
-                # saving state of the matrix
                 ms = MatrixState(self.d.current_coll, self.parameters.create_copy())
                 ms.brackets = token.value
                 self.state_stack.append(ms)
                 return True
-            else:
-                print("There are no matrix bracket type!", token.value)
+
+            print("Matrix type", token.value, "is not correct!")
+            return False
+
+        elif action == '#ACTION_MATRIX_VERIFY_END':
+            token = self.lex.get_token()
+            ms = self.state_stack[-1]
+            if token.type == '_TEXT' and token.value == ms.brackets:
+                self.state_stack.pop()
+                return True
+
+            print("Matrix type in begin", ms.brackets, "doesn't match the value in end", token.value)
+            return False
 
         elif action == '#ACTION_MATRIX_INIT':
             gen_calculate(self.parameters, self.d.text_scale, self.levels)
 
-            # saving state of the matrix
+            # saving starting state of the matrix
             ms = self.state_stack[-1]
-            ms.xy_size.append(ms.init_params.width) # array for matrix parameters
+            ms.size.min_x = ms.init_params.width
 
             # matrix body collection
             ms.mx_coll = gen_new_collection("MatrixBodyCollection", ms.parent_coll)
@@ -417,7 +436,7 @@ class MathSyntaxAnalyser:
             ms = self.state_stack[-1]
 
             # matrix cell collection
-            self.d.current_coll = gen_new_collection("MatrixCellCollection", ms.parent_coll)
+            self.d.current_coll = gen_new_collection("MatrixCellCollection", ms.mx_coll)
 
             # add new array that represents row
             ms.obj_array.append([])
@@ -434,37 +453,42 @@ class MathSyntaxAnalyser:
             ms = self.state_stack[-1]
 
             # matrix cell collection
-            self.d.current_coll = gen_new_collection("MatrixCellCollection", ms.parent_coll)
+            self.d.current_coll = gen_new_collection("MatrixCellCollection", ms.mx_coll)
 
             # add collection to row
             ms.obj_array[ms.row_num].append(self.d.current_coll)
             return True
 
         elif action == '#ACTION_MATRIX_CREATE':
-            ms = self.state_stack.pop()
+            ms = self.state_stack[-1]
 
             # position matrix
             gen_matrix_pos(self.d.context, ms.obj_array, self.parameters)
 
-            # get matrix parameters
-            ms.xy_size = gen_matrix_param(True, ms.parent_coll, ms.xy_size)
+            # calculate matrix height
+            ms.size.min_y = gen_bound(ms.parent_coll, 'y', 'min')
+            ms.size.max_y = gen_bound(ms.parent_coll, 'y', 'max')
             bracket_type = matrix_brackets[ms.brackets]
 
             if not ms.brackets == 'matrix':
                 # generate left bracket of matrix
-                gen_text(bracket_type[0], change_font('math'), self.d.current_coll)
-                gen_brackets(self.d.context, self.parameters, ms.parent_coll, self.d.base_coll, ms.xy_size, True)
-                ms.xy_size = gen_matrix_param(False, ms.parent_coll, ms.xy_size)
+                gen_text(bracket_type[0], change_font('math'), ms.mx_coll)
+                gen_brackets(self.d.context, self.parameters, ms.parent_coll, ms.size)
+
+                # calculate furthest x position
+                ms.size.max_x = gen_bound(ms.parent_coll, 'x', 'max')
+                ms.size.max_x += ms.size.bracket_width - ms.size.min_x
 
                 # generate right bracket of matrix
-                gen_text(bracket_type[1], change_font('math'), self.d.current_coll)
-                gen_brackets(self.d.context, self.parameters, ms.parent_coll, self.d.base_coll, ms.xy_size, False)
+                gen_text(bracket_type[1], change_font('math'), ms.mx_coll)
+                gen_brackets(self.d.context, self.parameters, ms.parent_coll, ms.size)
 
             # center matrix into row
-            gen_matrix_center(self.parameters, ms.parent_coll, ms.xy_size)
+            gen_matrix_center(self.parameters, ms.parent_coll, ms.size)
 
-            # set width of parameters
-            self.parameters.width = gen_bound(ms.mx_coll, 'x', 'max') + 0.25
+            # set new width and old line
+            self.parameters.width = gen_bound(ms.mx_coll, 'x', 'max') + 0.25 * self.d.text_scale
+            self.parameters.line = ms.init_params.line
 
             # link objects to matrix collection
             for collection in bpy.data.collections:

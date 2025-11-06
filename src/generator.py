@@ -512,72 +512,43 @@ def gen_matrix_y(obj_array, param, max_cell_x):
                 i += 1  # next cell
 
 
-# function calculates position of matrix brackets
-def gen_matrix_param(left, collection, xy_size):
-    # left bracket
-    if left:
-        # get matrix height
-        min_y = gen_bound(collection, 'y', 'min')
-        max_y = gen_bound(collection, 'y', 'max')
-        xy_size.insert(0, max_y)
-        xy_size.insert(0, min_y)
-    # right bracket
-    else:
-        # get width of bracket
-        bracket_width = xy_size.pop()
-        # get x_min
-        x_min = xy_size.pop()
-        # get matrix width
-        matrix_width = gen_bound(collection, 'x', 'max') + bracket_width - x_min
-        xy_size.append(matrix_width)
-
-    return xy_size
-
-
 # function generates matrix brackets
-def gen_brackets(context, param, collection, base_collection, xy_size, left):
-    # xy_size -> y_min, y_max, x
+def gen_brackets(context, param, collection, size):
+    # determine left or right bracket
+    is_left = (size.max_x == -1)
+    x = size.min_x if is_left else size.max_x
 
-    # move bracket to position
-    bpy.context.active_object.location.x = xy_size[2]  # x
-    bpy.context.active_object.location.y = xy_size[0]  # y_min
+    # move bracket object
+    bracket = context.active_object
+    bracket.location = (x, size.min_y, 0)
 
-    # scale
-    matrix_height = xy_size[1] - xy_size[0]  # y_max - y_min
-    scale = (matrix_height + 0.5 * param.scale) / context.active_object.dimensions.y
-    context.active_object.scale.x = scale / 3.0
-    context.active_object.scale.y = scale
-
-    # apply changes
-    obj_name = context.active_object.name
-    bpy.ops.object.select_all(action='DESELECT') # deselect all objects
-    bpy.data.objects[obj_name].select_set(True)
+    # scale bracket object
+    matrix_height = size.max_y - size.min_y
+    scale = (matrix_height + 0.5 * param.scale) / bracket.dimensions.y
+    bracket.scale = (scale / 3.0, scale, 0)
 
     # move bracket to align to text
-    context.active_object.location.y += context.active_object.dimensions.y / 12.0
-
-    # the width of bracket
-    bracket_width = context.active_object.location.x + context.active_object.dimensions.x
+    bracket.location.y += bracket.dimensions.y / 12.0
 
     # left bracket
-    if left:
-        # move objects
+    if is_left:
+        bracket_x = bracket.location.x + bracket.dimensions.x
+        move_by = bracket_x - x + 0.25 * param.scale
+
         for obj in bpy.data.collections[collection].all_objects:
-            obj.location.x += bracket_width - xy_size[2] + 0.25 * param.scale
+            # move all objects besides bracket
+            if obj.name != bracket.name:
+                obj.location.x += move_by
 
         # save bracket_width
-        xy_size.append(bracket_width)
-
-    # add bracket to collection
-    bpy.data.objects[obj_name].select_set(True)
-    gen_collection(collection, base_collection)
+        size.bracket_width = bracket_x
 
 
 # function centers matrix
-def gen_matrix_center(param, collection, xy_size):
+def gen_matrix_center(param, collection, size):
     # calculate center location
-    matrix_height = xy_size[1] - xy_size[0]  # y_max - y_min
-    center_loc = xy_size[1] - matrix_height / 2.0 - 0.3 * param.scale
+    matrix_height = size.max_y - size.min_y
+    center_loc = size.max_y - matrix_height / 2.0 - 0.3 * param.scale
 
     # center matrix into row
     for obj in bpy.data.collections[collection].all_objects:
@@ -594,7 +565,7 @@ def gen_bullet_point(param, defaults, text):
 
     bbox = [obj.matrix_world @ Vector(corner) for corner in obj.bound_box]
     obj_dimension = bbox[4].x * param.scale
-    param.width = 1.3 - obj_dimension  # space before bullet point
+    param.width = (1.3 - obj_dimension) * param.scale  # space before bullet point
 
     gen_move_position(param)
-    param.width += 0.3  # space after bullet point
+    param.width += 0.3 * param.scale  # space after bullet point

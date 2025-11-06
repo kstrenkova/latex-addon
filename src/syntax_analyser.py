@@ -90,7 +90,7 @@ class SyntaxAnalyser:
 
         if not math_syntax.parse():
             warn_msg = 'Mathematical equation was not fully generated.'
-            # TODO self.report({'WARNING'}, warn_msg)
+            print(warn_msg)
             return False
 
         self.d.base_coll = latex_coll
