@@ -48,6 +48,7 @@ def preload_fonts(user_fonts):
         'math':     ('STIX Two Math Regular',        'STIXTwoMath-Regular.ttf'),
         'teletype': ('Latin Modern Mono 10 Regular', 'latin-modern-mono.mmono10-regular.otf'),
         'verb':     ('Latin Modern Mono 10 Regular', 'latin-modern-mono.mmono10-regular.otf')
+        # TODO decide if we want a different mathcal font
         # 'mathcal':  ('Latin Modern Math Regular', 'latinmodern-math.otf')
     }
 

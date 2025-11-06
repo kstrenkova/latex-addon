@@ -15,10 +15,11 @@ TMP_TEXT_EDIT = "tmp_latex_text_edit"
 
 # function gets all of the loaded fonts
 def get_loaded_fonts(self, context):
-    items = []
+    fonts = [('Bfont Regular', 'Bfont Regular', '<builtin>')]
     for font in bpy.data.fonts:
-        items.append((font.name, font.name, font.filepath))
-    return items
+        if font.name != 'Bfont Regular':
+            fonts.append((font.name, font.name, font.filepath))
+    return fonts
 
 
 # custom properties
@@ -251,7 +252,7 @@ class WM_OT_AddText(bpy.types.Operator):
         # all objects in latex text
         all_obj = context.selected_objects
 
-        if len(all_obj) > 1 and props.one_object:
+        if len(all_obj) >= 1 and props.one_object:
             generate_one_object(context, props)
         else:
             # add empty object
