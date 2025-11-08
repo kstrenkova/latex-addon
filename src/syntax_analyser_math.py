@@ -477,18 +477,17 @@ class MathSyntaxAnalyser:
             if not ms.brackets == 'matrix':
                 # generate left bracket of matrix
                 gen_text(bracket_type[0], change_font('math'), ms.mx_coll)
-                gen_brackets(self.d.context, self.parameters, ms.parent_coll, ms.size)
+                gen_brackets(self.d.context, self.parameters, ms.mx_coll, ms.size)
 
                 # calculate furthest x position
-                ms.size.max_x = gen_bound(ms.parent_coll, 'x', 'max')
-                ms.size.max_x += ms.size.bracket_width - ms.size.min_x
+                ms.size.max_x = gen_bound(ms.parent_coll, 'x', 'max') + ms.size.bracket_width / 2.0
 
                 # generate right bracket of matrix
                 gen_text(bracket_type[1], change_font('math'), ms.mx_coll)
-                gen_brackets(self.d.context, self.parameters, ms.parent_coll, ms.size)
+                gen_brackets(self.d.context, self.parameters, ms.mx_coll, ms.size)
 
             # center matrix into row
-            gen_matrix_center(self.parameters, ms.parent_coll, ms.size)
+            gen_matrix_center(ms.mx_coll, ms.size, ms.init_params.height)
 
             # set new width and old line
             self.parameters.width = gen_bound(ms.mx_coll, 'x', 'max') + 0.25 * self.d.text_scale

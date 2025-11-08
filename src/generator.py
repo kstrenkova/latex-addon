@@ -411,8 +411,8 @@ def gen_matrix_pos(context, obj_array, param):
 # function centers matrix horizontally
 def gen_matrix_x(context, obj_array, param, max_cell_x):
     i = 0  # collumn number
-    while i < max_cell_x:
 
+    while i < max_cell_x:
         max_width = 0
         # iterate through rows
         for row in obj_array:
@@ -518,6 +518,7 @@ def gen_matrix_y(obj_array, param, max_cell_x):
                 i += 1  # next cell
 
 
+# TODO vmatrix and Vmatrix have tricky space after left bracket
 # function generates matrix brackets
 def gen_brackets(context, param, collection, size):
     # determine left or right bracket
@@ -532,36 +533,37 @@ def gen_brackets(context, param, collection, size):
     bracket.scale.x = scale / 3.0
     bracket.scale.y = scale
 
+    # force update after scaling
+    bpy.context.view_layer.update()
+
     # calculate the offset of bracket origin
     bbox = [bracket.matrix_world @ Vector(corner) for corner in bracket.bound_box]
-    bracket_min_y = abs(bbox[0].y) - 0.1
-    offset = size.min_y + bracket_min_y * scale
+    bracket_min_y = abs(bbox[0].y) - 0.15
+    offset = size.min_y + bracket_min_y
 
     # move bracket object
     bracket.location = (x, offset, 0)
 
     # left bracket
     if is_left:
-        bracket_x = bracket.location.x + bracket.dimensions.x
-        move_by = bracket_x - x + 0.25 * param.scale
-
         for obj in bpy.data.collections[collection].all_objects:
             # move all objects besides bracket
             if obj.name != bracket.name:
-                obj.location.x += move_by
+                obj.location.x += 1.5 * bracket.dimensions.x
 
         # save bracket_width
-        size.bracket_width = bracket_x
+        size.bracket_width = bracket.dimensions.x
 
 
 # function centers matrix
-def gen_matrix_center(param, collection, size):
+def gen_matrix_center(collection, size, y_line):
     # calculate center location
     center_loc = (size.max_y + size.min_y) / 2.0
+    offset = center_loc + abs(y_line)
 
     # center matrix into row
     for obj in bpy.data.collections[collection].all_objects:
-        obj.location.y -= center_loc
+        obj.location.y -= offset
 
 
 def gen_bullet_point(param, defaults, text):

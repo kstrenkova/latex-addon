@@ -273,6 +273,7 @@ math_ll_table = {
     ('MATRIX', '_SPECIAL_CHAR'):    ['CONST', 'MATRIX'],
     ('MATRIX', '_ENTER'):           ['#ACTION_MATRIX_NEW_ROW', 'MATRIX'],
     ('MATRIX', '{'):                ['COMMAND', 'MATRIX'],
+    ('MATRIX', '_MATH_SYMBOL'):     ['COMMAND', 'MATRIX'],
     ('MATRIX', 'sqrt'):             ['COMMAND', 'MATRIX'],
     ('MATRIX', 'frac'):             ['COMMAND', 'MATRIX'],
     ('MATRIX', '_AMPERSAND'):       ['#ACTION_MATRIX_NEW_CELL', 'MATRIX'],
