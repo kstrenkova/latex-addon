@@ -291,7 +291,7 @@ class MathSyntaxAnalyser:
 
             # generating sqrt symbol
             gen_sqrt_sym(self.d.context)
-            gen_into_collection(sqs.parent_coll)  # symbol into collection
+            gen_into_collection(sqs.parent_coll, bpy.context.active_object)
 
             # move sqrt symbol
             gen_sqrt_move(self.d.context, sqs.init_params, sqrt_param, use_param)
@@ -360,7 +360,7 @@ class MathSyntaxAnalyser:
 
             # center numerator and denominator
             gen_center(fs.nwidth, fs.dwidth, center_coll)
-            gen_into_collection(fs.dcoll)
+            gen_into_collection(fs.dcoll, bpy.context.active_object)
 
             # join numerator and denominator collections
             gen_join_collections(fs.dcoll, fs.ncoll)
@@ -387,7 +387,7 @@ class MathSyntaxAnalyser:
                 # TODO sum, prod was 0.4
                 self.parameters.height -= BASE_SPACE * self.parameters.scale  # move lower
             gen_move_position(self.parameters)
-            gen_into_collection(self.d.current_coll)
+            gen_into_collection(self.d.current_coll, bpy.context.active_object)
 
             # check if the next token is for creating exponent or index
             ntoken = self.lex.peek_token()

@@ -55,20 +55,18 @@ def gen_move_position(param):
 
 
 # function gets object into collection
-def gen_into_collection(collection):
-    active_obj = bpy.context.active_object
-
+def gen_into_collection(collection, symbol):
     for obj in bpy.data.collections[collection].objects:
         # object is already in collection
-        if obj.name == active_obj.name:
+        if obj.name == symbol.name:
             return
 
     # unlink from all collections
-    for coll in active_obj.users_collection:
-        coll.objects.unlink(active_obj)
+    for coll in symbol.users_collection:
+        coll.objects.unlink(symbol)
 
     # link object into the correct collection
-    bpy.data.collections[collection].objects.link(active_obj)
+    bpy.data.collections[collection].objects.link(symbol)
 
 
 # function creates new collection
@@ -526,17 +524,21 @@ def gen_brackets(context, param, collection, size):
     is_left = (size.max_x == -1)
     x = size.min_x if is_left else size.max_x
 
-    # move bracket object
     bracket = context.active_object
-    bracket.location = (x, size.min_y, 0)
 
     # scale bracket object
     matrix_height = size.max_y - size.min_y
     scale = (matrix_height + 0.5 * param.scale) / bracket.dimensions.y
-    bracket.scale = (scale / 3.0, scale, 0)
+    bracket.scale.x = scale / 3.0
+    bracket.scale.y = scale
 
-    # move bracket to align to text
-    bracket.location.y += bracket.dimensions.y / 12.0
+    # calculate the offset of bracket origin
+    bbox = [bracket.matrix_world @ Vector(corner) for corner in bracket.bound_box]
+    bracket_min_y = abs(bbox[0].y) - 0.1
+    offset = size.min_y + bracket_min_y * scale
+
+    # move bracket object
+    bracket.location = (x, offset, 0)
 
     # left bracket
     if is_left:
@@ -555,8 +557,7 @@ def gen_brackets(context, param, collection, size):
 # function centers matrix
 def gen_matrix_center(param, collection, size):
     # calculate center location
-    matrix_height = size.max_y - size.min_y
-    center_loc = size.max_y - matrix_height / 2.0 - 0.3 * param.scale
+    center_loc = (size.max_y + size.min_y) / 2.0
 
     # center matrix into row
     for obj in bpy.data.collections[collection].all_objects:
