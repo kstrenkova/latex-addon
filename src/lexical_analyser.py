@@ -127,4 +127,3 @@ class LexicalAnalyser:
             self.position += 1
 
         return "", "Missing | symbol in function \verb!"
-

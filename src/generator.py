@@ -55,8 +55,7 @@ def gen_move_position(param):
 
 
 # function gets object into collection
-def gen_collection(collection, base_collection):
-    # active object
+def gen_into_collection(collection):
     active_obj = bpy.context.active_object
 
     for obj in bpy.data.collections[collection].objects:
@@ -64,8 +63,12 @@ def gen_collection(collection, base_collection):
         if obj.name == active_obj.name:
             return
 
+    # unlink from all collections
+    for coll in active_obj.users_collection:
+        coll.objects.unlink(active_obj)
+
+    # link object into the correct collection
     bpy.data.collections[collection].objects.link(active_obj)
-    bpy.data.collections[base_collection].objects.unlink(active_obj)
 
 
 # function creates new collection
@@ -77,15 +80,20 @@ def gen_new_collection(coll_name, parent_coll):
 
 
 # function joins collections into parent collection and removes child collection
-def gen_join_collections(collection, parent_coll):
+def gen_join_collections(coll_name, parent_coll_name):
+    coll = bpy.data.collections.get(coll_name)
+    parent_coll = bpy.data.collections.get(parent_coll_name)
+
+    if coll is None or parent_coll is None:
+        return
+
     # join all objects into one parent collection
-    for obj in bpy.data.collections[collection].all_objects:
-        bpy.data.collections[parent_coll].objects.link(obj)
-        bpy.data.collections[collection].objects.unlink(obj)
+    for obj in list(coll.objects):
+        parent_coll.objects.link(obj)
+        coll.objects.unlink(obj)
 
     # remove child collection
-    child_collection = bpy.data.collections.get(collection)
-    bpy.data.collections.remove(child_collection)
+    bpy.data.collections.remove(coll)
 
 
 # function sets a new active collection

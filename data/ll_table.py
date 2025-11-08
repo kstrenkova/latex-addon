@@ -276,6 +276,6 @@ math_ll_table = {
     ('MATRIX', 'sqrt'):             ['COMMAND', 'MATRIX'],
     ('MATRIX', 'frac'):             ['COMMAND', 'MATRIX'],
     ('MATRIX', '_AMPERSAND'):       ['#ACTION_MATRIX_NEW_CELL', 'MATRIX'],
-    ('MATRIX', 'begin'):            ['BLOCK'],
+    ('MATRIX', 'begin'):            ['BLOCK', 'MATRIX'],
     ('MATRIX', 'end'):              ['epsilon'],
 }

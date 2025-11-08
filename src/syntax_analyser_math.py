@@ -58,6 +58,7 @@ class MatrixState:
         self.init_params = init_params
         self.size = MatrixSize()
         self.mx_coll = ''
+        self.cell_colls = []
         self.obj_array = [[]]
         self.row_num = 0
         self.brackets = 'matrix'
@@ -290,7 +291,7 @@ class MathSyntaxAnalyser:
 
             # generating sqrt symbol
             gen_sqrt_sym(self.d.context)
-            gen_collection(sqs.parent_coll, sqs.sqcoll)  # symbol into collection
+            gen_into_collection(sqs.parent_coll)  # symbol into collection
 
             # move sqrt symbol
             gen_sqrt_move(self.d.context, sqs.init_params, sqrt_param, use_param)
@@ -359,7 +360,7 @@ class MathSyntaxAnalyser:
 
             # center numerator and denominator
             gen_center(fs.nwidth, fs.dwidth, center_coll)
-            gen_collection(fs.dcoll, self.d.base_coll)
+            gen_into_collection(fs.dcoll)
 
             # join numerator and denominator collections
             gen_join_collections(fs.dcoll, fs.ncoll)
@@ -386,7 +387,7 @@ class MathSyntaxAnalyser:
                 # TODO sum, prod was 0.4
                 self.parameters.height -= BASE_SPACE * self.parameters.scale  # move lower
             gen_move_position(self.parameters)
-            gen_collection(self.d.current_coll, self.d.base_coll)
+            gen_into_collection(self.d.current_coll)
 
             # check if the next token is for creating exponent or index
             ntoken = self.lex.peek_token()
@@ -428,6 +429,7 @@ class MathSyntaxAnalyser:
 
             # first matrix cell collection
             self.d.current_coll = gen_new_collection("MatrixCellCollection", ms.mx_coll)
+            ms.cell_colls.append(self.d.current_coll)
             ms.obj_array[ms.row_num].append(self.d.current_coll)
             return True
 
@@ -437,6 +439,7 @@ class MathSyntaxAnalyser:
 
             # matrix cell collection
             self.d.current_coll = gen_new_collection("MatrixCellCollection", ms.mx_coll)
+            ms.cell_colls.append(self.d.current_coll)
 
             # add new array that represents row
             ms.obj_array.append([])
@@ -454,6 +457,7 @@ class MathSyntaxAnalyser:
 
             # matrix cell collection
             self.d.current_coll = gen_new_collection("MatrixCellCollection", ms.mx_coll)
+            ms.cell_colls.append(self.d.current_coll)
 
             # add collection to row
             ms.obj_array[ms.row_num].append(self.d.current_coll)
@@ -491,15 +495,19 @@ class MathSyntaxAnalyser:
             self.parameters.line = ms.init_params.line
 
             # link objects to matrix collection
-            for collection in bpy.data.collections:
-                if "MatrixCellCollection" in collection.name:
-                    # join all objects into one parent collection
-                    for obj in collection.all_objects:
-                        bpy.data.collections[ms.mx_coll].objects.link(obj)
-                        collection.objects.unlink(obj)
+            body_coll = bpy.data.collections.get(ms.mx_coll)
+            for coll_name in ms.cell_colls:
+                coll = bpy.data.collections.get(coll_name)
+                if coll is None:
+                    continue
 
-                    # remove matrix cell collection
-                    bpy.data.collections.remove(collection)
+                # join all objects into one parent collection
+                for obj in list(coll.objects):
+                    body_coll.objects.link(obj)
+                    coll.objects.unlink(obj)
+
+                # remove matrix cell collection
+                bpy.data.collections.remove(coll)
 
             # join matrix collection into parent collection
             gen_join_collections(ms.mx_coll, ms.parent_coll)
