@@ -14,6 +14,8 @@ ll_table = {
     ('TERM', '_ENTER'):           ['CONST'],
     ('TERM', '_SPECIAL_CHAR'):    ['CONST'],
     ('TERM', '_PIPE'):            ['CONST'],
+    ('TERM', '_OPEN_BRACKET'):    ['CONST'],
+    ('TERM', '_CLOSE_BRACKET'):   ['CONST'],
 
     # <TERM> -> <COMMAND>
     ('TERM', 'par'):              ['COMMAND'],
@@ -36,6 +38,8 @@ ll_table = {
     ('MORE_TERM', '_ENTER'):           ['TERM', 'MORE_TERM'],
     ('MORE_TERM', '_SPECIAL_CHAR'):    ['TERM', 'MORE_TERM'],
     ('MORE_TERM', '_PIPE'):            ['TERM', 'MORE_TERM'],
+    ('MORE_TERM', '_OPEN_BRACKET'):    ['TERM', 'MORE_TERM'],
+    ('MORE_TERM', '_CLOSE_BRACKET'):   ['TERM', 'MORE_TERM'],
     ('MORE_TERM', 'par'):              ['TERM', 'MORE_TERM'],
     ('MORE_TERM', 'textbf'):           ['TERM', 'MORE_TERM'],
     ('MORE_TERM', 'textit'):           ['TERM', 'MORE_TERM'],
@@ -57,6 +61,8 @@ ll_table = {
     ('CONST', '_ENTER'):               ['#ACTION_NEW_LINE'],
     ('CONST', '_SPECIAL_CHAR'):        ['#ACTION_GENERATE_TEXT'],
     ('CONST', '_PIPE'):                ['#ACTION_GENERATE_TEXT'],
+    ('CONST', '_OPEN_BRACKET'):        ['#ACTION_GENERATE_TEXT'],
+    ('CONST', '_CLOSE_BRACKET'):       ['#ACTION_GENERATE_TEXT'],
 
     # --- COMMAND ---
     ('COMMAND', 'par'):                ['par', '#ACTION_PARAGRAPH'],
@@ -101,6 +107,8 @@ ll_table = {
     ('ITEM', '['):               ['[', '#ACTION_SAVE_ITEM', ']', '#ACTION_ADD_ITEM', 'MORE_TERM', 'ITEMIZE'],
     # TODO other types
     ('ITEM', '_TEXT'):           ['#ACTION_ADD_ITEM', 'MORE_TERM', 'ITEMIZE'],
+    ('ITEM', 'dollar'):          ['#ACTION_ADD_ITEM', 'MORE_TERM', 'ITEMIZE'],
+    ('ITEM', '_OPEN_BRACKET'):   ['#ACTION_ADD_ITEM', 'MORE_TERM', 'ITEMIZE'],
 }
 
 math_ll_table = {
@@ -117,6 +125,9 @@ math_ll_table = {
     ('TERM', '_CARET'):           ['CONST'],
     ('TERM', '['):                ['CONST'],
     ('TERM', ']'):                ['CONST'],
+    ('TERM', '_PIPE'):            ['CONST'],
+    ('TERM', '_OPEN_BRACKET'):    ['CONST'],
+    ('TERM', '_CLOSE_BRACKET'):   ['CONST'],
 
     # <TERM> -> <COMMAND>
     ('TERM', '{'):                ['COMMAND'],
@@ -144,6 +155,9 @@ math_ll_table = {
     ('MORE_TERM', '_CARET'):         ['TERM', 'MORE_TERM'],
     ('MORE_TERM', '['):              ['TERM', 'MORE_TERM'],
     ('MORE_TERM', ']'):              ['TERM', 'MORE_TERM'],
+    ('MORE_TERM', '_PIPE'):          ['TERM', 'MORE_TERM'],
+    ('MORE_TERM', '_OPEN_BRACKET'):  ['TERM', 'MORE_TERM'],
+    ('MORE_TERM', '_CLOSE_BRACKET'): ['TERM', 'MORE_TERM'],
     ('MORE_TERM', '{'):              ['TERM', 'MORE_TERM'],
     ('MORE_TERM', 'sqrt'):           ['TERM', 'MORE_TERM'],
     ('MORE_TERM', 'frac'):           ['TERM', 'MORE_TERM'],
@@ -172,6 +186,10 @@ math_ll_table = {
     ('CONST', '_TEXT'):              ['#ACTION_GENERATE_TEXT'],
     ('CONST', '['):                  ['#ACTION_GENERATE_TEXT'],
     ('CONST', ']'):                  ['#ACTION_GENERATE_TEXT'],
+    ('CONST', '_PIPE'):              ['#ACTION_GENERATE_TEXT'],
+    ('CONST', '_OPEN_BRACKET'):      ['#ACTION_GENERATE_TEXT'],
+    ('CONST', '_CLOSE_BRACKET'):     ['#ACTION_GENERATE_TEXT'],
+
     # <CONST> -> special_char
     ('CONST', '_SPECIAL_CHAR'):      ['#ACTION_GENERATE_TEXT'],
     # <CONST> -> enter

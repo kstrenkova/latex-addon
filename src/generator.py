@@ -6,7 +6,7 @@
 import bpy
 
 from bpy_extras.object_utils import object_data_add  # add sqrt symbol
-from ..data.characters_db import unicode_chars_big
+from ..data.characters_db import unicode_chars_big, LINE_SPACE
 from .syntax_utils import change_font
 
 from mathutils import Vector  # vertices

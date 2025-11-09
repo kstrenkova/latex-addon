@@ -15,6 +15,7 @@ from ..data.characters_db import *
 
 # TODO checkout mathfonts not used only on upper letters
 # TODO new line should take the height of the object into account
+# TODO extra space after symbols like (, ) that are not _TEXT
 
 
 class ItemizeState:
