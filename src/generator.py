@@ -13,7 +13,7 @@ from mathutils import Vector  # vertices
 
 
 # function generates text in given font
-def gen_text(text, font_info, collection):
+def gen_text(text, font_info, collection, line):
     text_data = bpy.data.curves.new("Text", type='FONT')
     text_data.body = text
 
@@ -28,6 +28,9 @@ def gen_text(text, font_info, collection):
     text_obj = bpy.data.objects.new("Text", text_data)
     bpy.data.collections[collection].objects.link(text_obj)
     bpy.context.view_layer.objects.active = text_obj
+
+    # add object to current line
+    line.line_objs.append(text_obj)
 
 
 def gen_set_position(param):
@@ -252,7 +255,7 @@ def gen_calculate(param, text_scale, levels):
     lvl_ix = 0  # index lvl
 
     # starting height is line height and scale is user given scale
-    param.height = param.line
+    param.height = param.line.height
     param.scale = text_scale
 
     # iterating through array of exponents and indexes
@@ -363,6 +366,42 @@ def gen_center(obj1, obj2, collection):
     # move all objects
     for obj in bpy.data.collections[collection].all_objects:
         obj.location.x += move_by
+
+
+# function returns extreme for an array of objects
+# by a set axis and type (min/max)
+def gen_bound_for_array(objects, axis, ftype):
+    if len(objects) <= 0:
+        return 0
+
+    # TODO remove the update
+    # Issue: The objects from math mode that have indexes or exponents
+    # were generated at their height already, so function gen_bouds_for_array for
+    # minimum was returning a big negative number while for others it was calculating
+    # minimum against 0.0, so there was a mismatch
+
+    # update object placement
+    bpy.context.view_layer.update()
+
+    # determine which corner index to check
+    if axis == 'x' and ftype == 'max':
+        corner_index = 4
+    elif axis == 'y' and ftype == 'max':
+        corner_index = 2
+    else:
+        corner_index = 0
+
+    func = max if ftype == 'max' else min
+
+    # save position of all objects
+    positions = []
+    for obj in objects:
+            obj.select_set(True)
+            bbox = [obj.matrix_world @ Vector(corner) for corner in obj.bound_box]
+            positions.append(getattr(bbox[corner_index], axis))
+
+    # return max or min from all positions
+    return func(positions)
 
 
 # function returns extreme for set axis and type (min/max)
@@ -568,9 +607,7 @@ def gen_matrix_center(collection, size, y_line):
 
 def gen_bullet_point(param, defaults, text):
     # TODO scale
-    gen_text(text, change_font('base'), defaults.current_coll)
-    param.line -= 1.0
-    param.height = param.line
+    gen_text(text, change_font('base'), defaults.current_coll, param.line)
 
     obj = bpy.context.active_object  # save active object
 
@@ -578,5 +615,6 @@ def gen_bullet_point(param, defaults, text):
     obj_dimension = bbox[4].x * param.scale
     param.width = (1.3 - obj_dimension) * param.scale  # space before bullet point
 
+    param.height = param.line.height
     gen_move_position(param)
     param.width += 0.3 * param.scale  # space after bullet point

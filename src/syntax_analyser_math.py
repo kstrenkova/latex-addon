@@ -12,6 +12,8 @@ from .syntax_utils import change_font
 from ..data.ll_table import *
 from ..data.characters_db import *
 
+# TODO go from using collections to python arrays or dictionaries
+# TODO nested EI do not work for sum EI
 
 # class for levels
 class Levels:
@@ -112,7 +114,8 @@ class MathSyntaxAnalyser:
         # <CONST> actions
         if action == '#ACTION_GENERATE_TEXT':
             token = self.lex.get_token()
-            gen_text(token.value, change_font(self.d.user_font), self.d.current_coll)
+            gen_text(token.value, change_font(self.d.user_font), self.d.current_coll, self.parameters.line)
+
             gen_calculate(self.parameters, self.d.text_scale, self.levels)
             gen_move_position(self.parameters)
             return True
@@ -137,7 +140,7 @@ class MathSyntaxAnalyser:
         elif action == '#ACTION_MATH_SYMBOL':
             token = self.lex.get_token()
             if token.value in unicode_chars:
-                gen_text(unicode_chars[token.value], change_font('math'), self.d.current_coll)
+                gen_text(unicode_chars[token.value], change_font('math'), self.d.current_coll, self.parameters.line)
 
             gen_calculate(self.parameters, self.d.text_scale, self.levels)
             gen_move_position(self.parameters)
@@ -161,7 +164,7 @@ class MathSyntaxAnalyser:
             for letter in token.value:
                 # only supports uppercase letters
                 if letter.isupper():
-                    gen_text(unicode_fonts[mfont][letter], change_font('math'), self.d.current_coll)
+                    gen_text(unicode_fonts[mfont][letter], change_font('math'), self.d.current_coll, self.parameters.line)
                     gen_calculate(self.parameters, self.d.text_scale, self.levels)
                     gen_move_position(self.parameters)
                 else:
@@ -380,7 +383,7 @@ class MathSyntaxAnalyser:
         elif action == '#ACTION_RANGE_OP_INIT':
             token = self.lex.get_token()
             c = token.value if token.value not in unicode_chars_big else unicode_chars_big[token.value]
-            gen_text(c, change_font('math'), self.d.current_coll)
+            gen_text(c, change_font('math'), self.d.current_coll, self.parameters.line)
 
             gen_calculate(self.parameters, self.d.text_scale, self.levels)
             if token.value != 'lim':
@@ -448,7 +451,7 @@ class MathSyntaxAnalyser:
 
             # set width to start and height lower
             self.parameters.width = ms.init_params.width
-            self.parameters.line -= 1.0 * self.d.text_scale
+            self.parameters.height -= 1.0 * self.d.text_scale
             return True
 
         elif action == '#ACTION_MATRIX_NEW_CELL':
@@ -476,22 +479,22 @@ class MathSyntaxAnalyser:
 
             if not ms.brackets == 'matrix':
                 # generate left bracket of matrix
-                gen_text(bracket_type[0], change_font('math'), ms.mx_coll)
+                gen_text(bracket_type[0], change_font('math'), ms.mx_coll, self.parameters.line)
                 gen_brackets(self.d.context, self.parameters, ms.mx_coll, ms.size)
 
                 # calculate furthest x position
                 ms.size.max_x = gen_bound(ms.parent_coll, 'x', 'max') + ms.size.bracket_width / 2.0
 
                 # generate right bracket of matrix
-                gen_text(bracket_type[1], change_font('math'), ms.mx_coll)
+                gen_text(bracket_type[1], change_font('math'), ms.mx_coll, self.parameters.line)
                 gen_brackets(self.d.context, self.parameters, ms.mx_coll, ms.size)
 
             # center matrix into row
             gen_matrix_center(ms.mx_coll, ms.size, ms.init_params.height)
 
-            # set new width and old line
+            # set new width and old height
             self.parameters.width = gen_bound(ms.mx_coll, 'x', 'max') + 0.25 * self.d.text_scale
-            self.parameters.line = ms.init_params.line
+            self.parameters.height = ms.init_params.height
 
             # link objects to matrix collection
             body_coll = bpy.data.collections.get(ms.mx_coll)

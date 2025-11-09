@@ -24,13 +24,21 @@ class Defaults:
         self.text_scale = custom_prop.text_scale
 
 
+# class for lines
+class Line:
+    def __init__(self, height):
+        self.height = height
+        self.line_objs = []
+        self.min_y = 1000  # TODO big value
+
+
 # class for parameters
 class Parameters:
     def __init__(self, scale, height, width, line):
         self.scale = scale
         self.height = height
         self.width = width
-        self.line = line
+        self.line = Line(line)
 
     def create_copy(self):
         copy = Parameters(self.scale, self.height, self.width, self.line)

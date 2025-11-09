@@ -99,7 +99,7 @@ ll_table = {
 
     # <ITEMIZE> -> item <ITEM>
     # <ITEMIZE> -> epsilon
-    ('ITEMIZE', 'item'):         ['item', 'ITEM'],
+    ('ITEMIZE', 'item'):         ['item',             '#ACTION_NEW_LINE', 'ITEM'],
     ('ITEMIZE', 'epsilon'):      ['#ACTION_END_ITEM', '#ACTION_NEW_LINE'],
 
     # <ITEM> -> [ <MORE_TERM> ] <MORE_TERM> <ITEMIZE>

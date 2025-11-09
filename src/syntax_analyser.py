@@ -31,7 +31,7 @@ class SyntaxAnalyser:
 
         self.lex = lex
         self.d = Defaults(context, custom_prop)
-        self.parameters = Parameters(custom_prop.text_scale, 0.0, 0.0, 0.0)
+        self.p = Parameters(custom_prop.text_scale, 0.0, 0.0, 0.0)
         self.block = ''
 
 
@@ -54,10 +54,11 @@ class SyntaxAnalyser:
     # function creates a new text object with given value and font,
     # then moves it according to context
     def create_text_object(self, value, font_type):
-        gen_text(value, change_font(font_type), self.d.current_coll)
-        self.parameters.height = self.parameters.line
-        gen_move_position(self.parameters)
-        self.parameters.width += BASE_SPACE * self.parameters.scale  # space between text
+        gen_text(value, change_font(font_type), self.d.current_coll, self.p.line)
+
+        self.p.height = self.p.line.height
+        gen_move_position(self.p)
+        self.p.width += BASE_SPACE * self.p.scale  # space between text
         return True
 
 
@@ -85,7 +86,7 @@ class SyntaxAnalyser:
         self.set_active_collection(latex_coll, self.d.current_coll)
 
         # call math syntax analyser
-        math_syntax = MathSyntaxAnalyser(self.lex, self.d, self.parameters)
+        math_syntax = MathSyntaxAnalyser(self.lex, self.d, self.p)
 
         print("Entering math mode!")
 
@@ -137,15 +138,34 @@ class SyntaxAnalyser:
         # TODO new line based on line height
         elif action == '#ACTION_NEW_LINE':
             token = self.lex.peek_token()
+
             if token.type == '_ENTER':
                 self.lex.get_token()
-            self.parameters.line -= 1.0
-            self.parameters.width = 0.0
+
+            # current lowest and highest point
+            min_y = gen_bound_for_array(self.p.line.line_objs, 'y', 'min')
+            max_y = gen_bound_for_array(self.p.line.line_objs, 'y', 'max')
+
+            lmin_y = self.p.line.min_y  # lowest point of last row
+            overflow = max_y - lmin_y if (max_y > lmin_y) else 0
+
+            # move objects down
+            for obj in self.p.line.line_objs:
+                obj.location.y -= overflow
+
+            self.p.line.min_y = min_y
+
+            # reset line objects
+            self.p.line.line_objs.clear()
+
+            self.p.line.height = self.p.line.min_y - LINE_SPACE
+            self.p.width = 0.0
             return True
 
         elif action == '#ACTION_PARAGRAPH':
-            self.parameters.line -= 1.0
-            self.parameters.width = 1.0  # TODO research what the default value should be (for itemize as well)
+            # TODO
+            tmp = self.execute_action('#ACTION_NEW_LINE')
+            self.p.width = 1.0  # TODO research what the default value should be (for itemize as well)
             return True
 
         # <ITEMIZE> actions
@@ -168,7 +188,7 @@ class SyntaxAnalyser:
                 its.bullet_number += 1
                 item = str(its.bullet_number) + '.'
 
-            gen_bullet_point(self.parameters, self.d, item)
+            gen_bullet_point(self.p, self.d, item)
             its.bullet_type = '\u2022'
             return True
 
