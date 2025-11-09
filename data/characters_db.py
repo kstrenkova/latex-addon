@@ -95,6 +95,22 @@ end_tokens = {
 
 # UNICODE DATABASE
 
+# TODO math accents
+# 'hat': '\u0302',
+# 'tilde': '\u0303',
+# 'bar': '\u0304',
+# 'vec': '\u20d7',
+# 'dot': '\u0307',
+# 'ddot': '\u0308',
+
+# TODO wide version maybe
+# \widehat{...}
+# \widetilde{...}
+# \overline{...}
+# \underline{...}
+# \overbrace{...}
+# \underbrace{...}
+
 unicode_chars = {
     # lower case greek alphabet
     'alpha': '\u03b1',
@@ -225,9 +241,11 @@ unicode_chars = {
     'otimes': '\u2297',
     'oslash': '\u2298',
     'odot': '\u2299',
+    'boxtimes': '\u22a0',
     'diamond': '\u22c4',
     'cdot': '\u22c5',
     'star': '\u22c6',
+    'Box': '\u25a1',
     'bigtriangleup': '\u25b3',
     'triangleright': '\u25b9',
     'bigtriangledown': '\u25bd',
@@ -255,11 +273,26 @@ unicode_chars = {
     'rightarrow': '\u2192',
     'to': '\u2192',
     'downarrow': '\u2193',
+    'leftrightarrow': '\u2194',
     'updownarrow': '\u2195',
+    'nleftarrow': '\u219a',
+    'nrightarrow': '\u219b',
     'mapsto': '\u21a6',
     'Uparrow': '\u21d1',
     'Downarrow': '\u21d3',
     'Updownarrow': '\u21d5',
+    'rightleftharpoons': '\u21cc',
+    'nLeftrightarrow': '\u21ce',
+    'leadsto': '\u21dc',
+    'nwarrow': '\u2196',
+    'nearrow': '\u2197',
+    'searrow': '\u2198',
+    'swarrow': '\u2199',
+    'leftharpoonup': '\u21bc',
+    'leftharpoondown': '\u21bd',
+    'rightharpoonup': '\u21c0',
+    'rightharpoondown': '\u21c1',
+    'longmapsto': '\u27fc',
 
     # brackets
     'lceil': '\u2308',
@@ -270,20 +303,44 @@ unicode_chars = {
     'urcorner': '\u231d',
     'llcorner': '\u231e',
     'lrcorner': '\u231f',
+    'langle': '\u27e8',
+    'rangle': '\u27e9',
 
     # other symbols
     'backslash': '\\',
+    'neg': '\u00ac',
     'hbar': '\u0127',
+    'prime': '\u2032',
+    'Im': '\u2111',
+    'ell': '\u2113',
+    'wp': '\u2118',
+    'Re': '\u211c',
+    'complement': '\u2201',
     'partial': '\u2202',
-    'varnothing': '\u2205',
+    'emptyset': '\u2205',
+    'nabla': '\u2207',
+    'surd': '\u221a',
     'infty': '\u221e',
+    'angle': '\u2220',
+    'therefore': '\u2234',
+    'because': '\u2235',
+    'cdots': '\u22ef',
+    'varnothing': '\u2300',
+    'blacksquare': '\u25a0',
+    'square': '\u25a1',
+    'triangle': '\u25b3',
 }
 
 unicode_chars_big = {
     # big symbols
     'prod': '\u220f',
+    'sum': '\u2211',
     'int': '\u222b',
-    'sum': '\u2211'
+    'oint': '\u222e',
+    'bigcup': '\u22c3',
+    'bigcap': '\u22c2',
+    'bigvee': '\u22c1',
+    'bigwedge': '\u22c0'
 }
 
 unicode_fonts = {
