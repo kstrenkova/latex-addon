@@ -142,10 +142,8 @@ class SyntaxAnalyser:
             if token.type == '_ENTER':
                 self.lex.get_token()
 
-            # current lowest and highest point
-            min_y = gen_bound_for_array(self.p.line.line_objs, 'y', 'min')
+            # calculate overflow
             max_y = gen_bound_for_array(self.p.line.line_objs, 'y', 'max')
-
             lmin_y = self.p.line.min_y  # lowest point of last row
             overflow = max_y - lmin_y if (max_y > lmin_y) else 0
 
@@ -153,7 +151,8 @@ class SyntaxAnalyser:
             for obj in self.p.line.line_objs:
                 obj.location.y -= overflow
 
-            self.p.line.min_y = min_y
+            # save current lowest point
+            self.p.line.min_y = gen_bound_for_array(self.p.line.line_objs, 'y', 'min')
 
             # reset line objects
             self.p.line.line_objs.clear()
@@ -277,6 +276,10 @@ class SyntaxAnalyser:
                     print(f"Syntax Error: No rule for ({stack_top}, {token.type}, {token.value})")
                     return False
 
+        # put a new line at the end of the document
+        _ = self.execute_action("#ACTION_NEW_LINE")
+
+        # verify that all tokens have been read
         if self.stack:
             print("Error, not all tokens have been read!")
             return False
