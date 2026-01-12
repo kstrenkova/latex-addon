@@ -368,21 +368,8 @@ def gen_center(obj1, obj2, collection):
         obj.location.x += move_by
 
 
-# function returns extreme for an array of objects
-# by a set axis and type (min/max)
-def gen_bound_for_array(objects, axis, ftype):
-    if len(objects) <= 0:
-        return 0
-
-    # TODO remove the update
-    # Issue: The objects from math mode that have indexes or exponents
-    # were generated at their height already, so function gen_bouds_for_array for
-    # minimum was returning a big negative number while for others it was calculating
-    # minimum against 0.0, so there was a mismatch
-
-    # update object placement
-    bpy.context.view_layer.update()
-
+# calculate the extreme for set axis and type (min/max)
+def gen_calculate_bound(objects, axis, ftype):
     # determine which corner index to check
     if axis == 'x' and ftype == 'max':
         corner_index = 4
@@ -390,8 +377,6 @@ def gen_bound_for_array(objects, axis, ftype):
         corner_index = 2
     else:
         corner_index = 0
-
-    func = max if ftype == 'max' else min
 
     # save position of all objects
     positions = []
@@ -400,36 +385,29 @@ def gen_bound_for_array(objects, axis, ftype):
             bbox = [obj.matrix_world @ Vector(corner) for corner in obj.bound_box]
             positions.append(getattr(bbox[corner_index], axis))
 
-    # return max or min from all positions
-    return func(positions)
+    func = max if ftype == 'max' else min
+    return func(positions)  # return max or min from all positions
 
 
-# function returns extreme for set axis and type (min/max)
+# function returns the extreme for an array of objects
+def gen_bound_for_array(objects, axis, ftype):
+    if len(objects) <= 0:
+        return 0
+
+    # update object placement
+    bpy.context.view_layer.update()
+
+    return gen_calculate_bound(objects, axis, ftype)
+
+
+# # function returns the extreme for objects in a collection
 def gen_bound(collection, axis, ftype):
     bpy.ops.object.select_all(action='DESELECT')  # deselect all objects
     objects = bpy.data.collections[collection].all_objects
     if not objects:
         return 0
 
-    # determine which corner index to check
-    if axis == 'x' and ftype == 'max':
-        corner_index = 4
-    elif axis == 'y' and ftype == 'max':
-        corner_index = 2
-    else:
-        corner_index = 0
-
-    func = max if ftype == 'max' else min
-
-    # save position of all objects
-    positions = []
-    for obj in objects:
-        obj.select_set(True)
-        bbox = [obj.matrix_world @ Vector(corner) for corner in obj.bound_box]
-        positions.append(getattr(bbox[corner_index], axis))
-
-    # return max or min from all positions
-    return func(positions)
+    return gen_calculate_bound(objects, axis, ftype)
 
 
 # function positions matrix figure

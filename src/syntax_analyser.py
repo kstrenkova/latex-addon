@@ -14,9 +14,6 @@ from ..data.ll_table import *
 from ..data.characters_db import *
 
 # TODO checkout mathfonts not used only on upper letters
-# TODO new line should take the height of the object into account
-# TODO extra space after symbols like (, ) that are not _TEXT
-
 
 class ItemizeState:
     def __init__(self):
@@ -58,7 +55,6 @@ class SyntaxAnalyser:
 
         self.p.height = self.p.line.height
         gen_move_position(self.p)
-        self.p.width += BASE_SPACE * self.p.scale  # space between text
         return True
 
 
@@ -87,6 +83,7 @@ class SyntaxAnalyser:
 
         # call math syntax analyser
         math_syntax = MathSyntaxAnalyser(self.lex, self.d, self.p)
+        self.lex.mode = "math"
 
         print("Entering math mode!")
 
@@ -95,6 +92,7 @@ class SyntaxAnalyser:
             print(warn_msg)
             return False
 
+        self.lex.mode = "text"
         self.d.base_coll = latex_coll
         print("Returned from math mode!")
 
@@ -238,6 +236,12 @@ class SyntaxAnalyser:
             print(f"STACK: {self.stack}")
             print(f"Token type: '{token.type}'")
             print(f"Token value: '{token.value}'")
+
+            # generate space and consume the whitespace token
+            if token.type == "WHITESPACE":
+                self.p.width += BASE_SPACE * self.p.scale
+                self.lex.get_token()
+                continue
 
             # successful parsing
             if stack_top == '$' and token.type == 'END':

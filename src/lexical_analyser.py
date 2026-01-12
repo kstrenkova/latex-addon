@@ -16,9 +16,10 @@ class Token:
 
 # class for lexical analyser
 class LexicalAnalyser:
-    def __init__(self, latex_text, position):
+    def __init__(self, latex_text, position, mode):
         self.text = latex_text
         self.position = position
+        self.mode = mode
 
     # function that returns if the string is at the end
     def is_end(self):
@@ -38,8 +39,19 @@ class LexicalAnalyser:
 
     # function skips all the whitespace characters
     def state_whitespace(self):
+        # no whitespaces
+        if self.is_end() or not self.get_char().isspace():
+              return False
+
+        has_space = False  # mark whether non-newline space was found
+
+        # skip all whitespaces
         while not self.is_end() and self.get_char().isspace():
+            if self.get_char() != '\n':
+                has_space = True
             self.position += 1
+
+        return has_space
 
     # function creates a command token
     def state_command(self):
@@ -76,7 +88,9 @@ class LexicalAnalyser:
     # function returns the next token
     def get_token(self):
         # <WHITESPACE>
-        self.state_whitespace()
+        has_space = self.state_whitespace()
+        if has_space and self.mode == "text":
+            return Token("WHITESPACE", " ")
 
         if self.is_end():
             return Token("END", "")
@@ -97,20 +111,11 @@ class LexicalAnalyser:
         # <STATE_TEXT>
         return self.state_text()
 
-    # function returns the position before the current token
-    def return_token(self, token):
-        self.position -= len(token.value)
-
-        # check if the token had a backslash before
-        if self.position > 0:
-            c = self.text[self.position - 1]
-            if c == '\\':
-                self.position -= 1
-
     # function checks the value of the next token
     def peek_token(self):
+        start_position = self.position
         token = self.get_token()
-        self.return_token(token)
+        self.position = start_position
         return token
 
     # function returns the full \verb command content
