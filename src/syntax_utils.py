@@ -20,6 +20,7 @@ class Defaults:
             custom_prop.bold_font,
             custom_prop.italic_font
         ]
+        self.math_mode = 'inline'
         self.user_font = 'base'
         self.text_scale = custom_prop.text_scale
 

@@ -16,6 +16,7 @@ from ..data.characters_db import *
 # TODO checkout mathfonts not used only on upper letters
 # TODO research what the default value should be for \par and for itemize
 # TODO inline mode and display mode differences
+# TODO custom bullet points don't work for enumerate
 
 
 class ItemizeState:
@@ -52,16 +53,9 @@ class SyntaxAnalyser:
         return rule
 
 
-    # function sets the active collection
-    def set_active_collection(self, base_coll, current_coll):
-        view_layer = bpy.context.view_layer
-        collection = view_layer.layer_collection.children[base_coll].children[current_coll]
-        view_layer.active_layer_collection = collection
-
-
     # TODO add mode differences
     # function calls the mathematical syntax analyser
-    def enter_math_mode(self, mode):
+    def enter_math_mode(self):
         # When we use blocks we don't want to consume token and when we use symbols we do
         # How to change this to a clear version is the TODO
         token = self.lex.peek_token()
@@ -73,7 +67,7 @@ class SyntaxAnalyser:
         self.d.base_coll = self.d.current_coll
 
         # activate the collection for mathematical equations
-        self.set_active_collection(latex_coll, self.d.current_coll)
+        gen_set_active_collection(latex_coll, self.d.current_coll)
 
         # call math syntax analyser
         math_syntax = MathSyntaxAnalyser(self.lex, self.d, self.p)
@@ -142,7 +136,7 @@ class SyntaxAnalyser:
         # paragraph (\par)
         elif action == '#ACTION_PARAGRAPH':
             self.execute_action('#ACTION_NEW_LINE')
-            self.p.width = 1.0
+            self.p.width = PAR_SPACE
             return True
 
         # <ITEMIZE> actions
@@ -204,8 +198,8 @@ class SyntaxAnalyser:
 
         # MATH MODE
         elif action.startswith('#ACTION_MATH_MODE_'):
-            mode = action.removeprefix('#ACTION_MATH_MODE_').lower()
-            return self.enter_math_mode(mode)
+            self.d.math_mode = action.removeprefix('#ACTION_MATH_MODE_').lower()
+            return self.enter_math_mode()
 
         else:
             print(f"Unknown action: '{action}'")

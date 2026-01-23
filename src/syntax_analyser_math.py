@@ -12,8 +12,9 @@ from .syntax_utils import change_font
 from ..data.ll_table import *
 from ..data.characters_db import *
 
-# TODO go from using collections to python arrays or dictionaries
+# TODO go from using collections to python arrays or dictionaries (?)
 # TODO nested EI do not work for sum EI
+# TODO add inline and display mode differences
 
 # class for levels
 class Levels:

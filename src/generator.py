@@ -6,7 +6,7 @@
 import bpy
 
 from bpy_extras.object_utils import object_data_add  # add sqrt symbol
-from ..data.characters_db import unicode_chars_big, LINE_SPACE
+from ..data.characters_db import unicode_chars_big, LINE_SPACE, PAR_SPACE
 from .syntax_utils import change_font
 
 from mathutils import Vector  # vertices
@@ -112,6 +112,13 @@ def gen_new_collection(coll_name, parent_coll):
     collection = bpy.data.collections.new(coll_name)
     bpy.data.collections[parent_coll].children.link(collection)
     return collection.name
+
+
+# function sets the active collection
+def gen_set_active_collection(base_coll, current_coll):
+    view_layer = bpy.context.view_layer
+    collection = view_layer.layer_collection.children[base_coll].children[current_coll]
+    view_layer.active_layer_collection = collection
 
 
 # function joins collections into parent collection and removes child collection
@@ -617,14 +624,15 @@ def gen_matrix_center(collection, size, y_line):
         obj.location.y -= offset
 
 
+# function calculates positions around bullet point
 def gen_bullet_point(param, nest_lvl):
     # TODO scale
     obj = bpy.context.active_object  # save active object
 
     bbox = [obj.matrix_world @ Vector(corner) for corner in obj.bound_box]
     obj_dimension = bbox[4].x * param.scale
-    param.width = (1.3 - obj_dimension) * param.scale  # space before bullet point
-    param.width += nest_lvl * 1.5 * param.scale  # TODO change 1.5 for the correct value
+    nested_space = nest_lvl * PAR_SPACE * param.scale
+    param.width = (nested_space - obj_dimension) * param.scale  # space before bullet point
 
     gen_move_position(param)
     param.width += 0.3 * param.scale  # space after bullet point
