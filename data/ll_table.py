@@ -94,13 +94,13 @@ ll_table = {
 
     ('BLOCK_CONTENT', 'item'):         ['ITEMIZE'],
     ('BLOCK_CONTENT', '_ANY'):         ['MORE_TERM'],
+    ('BLOCK_CONTENT', 'begin'):        ['BLOCK'],  # TODO fix when begin is at the beginning
     ('BLOCK_CONTENT', 'end'):          ['epsilon'],
-    # TODO nested blocks
 
     # <ITEMIZE> -> item <ITEM>
     # <ITEMIZE> -> epsilon
     ('ITEMIZE', 'item'):         ['item',             '#ACTION_NEW_LINE', 'ITEM'],
-    ('ITEMIZE', 'epsilon'):      ['#ACTION_END_ITEM', '#ACTION_NEW_LINE'],
+    ('ITEMIZE', 'epsilon'):      ['#ACTION_END_ITEM'],
 
     # <ITEM> -> [ <MORE_TERM> ] <MORE_TERM> <ITEMIZE>
     # <ITEM> -> <MORE_TERM> <ITEMIZE>
@@ -289,6 +289,7 @@ math_ll_table = {
     # <MATRIX> -> <COMMAND> <MATRIX>
     ('MATRIX', '_TEXT'):            ['CONST', 'MATRIX'],
     ('MATRIX', '_SPECIAL_CHAR'):    ['CONST', 'MATRIX'],
+    ('MATRIX', '_UNDERSCORE'):      ['CONST', 'MATRIX'],
     ('MATRIX', '_ENTER'):           ['#ACTION_MATRIX_NEW_ROW', 'MATRIX'],
     ('MATRIX', '{'):                ['COMMAND', 'MATRIX'],
     ('MATRIX', '_MATH_SYMBOL'):     ['COMMAND', 'MATRIX'],

@@ -33,6 +33,7 @@ def gen_text(text, font_info, collection, line):
     line.line_objs.append(text_obj)
 
 
+# function sets the position of an object
 def gen_set_position(param):
     # save active object
     obj = bpy.context.active_object
@@ -46,6 +47,7 @@ def gen_set_position(param):
     obj.location.z = 0.0
 
 
+# function moves the object and sets the starting width
 def gen_move_position(param):
     # save active object
     obj = bpy.context.active_object
@@ -55,6 +57,38 @@ def gen_move_position(param):
     bbox = [obj.matrix_world @ Vector(corner) for corner in obj.bound_box]
     obj_dimension = bbox[4].x * param.scale
     param.width += obj_dimension + (0.1 * param.scale)  # space
+
+
+# function creates a new text object with given value and font,
+# then moves it according to context
+def gen_text_object(param, collection, text, font_type):
+    # generate text
+    gen_text(text, change_font(font_type), collection, param.line)
+
+    # set object position
+    param.height = param.line.height
+    gen_move_position(param)
+
+
+# function calculates and adjusts the height for new line
+def gen_adjust_new_line(param):
+    # calculate overflow
+    max_y = gen_bound_for_array(param.line.line_objs, 'y', 'max')
+    lmin_y = param.line.min_y  # lowest point of last row
+    overflow = max_y - lmin_y if (max_y > lmin_y) else 0
+
+    # move objects down
+    for obj in param.line.line_objs:
+        obj.location.y -= overflow
+
+    # save current lowest point
+    param.line.min_y = gen_bound_for_array(param.line.line_objs, 'y', 'min')
+
+    # reset line objects
+    param.line.line_objs.clear()
+
+    param.line.height = param.line.min_y - LINE_SPACE
+    param.width = 0.0
 
 
 # function gets object into collection
@@ -583,16 +617,14 @@ def gen_matrix_center(collection, size, y_line):
         obj.location.y -= offset
 
 
-def gen_bullet_point(param, defaults, text):
+def gen_bullet_point(param, nest_lvl):
     # TODO scale
-    gen_text(text, change_font('base'), defaults.current_coll, param.line)
-
     obj = bpy.context.active_object  # save active object
 
     bbox = [obj.matrix_world @ Vector(corner) for corner in obj.bound_box]
     obj_dimension = bbox[4].x * param.scale
     param.width = (1.3 - obj_dimension) * param.scale  # space before bullet point
+    param.width += nest_lvl * 1.5 * param.scale  # TODO change 1.5 for the correct value
 
-    param.height = param.line.height
     gen_move_position(param)
     param.width += 0.3 * param.scale  # space after bullet point

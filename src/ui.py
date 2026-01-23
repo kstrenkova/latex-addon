@@ -12,6 +12,8 @@ from .syntax_analyser import SyntaxAnalyser
 
 TMP_TEXT_EDIT = "tmp_latex_text_edit"
 
+# TODO fix messy letters in generate_1_object when thickness is not zero
+# TODO fix different final position for 1 object vs multiple objects
 
 # function gets all of the loaded fonts
 def get_loaded_fonts(self, context):
@@ -308,9 +310,11 @@ def generate_one_object(context, props):
 
     final_obj = context.active_object
     final_obj.name = "Latex Text"
-    final_obj.location = props.text_location                      # move object
-    final_obj.rotation_euler = props.text_rotation                # rotate object
-    bpy.ops.object.transform_apply(location=True, rotation=True)  # apply transformation
+    final_obj.location = props.text_location        # move object
+    final_obj.rotation_euler = props.text_rotation  # rotate object
+
+    # apply transformations
+    bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
 
     # apply solidify modifier
     solidify_mod = final_obj.modifiers.new(name="Solidify", type='SOLIDIFY')

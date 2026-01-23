@@ -14,22 +14,26 @@ from ..data.ll_table import *
 from ..data.characters_db import *
 
 # TODO checkout mathfonts not used only on upper letters
+# TODO research what the default value should be for \par and for itemize
+# TODO inline mode and display mode differences
+
 
 class ItemizeState:
-    def __init__(self):
+    def __init__(self, nest_lvl):
         self.bullet_number = 0
         self.bullet_type = '\u2022'
+        self.nest_lvl = nest_lvl
 
 
 class SyntaxAnalyser:
     def __init__(self, lex, context, custom_prop):
         self.stack = ['$', 'PROG']
         self.state_stack = []
+        self.block = []
 
         self.lex = lex
         self.d = Defaults(context, custom_prop)
         self.p = Parameters(custom_prop.text_scale, 0.0, 0.0, 0.0)
-        self.block = ''
 
 
     # function returns the next rule
@@ -46,16 +50,6 @@ class SyntaxAnalyser:
         print("KEY:", key)
         rule = ll_table.get((stack_top, key))
         return rule
-
-
-    # function creates a new text object with given value and font,
-    # then moves it according to context
-    def create_text_object(self, value, font_type):
-        gen_text(value, change_font(font_type), self.d.current_coll, self.p.line)
-
-        self.p.height = self.p.line.height
-        gen_move_position(self.p)
-        return True
 
 
     # function sets the active collection
@@ -107,13 +101,13 @@ class SyntaxAnalyser:
     def execute_action(self, action):
         # <BLOCK> actions
         if action == '#ACTION_BLOCK_ENTER':
-            action = block_actions.get(self.block)
+            action = block_actions.get(self.block[-1])
             return self.execute_action(action)
 
         elif action == '#ACTION_BLOCK_VERIFY_BEGIN':
             token = self.lex.get_token()
             if block_actions.get(token.value) is not None:
-                self.block = token.value
+                self.block.append(token.value)
                 return True
 
             print("Block value", token.value, "is not correct or supported!")
@@ -121,75 +115,75 @@ class SyntaxAnalyser:
 
         elif action == '#ACTION_BLOCK_VERIFY_END':
             token = self.lex.get_token()
-            if token.value == self.block:
-                self.block = ''
+            if token.value == self.block[-1]:
+                self.block.pop()
                 return True
 
-            print("Block value in begin", self.block, "doesn't match the value in end", token.value)
+            print("Block value in begin", self.block[-1], "doesn't match the value in end", token.value)
             return False
 
         # <CONST> actions
         elif action == '#ACTION_GENERATE_TEXT':
             token = self.lex.get_token()
-            return self.create_text_object(token.value, self.d.user_font)
+            gen_text_object(self.p, self.d.current_coll, token.value, self.d.user_font)
+            return True
 
-        # TODO new line based on line height
+        # new line (\\)
         elif action == '#ACTION_NEW_LINE':
             token = self.lex.peek_token()
 
+            # consume token when enter is explicitely used
             if token.type == '_ENTER':
                 self.lex.get_token()
 
-            # calculate overflow
-            max_y = gen_bound_for_array(self.p.line.line_objs, 'y', 'max')
-            lmin_y = self.p.line.min_y  # lowest point of last row
-            overflow = max_y - lmin_y if (max_y > lmin_y) else 0
-
-            # move objects down
-            for obj in self.p.line.line_objs:
-                obj.location.y -= overflow
-
-            # save current lowest point
-            self.p.line.min_y = gen_bound_for_array(self.p.line.line_objs, 'y', 'min')
-
-            # reset line objects
-            self.p.line.line_objs.clear()
-
-            self.p.line.height = self.p.line.min_y - LINE_SPACE
-            self.p.width = 0.0
+            gen_adjust_new_line(self.p)
             return True
 
+        # paragraph (\par)
         elif action == '#ACTION_PARAGRAPH':
-            # TODO
-            tmp = self.execute_action('#ACTION_NEW_LINE')
-            self.p.width = 1.0  # TODO research what the default value should be (for itemize as well)
+            self.execute_action('#ACTION_NEW_LINE')
+            self.p.width = 1.0
             return True
 
         # <ITEMIZE> actions
         elif action == '#ACTION_INIT_ITEM':
-            its = ItemizeState()
-            self.state_stack.append(its)
+            # calculate the level of nesting
+            nested_level = 1
+            for state in self.state_stack:
+                if isinstance(state, ItemizeState):
+                    nested_level += 1
+
+            # add a new itemize/enumerate block
+            self.state_stack.append(ItemizeState(nested_level))
             return True
 
         elif action == '#ACTION_SAVE_ITEM':
+            # overwrite default bullet point value
             token = self.lex.get_token()
             its = self.state_stack[-1]
             its.bullet_type = token.value
             return True
 
         elif action == '#ACTION_ADD_ITEM':
+            # get bullet point value
             its = self.state_stack[-1]
-            if self.block == 'itemize':
+            if self.block[-1] == 'itemize':
                 item = its.bullet_type
-            elif self.block == 'enumerate':
+            elif self.block[-1] == 'enumerate':
                 its.bullet_number += 1
                 item = str(its.bullet_number) + '.'
 
-            gen_bullet_point(self.p, self.d, item)
+            # generate bullet point
+            gen_text_object(self.p, self.d.current_coll, item, self.d.user_font)
+            gen_bullet_point(self.p, its.nest_lvl)
             its.bullet_type = '\u2022'
             return True
 
         elif action == '#ACTION_END_ITEM':
+            # set new line when main itemize/enumerate end
+            its = self.state_stack[-1]
+            if its.nest_lvl == 1:
+                self.execute_action("#ACTION_NEW_LINE")
             self.state_stack.pop()
             return True
 
@@ -205,7 +199,8 @@ class SyntaxAnalyser:
                 print("Error:", err)
                 return False
 
-            return self.create_text_object(content, 'verb')
+            gen_text_object(self.p, self.d.current_coll, content, 'verb')
+            return True
 
         # MATH MODE
         elif action.startswith('#ACTION_MATH_MODE_'):
