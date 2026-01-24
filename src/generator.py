@@ -78,6 +78,13 @@ def gen_text_object(param, defaults, text, font_type, levels=None, symbol=None):
 
 # function calculates and adjusts the height for new line
 def gen_adjust_new_line(param):
+    # multiple new lines in the row
+    if len(param.line.line_objs) == 0:
+        param.line.min_y -= LINE_SPACE * param.scale
+        param.line.height = param.line.min_y - LINE_SPACE
+        param.width = 0.0
+        return
+
     # calculate overflow
     max_y = gen_bound_for_array(param.line.line_objs, 'y', 'max')
     lmin_y = param.line.min_y  # lowest point of last row
