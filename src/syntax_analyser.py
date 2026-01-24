@@ -16,7 +16,6 @@ from ..data.characters_db import *
 # TODO checkout mathfonts not used only on upper letters
 # TODO research what the default value should be for \par and for itemize
 # TODO custom bullet points don't work for enumerate
-# TODO Fraction smaller and more compact for inline mode
 
 
 class ItemizeState:

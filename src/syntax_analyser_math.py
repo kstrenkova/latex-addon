@@ -14,9 +14,10 @@ from ..data.characters_db import *
 
 # TODO [optimalization] go from using collections to python arrays or dictionaries (?)
 # TODO [bug] nested EI do not work for sum EI
-# TODO limits have space after them (\lim) !! It's because it's not centered properly
-# TODO [bug] when you start with \sum, it's weirdly higher than the baseline
+# TODO [bug] when you start with \sum (display mode) and the sub/super overflows
+# the start vertical line moves left with them
 # TODO Fraction smaller and more compact for inline mode
+
 
 # class for levels
 class Levels:
@@ -193,7 +194,7 @@ class MathSyntaxAnalyser:
             # move range operator symbol (sum, int, ...) if present
             if self.levels.sym_name != '' and self.d.math_mode == 'display':
                 gen_move_sum(self.p, eis.eicoll, self.levels.sym_name)
-                space = MIN_SPACE * self.p.scale
+                space = BASE_SPACE * self.p.scale
                 self.p.width = gen_fin_sum(self.levels.sym_name, eis.eicoll, eis.eicoll) + space
 
             # join collection into parent collection
@@ -232,7 +233,7 @@ class MathSyntaxAnalyser:
             # move range operator symbol (sum, int, ...) if present
             if self.levels.sym_name != '' and self.d.math_mode == 'display':
                 gen_move_sum(self.p, eis.eicoll2, self.levels.sym_name)
-                space = MIN_SPACE * self.p.scale
+                space = BASE_SPACE * self.p.scale
                 self.p.width = gen_fin_sum(self.levels.sym_name, eis.eicoll, eis.eicoll2) + space
 
             # join collection into parent collection

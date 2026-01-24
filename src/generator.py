@@ -395,11 +395,18 @@ def gen_fin_sum(sum_name, up_collection, down_collection):
 
     # index or exponent is longer than sum symbol
     if diff > 0:
-        up_objects = bpy.data.collections[up_collection].all_objects
-        down_objects = bpy.data.collections[down_collection].all_objects
-        obj_move = [sum_symbol] + list(up_objects) + list(down_objects)
+        obj_move = [sum_symbol]
+
+        # get all objects in sub/superscript
+        if up_collection == down_collection:
+          obj_move.extend(bpy.data.collections[down_collection].all_objects)
+        else:
+          obj_move.extend(bpy.data.collections[up_collection].all_objects)
+          obj_move.extend(bpy.data.collections[down_collection].all_objects)
+
+        # move all objects
         for obj in obj_move:
-            obj.location.x += diff  # move objects
+            obj.location.x += diff
 
     return fin_width + diff
 
