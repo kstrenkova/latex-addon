@@ -43,15 +43,15 @@ class LexicalAnalyser:
         if self.is_end() or not self.get_char().isspace():
               return False
 
-        has_space = False  # mark whether non-newline space was found
+        last_char = None
 
         # skip all whitespaces
         while not self.is_end() and self.get_char().isspace():
-            if self.get_char() != '\n':
-                has_space = True
+            last_char = self.get_char()
             self.position += 1
 
-        return has_space
+        # add whitespace only if didn't end with \n
+        return last_char != '\n'
 
     # function creates a command token
     def state_command(self):
@@ -89,7 +89,7 @@ class LexicalAnalyser:
     def get_token(self):
         # <WHITESPACE>
         has_space = self.state_whitespace()
-        if has_space and self.mode == "text":
+        if has_space and self.mode == 'text':
             return Token("WHITESPACE", " ")
 
         if self.is_end():

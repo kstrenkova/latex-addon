@@ -60,6 +60,10 @@ class SyntaxAnalyser:
         if token.value in ['$', '\(', '\[']:
             self.lex.get_token()
 
+        # change starting position for display mode
+        if self.d.math_mode == 'display':
+            self.execute_action('#ACTION_NEW_LINE')
+
         latex_coll = self.d.base_coll
         self.d.current_coll = gen_new_collection("MathematicalEqCollection", self.d.base_coll)
         self.d.base_coll = self.d.current_coll
@@ -73,10 +77,6 @@ class SyntaxAnalyser:
 
         print("Entering math mode!")
 
-        # change starting position for display mode
-        if self.d.math_mode == 'display':
-            self.execute_action('#ACTION_NEW_LINE')
-
         if not math_syntax.parse():
             warn_msg = 'Mathematical equation was not fully generated.'
             print(warn_msg)
@@ -85,6 +85,11 @@ class SyntaxAnalyser:
         self.lex.mode = "text"
         self.d.base_coll = latex_coll
         print("Returned from math mode!")
+
+        # consume redundant whitespace
+        token = self.lex.peek_token()
+        if token.type == 'WHITESPACE':
+            self.lex.get_token()
 
         # change ending position for display mode
         if self.d.math_mode == 'display':
@@ -136,7 +141,7 @@ class SyntaxAnalyser:
             if token.type == '_ENTER':
                 self.lex.get_token()
 
-            gen_adjust_new_line(self.p)
+            gen_adjust_new_line(self.p, self.d.base_coll)
             return True
 
         # paragraph (\par)

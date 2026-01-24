@@ -77,7 +77,11 @@ def gen_text_object(param, defaults, text, font_type, levels=None, symbol=None):
 
 
 # function calculates and adjusts the height for new line
-def gen_adjust_new_line(param):
+def gen_adjust_new_line(param, collection):
+    # no objects have been generated yet
+    if len(bpy.data.collections[collection].all_objects) == 0:
+        return
+
     # multiple new lines in the row
     if len(param.line.line_objs) == 0:
         param.line.min_y -= LINE_SPACE * param.scale
