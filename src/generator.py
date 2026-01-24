@@ -13,16 +13,16 @@ from mathutils import Vector  # vertices
 
 
 # function generates text in given font
-def gen_text(text, font_info, collection, line):
+def gen_text(text, font_info, collection, line, math_mode=None):
     text_data = bpy.data.curves.new("Text", type='FONT')
     text_data.body = text
 
-    if font_info != "":
+    if len(font_info) > 0:
         text_data.font = font_info['font']
         text_data.size = font_info['size']
 
     # changing size for bigger symbols, e.g. sum, integral
-    if text in unicode_chars_big.values():
+    if text in unicode_chars_big.values() and math_mode == 'display':
         text_data.size *= 1.5
 
     text_obj = bpy.data.objects.new("Text", text_data)
@@ -63,7 +63,7 @@ def gen_move_position(param):
 # then moves it according to context
 def gen_text_object(param, defaults, text, font_type, levels=None, symbol=None):
     # generate text into current collection
-    gen_text(text, change_font(font_type), defaults.current_coll, param.line)
+    gen_text(text, change_font(font_type), defaults.current_coll, param.line, defaults.math_mode)
 
     if levels:
         # calculate level for math mode

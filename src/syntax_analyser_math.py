@@ -12,11 +12,11 @@ from .syntax_utils import change_font
 from ..data.ll_table import *
 from ..data.characters_db import *
 
-# TODO go from using collections to python arrays or dictionaries (?)
-# TODO nested EI do not work for sum EI
-# TODO add inline and display mode differences
-# TODO limits have space after them (\lim)
-# TODO when you start with \sum, it's weirdly higher than the baseline
+# TODO [optimalization] go from using collections to python arrays or dictionaries (?)
+# TODO [bug] nested EI do not work for sum EI
+# TODO limits have space after them (\lim) !! It's because it's not centered properly
+# TODO [bug] when you start with \sum, it's weirdly higher than the baseline
+# TODO Fraction smaller and more compact for inline mode
 
 # class for levels
 class Levels:
@@ -191,7 +191,7 @@ class MathSyntaxAnalyser:
             self.levels.ei_array.pop()
 
             # move range operator symbol (sum, int, ...) if present
-            if self.levels.sym_name != '':
+            if self.levels.sym_name != '' and self.d.math_mode == 'display':
                 gen_move_sum(self.p, eis.eicoll, self.levels.sym_name)
                 space = MIN_SPACE * self.p.scale
                 self.p.width = gen_fin_sum(self.levels.sym_name, eis.eicoll, eis.eicoll) + space
@@ -208,7 +208,7 @@ class MathSyntaxAnalyser:
             eis = self.state_stack[-1]
 
             # move range operator symbol (sum, int, ...) if present
-            if self.levels.sym_name != '':
+            if self.levels.sym_name != '' and self.d.math_mode == 'display':
                 gen_move_sum(self.p, eis.eicoll, self.levels.sym_name)
 
             # exponent or index collection
@@ -230,7 +230,7 @@ class MathSyntaxAnalyser:
             self.levels.ei_array.pop()
 
             # move range operator symbol (sum, int, ...) if present
-            if self.levels.sym_name != '':
+            if self.levels.sym_name != '' and self.d.math_mode == 'display':
                 gen_move_sum(self.p, eis.eicoll2, self.levels.sym_name)
                 space = MIN_SPACE * self.p.scale
                 self.p.width = gen_fin_sum(self.levels.sym_name, eis.eicoll, eis.eicoll2) + space

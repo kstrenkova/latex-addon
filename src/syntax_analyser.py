@@ -7,7 +7,7 @@ import bpy
 
 from .generator import *
 from .syntax_analyser_math import MathSyntaxAnalyser
-from .syntax_utils import Defaults, Parameters, preload_fonts, change_font
+from .syntax_utils import Defaults, Parameters, preload_fonts
 
 # TODO get rid of ..data
 from ..data.ll_table import *
@@ -15,8 +15,8 @@ from ..data.characters_db import *
 
 # TODO checkout mathfonts not used only on upper letters
 # TODO research what the default value should be for \par and for itemize
-# TODO inline mode and display mode differences
 # TODO custom bullet points don't work for enumerate
+# TODO Fraction smaller and more compact for inline mode
 
 
 class ItemizeState:
@@ -53,12 +53,11 @@ class SyntaxAnalyser:
         return rule
 
 
-    # TODO add mode differences
     # function calls the mathematical syntax analyser
     def enter_math_mode(self):
-        # When we use blocks we don't want to consume token and when we use symbols we do
-        # How to change this to a clear version is the TODO
         token = self.lex.peek_token()
+
+        # consume token when symbols were used instead of environment
         if token.value in ['$', '\(', '\[']:
             self.lex.get_token()
 
@@ -75,6 +74,10 @@ class SyntaxAnalyser:
 
         print("Entering math mode!")
 
+        # change starting position for display mode
+        if self.d.math_mode == 'display':
+            self.execute_action('#ACTION_NEW_LINE')
+
         if not math_syntax.parse():
             warn_msg = 'Mathematical equation was not fully generated.'
             print(warn_msg)
@@ -83,6 +86,10 @@ class SyntaxAnalyser:
         self.lex.mode = "text"
         self.d.base_coll = latex_coll
         print("Returned from math mode!")
+
+        # change ending position for display mode
+        if self.d.math_mode == 'display':
+            self.execute_action('#ACTION_NEW_LINE')
 
         # join collection into parent collection
         gen_join_collections(self.d.current_coll, self.d.base_coll)

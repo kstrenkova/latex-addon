@@ -48,7 +48,7 @@ class Parameters:
 
 # function returns font info
 def change_font(mode):
-    return FONT_CACHE.get(mode) if (mode in FONT_CACHE) else ""
+    return FONT_CACHE.get(mode) if (mode in FONT_CACHE) else ''
 
 
 # function preloads fonts used by the addon
