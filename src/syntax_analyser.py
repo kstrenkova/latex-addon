@@ -119,7 +119,7 @@ class SyntaxAnalyser:
         # <CONST> actions
         elif action == '#ACTION_GENERATE_TEXT':
             token = self.lex.get_token()
-            gen_text_object(self.p, self.d.current_coll, token.value, self.d.user_font)
+            gen_text_object(self.p, self.d, token.value, self.d.user_font)
             return True
 
         # new line (\\)
@@ -168,7 +168,7 @@ class SyntaxAnalyser:
                 item = str(its.bullet_number) + '.'
 
             # generate bullet point
-            gen_text_object(self.p, self.d.current_coll, item, self.d.user_font)
+            gen_text_object(self.p, self.d, item, self.d.user_font)
             gen_bullet_point(self.p, its.nest_lvl)
             its.bullet_type = '\u2022'
             return True
@@ -193,7 +193,7 @@ class SyntaxAnalyser:
                 print("Error:", err)
                 return False
 
-            gen_text_object(self.p, self.d.current_coll, content, 'verb')
+            gen_text_object(self.p, self.d, content, 'verb')
             return True
 
         # MATH MODE

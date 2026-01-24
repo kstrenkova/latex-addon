@@ -61,12 +61,18 @@ def gen_move_position(param):
 
 # function creates a new text object with given value and font,
 # then moves it according to context
-def gen_text_object(param, collection, text, font_type):
-    # generate text
-    gen_text(text, change_font(font_type), collection, param.line)
+def gen_text_object(param, defaults, text, font_type, levels=None, symbol=None):
+    # generate text into current collection
+    gen_text(text, change_font(font_type), defaults.current_coll, param.line)
+
+    if levels:
+        # calculate level for math mode
+        gen_calculate(param, defaults.text_scale, levels, symbol)
+    else:
+        # set line height for text mode
+        param.height = param.line.height
 
     # set object position
-    param.height = param.line.height
     gen_move_position(param)
 
 
@@ -281,7 +287,7 @@ def gen_frac_line(context, param, x_pos):
 
 
 # function calculates the scaling and height of text
-def gen_calculate(param, text_scale, levels):
+def gen_calculate(param, text_scale, levels, symbol=None):
     # height factors
     first_exp = 0.75
     nested_exp = 0.5
@@ -319,6 +325,10 @@ def gen_calculate(param, text_scale, levels):
             factor = first_ix if lvl_ix == 1 else nested_ix
             param.height -= factor * param.scale
 
+    # special vertical move for large symbols
+    if symbol in unicode_chars_big.values():
+        # TODO 0.2 is a magic constant
+        param.height -= 0.2 * param.scale  # move lower
 
 # function moves sum symbol according to given parameters
 def gen_move_sum(param, collection, sum_name):

@@ -15,6 +15,8 @@ from ..data.characters_db import *
 # TODO go from using collections to python arrays or dictionaries (?)
 # TODO nested EI do not work for sum EI
 # TODO add inline and display mode differences
+# TODO limits have space after them (\lim)
+# TODO when you start with \sum, it's weirdly higher than the baseline
 
 # class for levels
 class Levels:
@@ -115,10 +117,7 @@ class MathSyntaxAnalyser:
         # <CONST> actions
         if action == '#ACTION_GENERATE_TEXT':
             token = self.lex.get_token()
-            gen_text(token.value, change_font(self.d.user_font), self.d.current_coll, self.p.line)
-
-            gen_calculate(self.p, self.d.text_scale, self.levels)
-            gen_move_position(self.p)
+            gen_text_object(self.p, self.d, token.value, self.d.user_font, self.levels)
             return True
 
         elif action == '#ACTION_LEVEL_DOWN':
@@ -140,11 +139,11 @@ class MathSyntaxAnalyser:
 
         elif action == '#ACTION_MATH_SYMBOL':
             token = self.lex.get_token()
-            if token.value in unicode_chars:
-                gen_text(unicode_chars[token.value], change_font('math'), self.d.current_coll, self.p.line)
+            if not token.value in unicode_chars:
+                print("Symbol", token.value, "is not supported.")
+                return False
 
-            gen_calculate(self.p, self.d.text_scale, self.levels)
-            gen_move_position(self.p)
+            gen_text_object(self.p, self.d, unicode_chars[token.value], 'math', self.levels)
             return True
 
         # <MATH_FONT>
@@ -164,13 +163,12 @@ class MathSyntaxAnalyser:
             # divide token into letters
             for letter in token.value:
                 # only supports uppercase letters
-                if letter.isupper():
-                    gen_text(unicode_fonts[mfont][letter], change_font('math'), self.d.current_coll, self.p.line)
-                    gen_calculate(self.p, self.d.text_scale, self.levels)
-                    gen_move_position(self.p)
-                else:
+                if not letter.isupper():
                     print("Function", mfont, "doesn't support the letter", letter, "!")
                     return False
+
+                # generate math letter
+                gen_text_object(self.p, self.d, unicode_fonts[mfont][letter], 'math', self.levels)
 
             return True
 
@@ -386,13 +384,8 @@ class MathSyntaxAnalyser:
         elif action == '#ACTION_RANGE_OP_INIT':
             token = self.lex.get_token()
             c = token.value if token.value not in unicode_chars_big else unicode_chars_big[token.value]
-            gen_text(c, change_font('math'), self.d.current_coll, self.p.line)
 
-            gen_calculate(self.p, self.d.text_scale, self.levels)
-            if token.value != 'lim':
-                # TODO sum, prod was 0.4
-                self.p.height -= BASE_SPACE * self.p.scale  # move lower
-            gen_move_position(self.p)
+            gen_text_object(self.p, self.d, c, 'math', self.levels, token.value)
             gen_into_collection(self.d.current_coll, bpy.context.active_object)
 
             # check if the next token is for creating exponent or index
