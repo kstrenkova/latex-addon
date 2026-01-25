@@ -306,8 +306,8 @@ def gen_calculate(param, text_scale, levels, symbol=None):
     nested_ix = 0.25
 
     # scale factors
-    scale_low = 0.65
-    scale_nested = 0.45
+    scale_low = 0.65 * text_scale
+    scale_nested = 0.45 * text_scale
 
     lvl_exp = 0  # exponent lvl
     lvl_ix = 0  # index lvl
@@ -316,15 +316,22 @@ def gen_calculate(param, text_scale, levels, symbol=None):
     param.height = param.line.height
     param.scale = text_scale
 
+    # scale based on fractions
+    if levels.frac == 1:
+        param.scale = scale_low
+    elif levels.frac >= 2:
+        param.scale = scale_nested
+
     # iterating through array of exponents and indexes
     for item in levels.ei_array:
+        is_base_level = (lvl_exp + lvl_ix) == 0
 
-        # deciding scaling
-        if (lvl_exp + lvl_ix) == 0:
-            # depending on fraction level
-            param.scale = (scale_low if levels.frac < 2 else scale_nested) * text_scale
-        else:
-            param.scale = scale_nested * text_scale
+        # start on nested scale
+        param.scale = scale_nested
+
+        # enlarge scale depending on base and fraction level
+        if is_base_level and levels.frac < 1:
+            param.scale = scale_low
 
         # adding number of exponent or index
         if item == "exp":
@@ -339,7 +346,8 @@ def gen_calculate(param, text_scale, levels, symbol=None):
     # special vertical move for large symbols
     if symbol in unicode_chars_big.values():
         # TODO 0.2 is a magic constant
-        param.height -= 0.2 * param.scale  # move lower
+        param.height -= 0.2 * text_scale  # move lower
+
 
 # function moves sum symbol according to given parameters
 def gen_move_sum(param, collection, sum_name):

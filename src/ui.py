@@ -12,8 +12,8 @@ from .syntax_analyser import SyntaxAnalyser
 
 TMP_TEXT_EDIT = "tmp_latex_text_edit"
 
-# TODO fix messy letters in generate_1_object when thickness is not zero
-# TODO fix different final position for 1 object vs multiple objects
+# TODO [bug] fix messy letters in generate_1_object when thickness is not zero
+# TODO [bug] fix different final position for 1 object vs multiple objects
 
 # function gets all of the loaded fonts
 def get_loaded_fonts(self, context):

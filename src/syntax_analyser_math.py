@@ -16,14 +16,15 @@ from ..data.characters_db import *
 # TODO [bug] nested EI do not work for sum EI
 # TODO [bug] when you start with \sum (display mode) and the sub/super overflows
 # the start vertical line moves left with them
-# TODO Fraction smaller and more compact for inline mode
+# TODO [bug] Fraction line is not positioned correctly after nested fractions
+# are now smaller
 
 
 # class for levels
 class Levels:
-    def __init__(self):
+    def __init__(self, frac_lvl):
         self.ei_array = []
-        self.frac = 0
+        self.frac = frac_lvl
         self.sqrt = False
         self.sym_name = ''
 
@@ -88,7 +89,10 @@ class MathSyntaxAnalyser:
         self.lex = lex
         self.d = defaults
         self.p = parameters
-        self.levels = Levels()
+
+        # set default fraction level based on math mode type
+        frac_lvl = -1 if self.d.math_mode == 'display' else 0
+        self.levels = Levels(frac_lvl)
 
     def math_mode_end(self, stack_top, token):
         if stack_top != '$':
