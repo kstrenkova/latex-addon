@@ -297,6 +297,26 @@ def gen_frac_line(context, param, x_pos):
         i.co = new_location
 
 
+# helper function to get the fraction level scale
+def get_frac_scale(levels, text_scale, scale_low, scale_nested):
+    level = len(levels.frac_array)
+
+    # no fraction or base level fraction
+    if level <= 1:
+        return text_scale
+
+    # display fraction command
+    if levels.frac_array[-1] == 'dfrac':
+        return text_scale
+
+    # first level fraction or fraction before was dfrac
+    if level == 2 or (levels.frac_array[-2] == 'dfrac'):
+        return scale_low
+
+    # second level fraction
+    return scale_nested
+
+
 # function calculates the scaling and height of text
 def gen_calculate(param, text_scale, levels, symbol=None):
     # height factors
@@ -314,24 +334,18 @@ def gen_calculate(param, text_scale, levels, symbol=None):
 
     # starting height is line height and scale is user given scale
     param.height = param.line.height
-    param.scale = text_scale
-
-    # scale based on fractions
-    if levels.frac == 1:
-        param.scale = scale_low
-    elif levels.frac >= 2:
-        param.scale = scale_nested
+    param.scale = get_frac_scale(levels, text_scale, scale_low, scale_nested)
 
     # iterating through array of exponents and indexes
     for item in levels.ei_array:
         is_base_level = (lvl_exp + lvl_ix) == 0
 
-        # start on nested scale
-        param.scale = scale_nested
-
-        # enlarge scale depending on base and fraction level
-        if is_base_level and levels.frac < 1:
-            param.scale = scale_low
+        # scale based on level of index/exponent
+        if is_base_level:
+            if (len(levels.frac_array) < 2) or (levels.frac_array[-1] == 'dfrac'):
+                param.scale = scale_low
+        else:
+            param.scale = scale_nested
 
         # adding number of exponent or index
         if item == "exp":

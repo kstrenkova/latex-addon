@@ -133,6 +133,7 @@ math_ll_table = {
     ('TERM', '{'):                ['COMMAND'],
     ('TERM', 'sqrt'):             ['COMMAND'],
     ('TERM', 'frac'):             ['COMMAND'],
+    ('TERM', 'dfrac'):            ['COMMAND'],
     ('TERM', 'sum'):              ['COMMAND'],
     ('TERM', 'prod'):             ['COMMAND'],
     ('TERM', 'int'):              ['COMMAND'],
@@ -161,6 +162,7 @@ math_ll_table = {
     ('MORE_TERM', '{'):              ['TERM', 'MORE_TERM'],
     ('MORE_TERM', 'sqrt'):           ['TERM', 'MORE_TERM'],
     ('MORE_TERM', 'frac'):           ['TERM', 'MORE_TERM'],
+    ('MORE_TERM', 'dfrac'):          ['TERM', 'MORE_TERM'],
     ('MORE_TERM', 'sum'):            ['TERM', 'MORE_TERM'],
     ('MORE_TERM', 'prod'):           ['TERM', 'MORE_TERM'],
     ('MORE_TERM', 'int'):            ['TERM', 'MORE_TERM'],
@@ -209,6 +211,7 @@ math_ll_table = {
     # <EI_TERM> -> <COMMAND>
     ('EI_TERM', 'sqrt'):            ['COMMAND'],
     ('EI_TERM', 'frac'):            ['COMMAND'],
+    ('EI_TERM', 'dfrac'):           ['COMMAND'],
     ('EI_TERM', '_MATH_SYMBOL'):    ['COMMAND'],
 
     # <EXP> -> exponent <EI_TERM>
@@ -229,7 +232,9 @@ math_ll_table = {
     ('COMMAND', 'sqrt'):            ['sqrt', 'SQRT'],
 
     # <COMMAND> -> frac <FRAC>
-    ('COMMAND', 'frac'):            ['frac', 'FRAC'],
+    # <COMMAND> -> dfrac <FRAC>
+    ('COMMAND', 'frac'):            ['frac',  '#ACTION_FRAC_SAVE_FRAC',  'FRAC'],
+    ('COMMAND', 'dfrac'):           ['dfrac', '#ACTION_FRAC_SAVE_DFRAC', 'FRAC'],
 
     # <COMMAND> -> range_operators
     ('COMMAND', 'sum'):             ['#ACTION_RANGE_OP_INIT'],

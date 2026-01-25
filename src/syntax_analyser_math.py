@@ -22,9 +22,9 @@ from ..data.characters_db import *
 
 # class for levels
 class Levels:
-    def __init__(self, frac_lvl):
+    def __init__(self, frac_array):
         self.ei_array = []
-        self.frac = frac_lvl
+        self.frac_array = frac_array
         self.sqrt = False
         self.sym_name = ''
 
@@ -91,8 +91,8 @@ class MathSyntaxAnalyser:
         self.p = parameters
 
         # set default fraction level based on math mode type
-        frac_lvl = -1 if self.d.math_mode == 'display' else 0
-        self.levels = Levels(frac_lvl)
+        frac_array = [] if self.d.math_mode == 'display' else ['frac']
+        self.levels = Levels(frac_array)
 
     def math_mode_end(self, stack_top, token):
         if stack_top != '$':
@@ -310,9 +310,12 @@ class MathSyntaxAnalyser:
             return True
 
         # <FRAC> actions
+        elif action.startswith('#ACTION_FRAC_SAVE_'):
+            item = action.removeprefix('#ACTION_FRAC_SAVE_').lower()
+            self.levels.frac_array.append(item)
+            return True
+
         elif action == '#ACTION_FRAC_INIT':
-            # increasing level of fraction
-            self.levels.frac += 1
             self.p.width += MIN_SPACE * self.p.scale  # space before fraction
             gen_calculate(self.p, self.d.text_scale, self.levels)
 
@@ -382,7 +385,7 @@ class MathSyntaxAnalyser:
             self.p.width = line_length + 0.2 * self.p.scale  # space
 
             # decreasing level of fraction
-            self.levels.frac -= 1
+            self.levels.frac_array.pop()
             return True
 
         # <RANGE_OP> functions
