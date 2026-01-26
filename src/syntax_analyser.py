@@ -15,7 +15,6 @@ from ..data.characters_db import *
 
 # TODO checkout mathfonts not used only on upper letters
 # TODO research what the default value should be for \par and for itemize
-# TODO custom bullet points don't work for enumerate
 
 
 class ItemizeState:
@@ -173,19 +172,20 @@ class SyntaxAnalyser:
             return True
 
         elif action == '#ACTION_ADD_ITEM':
-            # get bullet point value
             its = self.state_stack[-1]
-            if self.block[-1] == 'itemize':
-                nest_lvl = get_nest_level(its.nest_array, 'itemize')
-                item = get_bullet_default(nest_lvl)
-            elif self.block[-1] == 'enumerate':
-                its.bullet_number += 1
-                item = str(its.bullet_number) + '.'
+            nest_lvl = get_nest_level(its.nest_array, self.block[-1])
 
-            # overwrite default bullet points with custom bullet point
             if len(its.custom_bullet) != 0:
+                # use custom bullet point
                 item = its.custom_bullet
                 its.custom_bullet = ''
+            else:
+                # use default bullet point
+                if self.block[-1] == 'itemize':
+                    item = get_bullet_default(nest_lvl)
+                elif self.block[-1] == 'enumerate':
+                    its.bullet_number += 1
+                    item = get_numbering_default(nest_lvl, its.bullet_number)
 
             # generate bullet point
             gen_text_object(self.p, self.d, item, self.d.user_font)

@@ -698,6 +698,39 @@ def get_bullet_default(level):
     return bullet_types[index]
 
 
+# function returns roman numbers
+def get_roman(num):
+    lookup = [
+        (100, 'c'), (90, 'xc'), (50, 'l'), (40, 'xl'),
+        (10, 'x'), (9, 'ix'), (5, 'v'), (4, 'iv'), (1, 'i'),
+    ]
+
+    item = ''
+    for (value, roman) in lookup:
+        (res, num) = divmod(num, value)
+        item += roman * res
+    return item
+
+
+# function returns default numbering based on nested level
+def get_numbering_default(level, index):
+    if level == 1:
+        item = str(index) + '.'
+
+    elif level == 2:
+        char_code = 97 + ((index - 1) % 26)  # a, b, c, ...
+        item = '(' + chr(char_code) + ')'
+
+    elif level == 3:
+        item = get_roman(index) + '.'
+
+    else:
+        char_code = 65 + ((index - 1) % 26)  # A, B, C, ...
+        item = chr(char_code) + '.'
+
+    return item
+
+
 # function calculates positions around bullet point
 def gen_bullet_point(param, nest_lvl):
     # TODO scale
