@@ -19,10 +19,10 @@ from ..data.characters_db import *
 
 
 class ItemizeState:
-    def __init__(self, nest_lvl):
+    def __init__(self, nest_array):
         self.bullet_number = 0
-        self.bullet_type = '\u2022'
-        self.nest_lvl = nest_lvl
+        self.custom_bullet = ''
+        self.nest_array = nest_array
 
 
 class SyntaxAnalyser:
@@ -152,42 +152,50 @@ class SyntaxAnalyser:
 
         # <ITEMIZE> actions
         elif action == '#ACTION_INIT_ITEM':
-            # calculate the level of nesting
-            nested_level = 1
-            for state in self.state_stack:
+            # save current environment
+            nest_array = []
+            for state in reversed(self.state_stack):
                 if isinstance(state, ItemizeState):
-                    nested_level += 1
+                    nest_array = state.nest_array
+                    break
+
+            nest_array.append(self.block[-1])
 
             # add a new itemize/enumerate block
-            self.state_stack.append(ItemizeState(nested_level))
+            self.state_stack.append(ItemizeState(nest_array))
             return True
 
         elif action == '#ACTION_SAVE_ITEM':
             # overwrite default bullet point value
             token = self.lex.get_token()
             its = self.state_stack[-1]
-            its.bullet_type = token.value
+            its.custom_bullet = token.value
             return True
 
         elif action == '#ACTION_ADD_ITEM':
             # get bullet point value
             its = self.state_stack[-1]
             if self.block[-1] == 'itemize':
-                item = its.bullet_type
+                nest_lvl = get_nest_level(its.nest_array, 'itemize')
+                item = get_bullet_default(nest_lvl)
             elif self.block[-1] == 'enumerate':
                 its.bullet_number += 1
                 item = str(its.bullet_number) + '.'
 
+            # overwrite default bullet points with custom bullet point
+            if len(its.custom_bullet) != 0:
+                item = its.custom_bullet
+                its.custom_bullet = ''
+
             # generate bullet point
             gen_text_object(self.p, self.d, item, self.d.user_font)
-            gen_bullet_point(self.p, its.nest_lvl)
-            its.bullet_type = '\u2022'
+            gen_bullet_point(self.p, len(its.nest_array))
             return True
 
         elif action == '#ACTION_END_ITEM':
             # set new line when main itemize/enumerate end
             its = self.state_stack[-1]
-            if its.nest_lvl == 1:
+            if len(its.nest_array) == 1:
                 self.execute_action("#ACTION_NEW_LINE")
             self.state_stack.pop()
             return True

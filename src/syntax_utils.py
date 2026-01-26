@@ -30,7 +30,7 @@ class Line:
     def __init__(self, height):
         self.height = height
         self.line_objs = []
-        self.min_y = 1000  # TODO big value
+        self.min_y = float('inf')
 
 
 # class for parameters

@@ -674,6 +674,30 @@ def gen_matrix_center(collection, size, y_line):
         obj.location.y -= offset
 
 
+# function gets level of nesting for itemize/enumerate
+def get_nest_level(nest_array, env_type):
+    nest_lvl = 0
+    for item in nest_array:
+        if item == env_type:
+            nest_lvl += 1
+
+    return nest_lvl
+
+
+# function return default bullet point values based on nested level
+def get_bullet_default(level):
+    bullet_types = [
+        '\u2022',
+        '\u2013',
+        '\u2217',
+        '\u00B7'
+    ]
+
+    # calculate index based on level
+    index = min(level, len(bullet_types)) - 1
+    return bullet_types[index]
+
+
 # function calculates positions around bullet point
 def gen_bullet_point(param, nest_lvl):
     # TODO scale
