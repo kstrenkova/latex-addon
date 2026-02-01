@@ -289,12 +289,23 @@ def gen_frac_line(context, param, x_pos):
         0.0
     ))
 
-    # moving fraction line
+    # prolonging fraction line
     for i in bpy.context.object.data.vertices:
         new_location = i.co
         if i.co.x == 1.0:
             new_location[0] = x_pos - param.width + 0.1 * param.scale  # x position
         i.co = new_location
+
+
+# function moves objects in fraction
+def gen_frac_move(param, collection, mode):
+    # get highest or lowest point in collection
+    y = gen_bound(collection, 'y', 'max') if mode == "den" else gen_bound(collection, 'y', 'min')
+    move_by = param.height - y + (0.1 if mode == "den" else 0.6) * param.scale
+
+    # select and move all objects in denominator
+    for obj in bpy.data.collections[collection].all_objects:
+        obj.location.y += move_by
 
 
 # helper function to get the fraction level scale
@@ -435,17 +446,6 @@ def gen_fin_sum(sum_name, up_collection, down_collection):
             obj.location.x += diff
 
     return fin_width + diff
-
-
-# function moves objects in fraction
-def gen_frac_move(param, collection, mode):
-    # get highest or lowest point in collection
-    y = gen_bound(collection, 'y', 'max') if mode == "den" else gen_bound(collection, 'y', 'min')
-    move_by = param.height - y + (0.1 if mode == "den" else 0.6) * param.scale
-
-    # select and move all objects in denominator
-    for obj in bpy.data.collections[collection].all_objects:
-        obj.location.y += move_by
 
 
 # function centers objects on x axis

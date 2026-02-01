@@ -16,8 +16,6 @@ from ..data.characters_db import *
 # TODO [bug] nested EI do not work for sum EI
 # TODO [bug] when you start with \sum (display mode) and the sub/super overflows
 # the start vertical line moves left with them
-# TODO [bug] Fraction line is not positioned correctly after nested fractions
-# are now smaller
 
 
 # class for levels
@@ -204,7 +202,10 @@ class MathSyntaxAnalyser:
             # join collection into parent collection
             gen_join_collections(eis.eicoll, eis.parent_coll)
             self.d.current_coll = eis.parent_coll
+
+            # reset levels
             self.levels.sym_name = ''
+            gen_calculate(self.p, self.d.text_scale, self.levels)
             return True
 
         elif action == '#ACTION_EI_BOTH':
@@ -244,7 +245,10 @@ class MathSyntaxAnalyser:
             gen_join_collections(eis.eicoll, eis.parent_coll)
             gen_join_collections(eis.eicoll2, eis.parent_coll)
             self.d.current_coll = eis.parent_coll  # set current collection
+
+            # reset levels
             self.levels.sym_name = ''
+            gen_calculate(self.p, self.d.text_scale, self.levels)
             return True
 
         # <SQRT> actions
@@ -317,8 +321,6 @@ class MathSyntaxAnalyser:
 
         elif action == '#ACTION_FRAC_INIT':
             self.p.width += MIN_SPACE * self.p.scale  # space before fraction
-            gen_calculate(self.p, self.d.text_scale, self.levels)
-
             fs = FractionState(self.d.current_coll, self.p.create_copy())
 
             # numerator collection
@@ -382,7 +384,7 @@ class MathSyntaxAnalyser:
             self.d.current_coll = fs.parent_coll
 
             # set back line width
-            self.p.width = line_length + 0.2 * self.p.scale  # space
+            self.p.width = line_length + BASE_SPACE * self.p.scale  # space
 
             # decreasing level of fraction
             self.levels.frac_array.pop()
