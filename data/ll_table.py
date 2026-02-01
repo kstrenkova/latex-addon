@@ -237,10 +237,14 @@ math_ll_table = {
     ('COMMAND', 'dfrac'):           ['dfrac', '#ACTION_FRAC_SAVE_DFRAC', 'FRAC'],
 
     # <COMMAND> -> range_operators
-    ('COMMAND', 'sum'):             ['#ACTION_RANGE_OP_INIT'],
-    ('COMMAND', 'prod'):            ['#ACTION_RANGE_OP_INIT'],
+    ('COMMAND', 'sum'):             ['#ACTION_RANGE_OP_INIT', 'RANGE_OP'],
+    ('COMMAND', 'prod'):            ['#ACTION_RANGE_OP_INIT', 'RANGE_OP'],
+    ('COMMAND', 'lim'):             ['#ACTION_RANGE_OP_INIT', 'RANGE_OP'],
     ('COMMAND', 'int'):             ['#ACTION_RANGE_OP_INIT'],
-    ('COMMAND', 'lim'):             ['#ACTION_RANGE_OP_INIT'],
+
+    ('RANGE_OP', '_UNDERSCORE'):    ['#ACTION_SAVE_RANGE_OP'],
+    ('RANGE_OP', '_CARET'):         ['#ACTION_SAVE_RANGE_OP'],
+    ('RANGE_OP', 'epsilon'):        ['epsilon'],
 
     # <COMMAND> -> command <MATH_FONT>
     ('COMMAND', 'mathbb'):          ['mathbb',   '{', '#ACTION_MATH_FONT_MATHBB',   'MATH_FONT', '}'],
@@ -287,20 +291,22 @@ math_ll_table = {
     ],
 
     # --- MATRIX ---
-    # <MATRIX> -> TODO
-    # <MATRIX> -> enter <MATRIX>
-    # <MATRIX> -> & <MATRIX>
+    # TODO add all possible values
     # <MATRIX> -> <CONST> <MATRIX>
     # <MATRIX> -> <COMMAND> <MATRIX>
+    # <MATRIX> -> <BLOCK> <MATRIX>
+    # <MATRIX> -> enter <MATRIX>
+    # <MATRIX> -> & <MATRIX>
+    # <MATRIX> -> epsilon
     ('MATRIX', '_TEXT'):            ['CONST', 'MATRIX'],
     ('MATRIX', '_SPECIAL_CHAR'):    ['CONST', 'MATRIX'],
     ('MATRIX', '_UNDERSCORE'):      ['CONST', 'MATRIX'],
-    ('MATRIX', '_ENTER'):           ['#ACTION_MATRIX_NEW_ROW', 'MATRIX'],
     ('MATRIX', '{'):                ['COMMAND', 'MATRIX'],
     ('MATRIX', '_MATH_SYMBOL'):     ['COMMAND', 'MATRIX'],
     ('MATRIX', 'sqrt'):             ['COMMAND', 'MATRIX'],
     ('MATRIX', 'frac'):             ['COMMAND', 'MATRIX'],
-    ('MATRIX', '_AMPERSAND'):       ['#ACTION_MATRIX_NEW_CELL', 'MATRIX'],
     ('MATRIX', 'begin'):            ['BLOCK', 'MATRIX'],
+    ('MATRIX', '_ENTER'):           ['#ACTION_MATRIX_NEW_ROW', 'MATRIX'],
+    ('MATRIX', '_AMPERSAND'):       ['#ACTION_MATRIX_NEW_CELL', 'MATRIX'],
     ('MATRIX', 'end'):              ['epsilon'],
 }

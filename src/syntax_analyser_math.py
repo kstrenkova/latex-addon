@@ -13,7 +13,6 @@ from ..data.ll_table import *
 from ..data.characters_db import *
 
 # TODO [optimalization] go from using collections to python arrays or dictionaries (?)
-# TODO [bug] nested EI do not work for sum EI
 # TODO [bug] when you start with \sum (display mode) and the sub/super overflows
 # the start vertical line moves left with them
 
@@ -29,11 +28,12 @@ class Levels:
 
 # class for index and exponent
 class ExpIxState:
-    def __init__(self, parent_coll, init_params):
+    def __init__(self, parent_coll, init_params, sym_name):
         self.parent_coll = parent_coll
         self.init_params = init_params
         self.eicoll = ''
         self.eicoll2 = ''
+        self.sym_name = sym_name
         self.width = 0
 
 
@@ -102,7 +102,7 @@ class MathSyntaxAnalyser:
         # TODO clean lookup
         key = token.value if (token.type in special_token_type) else token.type
 
-        if stack_top in epsilon_rules and epsilon_rules[stack_top] != (token.type, token.value):
+        if stack_top in epsilon_rules and (token.type, token.value) not in epsilon_rules[stack_top]:
             key = 'epsilon'
 
         if stack_top == 'PROG':
@@ -178,8 +178,9 @@ class MathSyntaxAnalyser:
         # <TERM_EI> actions
         elif action == '#ACTION_EI_INIT':
             token = self.lex.get_token()
-            eis = ExpIxState(self.d.current_coll, self.p.create_copy())
+            eis = ExpIxState(self.d.current_coll, self.p.create_copy(), self.levels.sym_name)
             eis.width = gen_bound(self.d.current_coll, 'x', 'max')
+            self.levels.sym_name = ''
 
             # exponent or index collection
             coll_name = 'ExponentCollection' if token.type == '_CARET' else 'IndexCollection'
@@ -194,17 +195,16 @@ class MathSyntaxAnalyser:
             self.levels.ei_array.pop()
 
             # move range operator symbol (sum, int, ...) if present
-            if self.levels.sym_name != '' and self.d.math_mode == 'display':
-                gen_move_sum(self.p, eis.eicoll, self.levels.sym_name)
+            if eis.sym_name != '' and self.d.math_mode == 'display':
+                gen_move_sum(self.p, eis.eicoll, eis.sym_name)
                 space = BASE_SPACE * self.p.scale
-                self.p.width = gen_fin_sum(self.levels.sym_name, eis.eicoll, eis.eicoll) + space
+                self.p.width = gen_fin_sum(eis.sym_name, eis.eicoll, eis.eicoll) + space
 
             # join collection into parent collection
             gen_join_collections(eis.eicoll, eis.parent_coll)
             self.d.current_coll = eis.parent_coll
 
             # reset levels
-            self.levels.sym_name = ''
             gen_calculate(self.p, self.d.text_scale, self.levels)
             return True
 
@@ -214,8 +214,8 @@ class MathSyntaxAnalyser:
             eis = self.state_stack[-1]
 
             # move range operator symbol (sum, int, ...) if present
-            if self.levels.sym_name != '' and self.d.math_mode == 'display':
-                gen_move_sum(self.p, eis.eicoll, self.levels.sym_name)
+            if eis.sym_name != '' and self.d.math_mode == 'display':
+                gen_move_sum(self.p, eis.eicoll, eis.sym_name)
 
             # exponent or index collection
             coll_name = 'ExponentCollection' if token.type == '_CARET' else 'IndexCollection'
@@ -236,10 +236,10 @@ class MathSyntaxAnalyser:
             self.levels.ei_array.pop()
 
             # move range operator symbol (sum, int, ...) if present
-            if self.levels.sym_name != '' and self.d.math_mode == 'display':
-                gen_move_sum(self.p, eis.eicoll2, self.levels.sym_name)
+            if eis.sym_name != '' and self.d.math_mode == 'display':
+                gen_move_sum(self.p, eis.eicoll2, eis.sym_name)
                 space = BASE_SPACE * self.p.scale
-                self.p.width = gen_fin_sum(self.levels.sym_name, eis.eicoll, eis.eicoll2) + space
+                self.p.width = gen_fin_sum(eis.sym_name, eis.eicoll, eis.eicoll2) + space
 
             # join collection into parent collection
             gen_join_collections(eis.eicoll, eis.parent_coll)
@@ -247,7 +247,6 @@ class MathSyntaxAnalyser:
             self.d.current_coll = eis.parent_coll  # set current collection
 
             # reset levels
-            self.levels.sym_name = ''
             gen_calculate(self.p, self.d.text_scale, self.levels)
             return True
 
@@ -391,17 +390,17 @@ class MathSyntaxAnalyser:
             return True
 
         # <RANGE_OP> functions
+        elif action == '#ACTION_SAVE_RANGE_OP':
+            self.levels.sym_name = self.d.context.active_object.name
+            return True
+
         elif action == '#ACTION_RANGE_OP_INIT':
             token = self.lex.get_token()
             c = token.value if token.value not in unicode_chars_big else unicode_chars_big[token.value]
 
+            # generate big symbol and add it to collection
             gen_text_object(self.p, self.d, c, 'math', self.levels, token.value)
             gen_into_collection(self.d.current_coll, bpy.context.active_object)
-
-            # check if the next token is for creating exponent or index
-            ntoken = self.lex.peek_token()
-            if (ntoken.type == '_UNDERSCORE' or ntoken.type == '_CARET') and token.value != 'int':
-                self.levels.sym_name = self.d.context.active_object.name  # save symbol
             return True
 
         # <MATRIX> actions

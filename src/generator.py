@@ -352,9 +352,8 @@ def gen_calculate(param, text_scale, levels, symbol=None):
         is_base_level = (lvl_exp + lvl_ix) == 0
 
         # scale based on level of index/exponent
-        if is_base_level:
-            if (len(levels.frac_array) < 2) or (levels.frac_array[-1] == 'dfrac'):
-                param.scale = scale_low
+        if is_base_level and ((len(levels.frac_array) < 2) or (levels.frac_array[-1] == 'dfrac')):
+            param.scale = scale_low
         else:
             param.scale = scale_nested
 

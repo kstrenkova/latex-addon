@@ -82,9 +82,13 @@ block_actions = {
 # context-dependent epsilon productions
 epsilon_rules = {
     # stack_top: token.type, token.value
-    'ITEMIZE': ('COMMAND', 'item'),
-    'IX':      ('_UNDERSCORE', '_'),
-    'EXP':     ('_CARET', '^')
+    'ITEMIZE':  [('COMMAND', 'item')],
+    'IX':       [('_UNDERSCORE', '_')],
+    'EXP':      [('_CARET', '^')],
+    'RANGE_OP': [
+        ('_UNDERSCORE', '_'),
+        ('_CARET', '^')
+    ]
 }
 
 # tokens that end math mode
