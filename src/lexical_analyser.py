@@ -16,10 +16,9 @@ class Token:
 
 # class for lexical analyser
 class LexicalAnalyser:
-    def __init__(self, latex_text, position, mode):
+    def __init__(self, latex_text, position):
         self.text = latex_text
         self.position = position
-        self.mode = mode
 
     # function that returns if the string is at the end
     def is_end(self):
@@ -86,10 +85,10 @@ class LexicalAnalyser:
         return Token("COMMAND", name)
 
     # function returns the next token
-    def get_token(self):
+    def get_token(self, add_whitespace=False):
         # <WHITESPACE>
         has_space = self.state_whitespace()
-        if has_space and self.mode == 'text':
+        if has_space and add_whitespace:
             return Token("WHITESPACE", " ")
 
         if self.is_end():
@@ -112,9 +111,9 @@ class LexicalAnalyser:
         return self.state_text()
 
     # function checks the value of the next token
-    def peek_token(self):
+    def peek_token(self, add_whitespace=False):
         start_position = self.position
-        token = self.get_token()
+        token = self.get_token(add_whitespace)
         self.position = start_position
         return token
 

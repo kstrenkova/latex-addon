@@ -15,6 +15,8 @@ from ..data.characters_db import *
 
 # TODO checkout mathfonts not used only on upper letters
 # TODO research what the default value should be for \par and for itemize
+# TODO [feature] add \newline
+# TODO [bug] coll -> col
 
 
 class ItemizeState:
@@ -22,6 +24,21 @@ class ItemizeState:
         self.bullet_number = 0
         self.custom_bullet = ''
         self.nest_array = nest_array
+
+
+# single column alignment
+class ColumnAlignment:
+    def __init__(self, type):
+        self.type = type
+        self.width = -1
+        self.unit = ''
+
+
+# whole table alignment
+class TableAlignment:
+    def __init__(self):
+        self.columns = []
+        self.vline = []
 
 
 class TableState:
@@ -32,6 +49,7 @@ class TableState:
         self.cell_colls = []
         self.obj_array = [[]]
         self.row_num = 0
+        self.align = TableAlignment()
 
 
 class SyntaxAnalyser:
@@ -82,7 +100,6 @@ class SyntaxAnalyser:
 
         # call math syntax analyser
         math_syntax = MathSyntaxAnalyser(self.lex, self.d, self.p)
-        self.lex.mode = "math"
 
         print("Entering math mode!")
 
@@ -91,7 +108,6 @@ class SyntaxAnalyser:
             print(warn_msg)
             return False
 
-        self.lex.mode = "text"
         self.d.base_coll = latex_coll
         print("Returned from math mode!")
 
@@ -230,15 +246,62 @@ class SyntaxAnalyser:
             self.d.math_mode = action.removeprefix('#ACTION_MATH_MODE_').lower()
             return self.enter_math_mode()
 
-        # TABULAR
+        # <TABLE> actions
         elif action == '#ACTION_ALIGN_SAVE':
-            #TODO save alignment
-            alignment = self.lex.get_token()
+            token = self.lex.get_token()
+            ts = self.state_stack[-1]
+
+            # save individual letters as column alignment
+            for c in token.value:
+                ts.align.columns.append(ColumnAlignment(c))
+
             return True
 
         elif action == '#ACTION_ALIGN_LINE':
-            #TODO save vertical line
-            alignment = self.lex.get_token()
+            token = self.lex.get_token()
+            ts = self.state_stack[-1]
+
+            # add vertical line before the current column
+            current_col = len(ts.align.columns)
+
+            if len(ts.align.vline) <= current_col:
+                # add zeros to match the number of the current column
+                zero_num = (current_col + 1) - len(ts.align.vline)
+                ts.align.vline.extend([0] * zero_num)
+
+            ts.align.vline[current_col] += 1
+            return True
+
+        elif action == '#ACTION_COL_WIDTH':
+            token = self.lex.get_token()
+            ts = self.state_stack[-1]
+
+            # alignment values for the current column
+            align = ts.align.columns[-1]
+            width = token.value
+            unit = None
+
+            if align.type not in ['p', 'm', 'b']:
+                print("Syntax error: Alignment", align.type, "does not support width specification!")
+                return False
+
+            # check whether the token includes units
+            if not token.value.replace('.', '', 1).isdigit():
+                for u in units:
+                    if width.endswith(u):
+                        width = width.replace(u, '')
+                        unit = u
+                        break
+
+            try:
+                # get the numeric value of the width
+                align.width = float(width)
+            except ValueError:
+                print(f"Syntax error: Invalid numeric value '{width}' in width specification!")
+                return False
+
+            # save units from current token or get the next one
+            align.unit = unit if unit else self.lex.get_token().value
             return True
 
         elif action == '#ACTION_TABLE_INIT':
@@ -331,7 +394,7 @@ class SyntaxAnalyser:
         # parsing loop
         while self.stack:
             stack_top = self.stack[-1]
-            token = self.lex.peek_token()
+            token = self.lex.peek_token(True)  # also return whitespaces
             print(f"STACK: {self.stack}")
             print(f"Token type: '{token.type}'")
             print(f"Token value: '{token.value}'")
@@ -339,7 +402,7 @@ class SyntaxAnalyser:
             # generate space and consume the whitespace token
             if token.type == "WHITESPACE":
                 self.p.width += BASE_SPACE * self.p.scale
-                self.lex.get_token()
+                self.lex.get_token(True)
                 continue
 
             # successful parsing

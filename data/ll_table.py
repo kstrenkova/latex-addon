@@ -116,9 +116,14 @@ ll_table = {
     # <ALIGN> -> text <ALIGN>
     # <ALIGN> -> | <ALIGN>
     # <ALIGN> -> epsilon
-    ('ALIGN', '_TEXT'):          ['#ACTION_ALIGN_SAVE', 'ALIGN'],
+    ('ALIGN', '_TEXT'):          ['#ACTION_ALIGN_SAVE', 'COL_WIDTH'],
     ('ALIGN', '_PIPE'):          ['#ACTION_ALIGN_LINE', 'ALIGN'],
     ('ALIGN', '}'):              ['epsilon'],
+
+    # <COL_WIDTH> -> { text } <ALIGN>
+    # <COL_WIDTH> -> epsilon
+    ('COL_WIDTH', '{'):        ['{', '#ACTION_COL_WIDTH', '}', 'ALIGN'],
+    ('COL_WIDTH', 'epsilon'):  ['ALIGN'],
 
     # <TABLE> -> <CONST>
     # <TABLE> -> <COMMAND>

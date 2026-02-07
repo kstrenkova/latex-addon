@@ -242,7 +242,7 @@ class WM_OT_AddText(bpy.types.Operator):
         props = context.scene.custom_prop
 
         # create lexical analyser and main syntax analyser
-        lex = LexicalAnalyser(props.latex_text, 0, "text")
+        lex = LexicalAnalyser(props.latex_text, 0)
         syntax = SyntaxAnalyser(lex, context, props)
 
         # parse latex text
