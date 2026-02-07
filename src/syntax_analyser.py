@@ -49,6 +49,7 @@ class TableState:
         self.obj_array = [[]]
         self.row_num = 0
         self.align = TableAlignment()
+        self.hline_pos = []
 
 
 class SyntaxAnalyser:
@@ -165,7 +166,7 @@ class SyntaxAnalyser:
             if token.type == '_ENTER':
                 self.lex.get_token()
 
-            gen_adjust_new_line(self.p, self.d.base_coll)
+            gen_adjust_new_line(self.p, self.d.base_coll, LINE_SPACE)
             return True
 
         # paragraph (\par)
@@ -317,7 +318,10 @@ class SyntaxAnalyser:
             return True
 
         elif action == '#ACTION_TABLE_HLINE':
-            # TODO generate a line
+            ts = self.state_stack[-1]
+            self.p.line.min_y -= BASE_SPACE * self.p.scale
+            ts.hline_pos.append(self.p.line.min_y)
+            self.p.line.height -= BASE_SPACE * self.p.scale
             return True
 
         elif action == '#ACTION_TABLE_NEW_ROW':
@@ -335,7 +339,7 @@ class SyntaxAnalyser:
 
             # set width to start and height lower
             self.p.width = ts.init_params.width
-            self.p.line.height -= 1.0 * self.d.text_scale  # TODO LINE HEIGHT not 1.0
+            gen_adjust_new_line(self.p, self.d.base_coll, LINE_SPACE)
             return True
 
         elif action == '#ACTION_TABLE_NEW_CELL':
@@ -367,6 +371,14 @@ class SyntaxAnalyser:
 
                 # remove table cell collection
                 bpy.data.collections.remove(coll)
+
+            # gets the furthest x position
+            if len(body_coll.all_objects):
+                line_length = gen_bound(body_coll.name, 'x', 'max')
+
+                # generate all horizontal lines
+                for y_pos in ts.hline_pos:
+                    gen_line_object(self.d.context, ts.init_params, line_length, y_pos)
 
             # join table collection into parent collection
             gen_join_collections(ts.table_coll, ts.parent_coll)

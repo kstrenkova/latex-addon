@@ -74,15 +74,15 @@ def gen_text_object(param, defaults, text, font_type, levels=None, symbol=None):
 
 
 # function calculates and adjusts the height for new line
-def gen_adjust_new_line(param, collection):
+def gen_adjust_new_line(param, collection, line_space):
     # no objects have been generated yet
     if len(bpy.data.collections[collection].all_objects) == 0:
         return
 
     # multiple new lines in the row
     if len(param.line.line_objs) == 0:
-        param.line.min_y -= LINE_SPACE * param.scale
-        param.line.height = param.line.min_y - LINE_SPACE
+        param.line.min_y -= line_space * param.scale
+        param.line.height = param.line.min_y - line_space
         param.width = 0.0
         return
 
@@ -101,12 +101,12 @@ def gen_adjust_new_line(param, collection):
     # reset line objects
     param.line.line_objs.clear()
 
-    param.line.height = param.line.min_y - LINE_SPACE
+    param.line.height = param.line.min_y - line_space
     param.width = 0.0
 
 
 # function generates line object
-def gen_line_object(context, param, x_pos):
+def gen_line_object(context, param, x_pos, y_pos):
     # calculate line parameters
     line_height = LINE_THICKNESS * param.scale
     line_width = x_pos - param.width + 0.1 * param.scale
@@ -128,7 +128,7 @@ def gen_line_object(context, param, x_pos):
     line_obj = context.active_object
     line_obj.location = Vector((
         param.width,
-        param.height + 0.3 * param.scale,
+        y_pos,
         0.0
     ))
 

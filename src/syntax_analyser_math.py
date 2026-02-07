@@ -16,6 +16,7 @@ from ..data.characters_db import *
 # TODO [bug] when you start with \sum (display mode) and the sub/super overflows
 # the start vertical line moves left with them
 # TODO [feature] numbers for equation lines
+# TODO make matrices use adjust_new_line function
 
 # class for levels
 class Levels:
@@ -368,7 +369,8 @@ class MathSyntaxAnalyser:
                 center_coll = fs.dcoll
 
             # generating fraction line
-            gen_line_object(self.d.context, fs.init_params, line_length)
+            y_pos = self.p.height + 0.3 * self.p.scale,
+            gen_line_object(self.d.context, fs.init_params, line_length, y_pos)
             self.p.line.line_objs.append(self.d.context.active_object)
 
             # center numerator and denominator
@@ -456,7 +458,7 @@ class MathSyntaxAnalyser:
 
             # set width to start and height lower
             self.p.width = ms.init_params.width
-            self.p.height -= 1.0 * self.d.text_scale  # TODO line height not 1.0
+            self.p.height -= LINE_SPACE * self.d.text_scale
             return True
 
         elif action == '#ACTION_MATRIX_NEW_CELL':
