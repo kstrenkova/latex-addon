@@ -300,12 +300,12 @@ class MathSyntaxAnalyser:
                 sqrt_param['y_max'] = gen_bound(sqs.sqcoll, 'y', 'max')
 
             # generating sqrt symbol
-            gen_sqrt_sym(self.d.context)
-            gen_into_collection(sqs.parent_coll, bpy.context.active_object)
-            self.p.line.line_objs.append(bpy.context.active_object)
+            sqrt_obj = gen_sqrt_sym(self.d.context)
+            gen_into_collection(sqs.parent_coll, self.d.context.active_object)
+            self.p.line.line_objs.append(self.d.context.active_object)
 
             # move sqrt symbol
-            gen_sqrt_move(self.d.context, sqs.init_params, sqrt_param, use_param)
+            gen_sqrt_move(self.d.context, sqrt_obj, sqs.init_params, sqrt_param, use_param)
 
             # join collection into parent collection
             gen_join_collections(sqs.sqcoll, sqs.parent_coll)
@@ -368,12 +368,12 @@ class MathSyntaxAnalyser:
                 center_coll = fs.dcoll
 
             # generating fraction line
-            gen_frac_line(self.d.context, fs.init_params, line_length)
-            self.p.line.line_objs.append(bpy.context.active_object)
+            gen_line_object(self.d.context, fs.init_params, line_length)
+            self.p.line.line_objs.append(self.d.context.active_object)
 
             # center numerator and denominator
             gen_center(fs.nwidth, fs.dwidth, center_coll)
-            gen_into_collection(fs.dcoll, bpy.context.active_object)
+            gen_into_collection(fs.dcoll, self.d.context.active_object)
 
             # join numerator and denominator collections
             gen_join_collections(fs.dcoll, fs.ncoll)
@@ -400,7 +400,7 @@ class MathSyntaxAnalyser:
 
             # generate big symbol and add it to collection
             gen_text_object(self.p, self.d, c, 'math', self.levels, token.value)
-            gen_into_collection(self.d.current_coll, bpy.context.active_object)
+            gen_into_collection(self.d.current_coll, self.d.context.active_object)
             return True
 
         # <MATRIX> actions
@@ -484,15 +484,15 @@ class MathSyntaxAnalyser:
 
             if not ms.brackets == 'matrix':
                 # generate left bracket of matrix
-                gen_text(bracket_type[0], change_font('math'), ms.mx_coll, self.p.line)
-                gen_brackets(self.d.context, self.p, ms.mx_coll, ms.size)
+                bracket_obj = gen_text(bracket_type[0], change_font('math'), ms.mx_coll, self.p.line)
+                gen_brackets(self.d.context, bracket_obj, self.p, ms.mx_coll, ms.size)
 
                 # calculate furthest x position
                 ms.size.max_x = gen_bound(ms.parent_coll, 'x', 'max') + ms.size.bracket_width / 2.0
 
                 # generate right bracket of matrix
-                gen_text(bracket_type[1], change_font('math'), ms.mx_coll, self.p.line)
-                gen_brackets(self.d.context, self.p, ms.mx_coll, ms.size)
+                bracket_obj = gen_text(bracket_type[1], change_font('math'), ms.mx_coll, self.p.line)
+                gen_brackets(self.d.context, bracket_obj, self.p, ms.mx_coll, ms.size)
 
             # center matrix into row
             gen_matrix_center(ms.mx_coll, ms.size, ms.init_params.height)

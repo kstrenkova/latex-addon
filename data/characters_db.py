@@ -8,6 +8,8 @@ BASE_SPACE = 0.3
 LINE_SPACE = 1.0
 INDENTATION = 0.6
 PAR_SPACE = 2.0  # TODO change 2.0 for the correct value
+
+LINE_THICKNESS = 0.025
 SQRT_WIDTH = 0.855927586555481
 
 # TODO cleanup

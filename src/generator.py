@@ -6,7 +6,7 @@
 import bpy
 
 from bpy_extras.object_utils import object_data_add  # add sqrt symbol
-from ..data.characters_db import unicode_chars_big, LINE_SPACE, PAR_SPACE
+from ..data.characters_db import unicode_chars_big, LINE_SPACE, PAR_SPACE, LINE_THICKNESS
 from .syntax_utils import change_font
 
 from mathutils import Vector  # vertices
@@ -32,12 +32,11 @@ def gen_text(text, font_info, collection, line, math_mode=None):
     # add object to current line
     line.line_objs.append(text_obj)
 
+    return text_obj
+
 
 # function sets the position of an object
-def gen_set_position(param):
-    # save active object
-    obj = bpy.context.active_object
-
+def gen_set_position(obj, param):
     # scale object
     obj.scale.x = param.scale
     obj.scale.y = param.scale
@@ -48,10 +47,8 @@ def gen_set_position(param):
 
 
 # function moves the object and sets the starting width
-def gen_move_position(param):
-    # save active object
-    obj = bpy.context.active_object
-    gen_set_position(param)
+def gen_move_position(obj, param):
+    gen_set_position(obj, param)
 
     # get corners of bounding box
     bbox = [obj.matrix_world @ Vector(corner) for corner in obj.bound_box]
@@ -63,7 +60,7 @@ def gen_move_position(param):
 # then moves it according to context
 def gen_text_object(param, defaults, text, font_type, levels=None, symbol=None):
     # generate text into current collection
-    gen_text(text, change_font(font_type), defaults.current_coll, param.line, defaults.math_mode)
+    obj = gen_text(text, change_font(font_type), defaults.current_coll, param.line, defaults.math_mode)
 
     if levels:
         # calculate level for math mode
@@ -73,7 +70,7 @@ def gen_text_object(param, defaults, text, font_type, levels=None, symbol=None):
         param.height = param.line.height
 
     # set object position
-    gen_move_position(param)
+    gen_move_position(obj, param)
 
 
 # function calculates and adjusts the height for new line
@@ -106,6 +103,34 @@ def gen_adjust_new_line(param, collection):
 
     param.line.height = param.line.min_y - LINE_SPACE
     param.width = 0.0
+
+
+# function generates line object
+def gen_line_object(context, param, x_pos):
+    # calculate line parameters
+    line_height = LINE_THICKNESS * param.scale
+    line_width = x_pos - param.width + 0.1 * param.scale
+
+    verts = [
+        Vector((0.0, -line_height, 0.0)),
+        Vector((0.0, line_height, 0.0)),
+        Vector((line_width, line_height, 0.0)),
+        Vector((line_width, -line_height, 0.0))
+    ]
+    edges = []
+    faces = [[0, 1, 2, 3]]
+
+    mesh = bpy.data.meshes.new(name="Line")
+    mesh.from_pydata(verts, edges, faces)
+    object_data_add(context, mesh)
+
+    # location of line
+    line_obj = context.active_object
+    line_obj.location = Vector((
+        param.width,
+        param.height + 0.3 * param.scale,
+        0.0
+    ))
 
 
 # function gets object into collection
@@ -186,26 +211,29 @@ def gen_sqrt_sym(context):
     object_data_add(context, mesh)
 
     # location of 3D cursor
-    cursor_3D = bpy.context.scene.cursor.location
+    cursor_3D = context.scene.cursor.location
 
     # set origin for sqrt
-    bpy.context.scene.cursor.location += Vector((-0.5266461968421936, -0.8238898515701294, 0.0))
+    context.scene.cursor.location += Vector((-0.5266461968421936, -0.8238898515701294, 0.0))
     bpy.ops.object.origin_set(type='ORIGIN_CURSOR')
 
     # set 3D cursor back
-    bpy.context.scene.cursor.location = cursor_3D
+    context.scene.cursor.location = cursor_3D
 
     # recalculate normals in editmode
     bpy.ops.object.editmode_toggle()
     bpy.ops.mesh.normals_make_consistent(inside=False)
     bpy.ops.object.editmode_toggle()
 
+    sqrt_obj = context.active_object
+    return sqrt_obj
+
 
 # function moves sqrt symbol according to given parameters
-def gen_sqrt_move(context, param, sqrt_param, move):
+def gen_sqrt_move(context, obj, param, sqrt_param, move):
     # position sqrt
     param.height -= 0.25 * param.scale
-    gen_set_position(param)
+    gen_set_position(obj, param)
     param.height += 0.25 * param.scale
 
     # apply scale
@@ -216,7 +244,7 @@ def gen_sqrt_move(context, param, sqrt_param, move):
         return
 
     # data of created sqrt symbol
-    obj_data = context.active_object.data
+    obj_data = obj.data
     vertices = obj_data.vertices
 
     # common parameters
@@ -261,40 +289,6 @@ def gen_sqrt_move(context, param, sqrt_param, move):
                 v.co.y = move_by_bottom
             elif v.co.y <= threshold_bottom:
                 v.co.y = move_by_bottom + line_size_bottom
-
-
-# function generates line for fractions
-def gen_frac_line(context, param, x_pos):
-    # calculate line height
-    line_height = 0.025 * param.scale
-
-    verts = [
-        Vector((0.0, -line_height, 0.0)),
-        Vector((0.0, line_height, 0.0)),
-        Vector((1.0, line_height, 0.0)),
-        Vector((1.0, -line_height, 0.0))
-    ]
-    edges = []
-    faces = [[0, 1, 2, 3]]
-
-    mesh = bpy.data.meshes.new(name="Line")
-    mesh.from_pydata(verts, edges, faces)
-    object_data_add(context, mesh)
-
-    # location of line
-    line_obj = context.active_object
-    line_obj.location = Vector((
-        param.width,
-        param.height + 0.3 * param.scale,
-        0.0
-    ))
-
-    # prolonging fraction line
-    for i in bpy.context.object.data.vertices:
-        new_location = i.co
-        if i.co.x == 1.0:
-            new_location[0] = x_pos - param.width + 0.1 * param.scale  # x position
-        i.co = new_location
 
 
 # function moves objects in fraction
@@ -627,12 +621,10 @@ def gen_matrix_y(obj_array, param, max_cell_x):
 
 # TODO vmatrix and Vmatrix have tricky space after left bracket
 # function generates matrix brackets
-def gen_brackets(context, param, collection, size):
+def gen_brackets(context, bracket, param, collection, size):
     # determine left or right bracket
     is_left = (size.max_x == -1)
     x = size.min_x if is_left else size.max_x
-
-    bracket = context.active_object
 
     # scale bracket object
     matrix_height = size.max_y - size.min_y
@@ -641,7 +633,7 @@ def gen_brackets(context, param, collection, size):
     bracket.scale.y = scale
 
     # force update after scaling
-    bpy.context.view_layer.update()
+    context.view_layer.update()
 
     # calculate the offset of bracket origin
     bbox = [bracket.matrix_world @ Vector(corner) for corner in bracket.bound_box]
@@ -740,5 +732,5 @@ def gen_bullet_point(param, nest_lvl):
     nested_space = nest_lvl * PAR_SPACE * param.scale
     param.width = (nested_space - obj_dimension) * param.scale  # space before bullet point
 
-    gen_move_position(param)
+    gen_move_position(obj, param)
     param.width += 0.3 * param.scale  # space after bullet point

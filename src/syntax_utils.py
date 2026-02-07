@@ -52,7 +52,7 @@ def change_font(mode):
 
 
 # function preloads fonts used by the addon
-def preload_fonts(user_fonts):
+def preload_fonts(context, user_fonts):
     font_mode = {
         'math':     ('STIX Two Math Regular',        'STIXTwoMath-Regular.ttf'),
         'teletype': ('Latin Modern Mono 10 Regular', 'latin-modern-mono.mmono10-regular.otf'),
@@ -72,7 +72,7 @@ def preload_fonts(user_fonts):
             font_file = os.path.join(fonts_dir, filename)
             font = bpy.data.fonts.load(font_file)
 
-        font_size = get_font_scale(font)
+        font_size = get_font_scale(context, font)
         FONT_CACHE[mode] = {'font': font, 'size': font_size}
 
     user_mode = ['base', 'bold', 'italic']
@@ -80,7 +80,7 @@ def preload_fonts(user_fonts):
     # load fonts specified by user
     for mode, font in zip(user_mode, user_fonts):
         user_font = bpy.data.fonts[font]
-        font_size = get_font_scale(user_font)
+        font_size = get_font_scale(context, user_font)
         FONT_CACHE[mode] = {'font': user_font, 'size': font_size}
 
     print("FONT CACHE:", FONT_CACHE.items())
@@ -88,13 +88,13 @@ def preload_fonts(user_fonts):
 
 # function that gets font scale that is needed
 # to make all fonts the same height
-def get_font_scale(font):
+def get_font_scale(context, font):
     bpy.ops.object.text_add()
-    h_obj = bpy.context.active_object
+    h_obj = context.active_object
 
     h_obj.data.font = font
     h_obj.data.body = 'H'
-    bpy.context.view_layer.update()
+    context.view_layer.update()
 
     # base blender font size is 0.6820 (for H)
     size = 0.6820 / h_obj.dimensions.y

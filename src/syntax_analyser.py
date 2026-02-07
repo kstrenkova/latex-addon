@@ -16,7 +16,6 @@ from ..data.characters_db import *
 # TODO checkout mathfonts not used only on upper letters
 # TODO research what the default value should be for \par and for itemize
 # TODO [feature] add \newline
-# TODO [bug] coll -> col
 
 
 class ItemizeState:
@@ -262,14 +261,14 @@ class SyntaxAnalyser:
             ts = self.state_stack[-1]
 
             # add vertical line before the current column
-            current_col = len(ts.align.columns)
+            column = len(ts.align.columns)
 
-            if len(ts.align.vline) <= current_col:
+            if len(ts.align.vline) <= column:
                 # add zeros to match the number of the current column
-                zero_num = (current_col + 1) - len(ts.align.vline)
+                zero_num = (column + 1) - len(ts.align.vline)
                 ts.align.vline.extend([0] * zero_num)
 
-            ts.align.vline[current_col] += 1
+            ts.align.vline[column] += 1
             return True
 
         elif action == '#ACTION_COL_WIDTH':
@@ -383,13 +382,13 @@ class SyntaxAnalyser:
     def parse(self):
         # creating base collection
         collection = bpy.data.collections.new("LatexCollection")
-        bpy.context.scene.collection.children.link(collection)
+        self.d.context.scene.collection.children.link(collection)
         gen_activate_collection(collection.name)
 
         self.d.base_coll = collection.name
         self.d.current_coll = collection.name
 
-        preload_fonts(self.d.fonts)
+        preload_fonts(self.d.context, self.d.fonts)
 
         # parsing loop
         while self.stack:
