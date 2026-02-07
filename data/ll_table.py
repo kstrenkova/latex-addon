@@ -93,22 +93,45 @@ ll_table = {
     ],
 
     ('BLOCK_CONTENT', 'item'):         ['ITEMIZE'],
+    ('BLOCK_CONTENT', '{'):            ['{', 'ALIGN', '}', 'TABLE'], # TODO BETTER
     ('BLOCK_CONTENT', '_ANY'):         ['MORE_TERM'],
     ('BLOCK_CONTENT', 'begin'):        ['BLOCK'],  # TODO fix when begin is at the beginning
     ('BLOCK_CONTENT', 'end'):          ['epsilon'],
 
+    # --- ITEMIZE ---
     # <ITEMIZE> -> item <ITEM>
     # <ITEMIZE> -> epsilon
     ('ITEMIZE', 'item'):         ['item', '#ACTION_NEW_LINE', 'ITEM'],
-    ('ITEMIZE', 'epsilon'):      ['#ACTION_END_ITEM'],
+    ('ITEMIZE', 'epsilon'):      ['#ACTION_ITEM_END'],
 
     # <ITEM> -> [ <MORE_TERM> ] <MORE_TERM> <ITEMIZE>
     # <ITEM> -> <MORE_TERM> <ITEMIZE>
-    ('ITEM', '['):               ['[', '#ACTION_SAVE_ITEM', ']', '#ACTION_ADD_ITEM', 'MORE_TERM', 'ITEMIZE'],
+    ('ITEM', '['):               ['[', '#ACTION_ITEM_SAVE', ']', '#ACTION_ITEM_ADD', 'MORE_TERM', 'ITEMIZE'],
     # TODO other types
-    ('ITEM', '_TEXT'):           ['#ACTION_ADD_ITEM', 'MORE_TERM', 'ITEMIZE'],
-    ('ITEM', 'dollar'):          ['#ACTION_ADD_ITEM', 'MORE_TERM', 'ITEMIZE'],
-    ('ITEM', '_OPEN_BRACKET'):   ['#ACTION_ADD_ITEM', 'MORE_TERM', 'ITEMIZE'],
+    ('ITEM', '_TEXT'):           ['#ACTION_ITEM_ADD', 'MORE_TERM', 'ITEMIZE'],
+    ('ITEM', 'dollar'):          ['#ACTION_ITEM_ADD', 'MORE_TERM', 'ITEMIZE'],
+    ('ITEM', '_OPEN_BRACKET'):   ['#ACTION_ITEM_ADD', 'MORE_TERM', 'ITEMIZE'],
+
+    # --- TABULAR ---
+    # <ALIGN> -> text <ALIGN>
+    # <ALIGN> -> | <ALIGN>
+    # <ALIGN> -> epsilon
+    ('ALIGN', '_TEXT'):          ['#ACTION_ALIGN_SAVE', 'ALIGN'],
+    ('ALIGN', '_PIPE'):          ['#ACTION_ALIGN_LINE', 'ALIGN'],
+    ('ALIGN', '}'):              ['epsilon'],
+
+    # <TABLE> -> <CONST>
+    # <TABLE> -> <COMMAND>
+    # <TABLE> -> <BLOCK>
+    # <TABLE> -> hline <TABLE>
+    # <TABLE> -> enter <TABLE>
+    # <TABLE> -> & <TABLE>
+    # <TABLE> -> epsilon
+    ('TABLE', '_TEXT'):          ['CONST', 'TABLE'],
+    ('TABLE', 'hline'):          ['hline', '#ACTION_TABLE_HLINE', 'TABLE'],
+    ('TABLE', '_ENTER'):         ['#ACTION_TABLE_NEW_ROW', 'TABLE'],  # TODO be able to add the _ENTER as the first symbol and treat it as terminal
+    ('TABLE', '_AMPERSAND'):     ['#ACTION_TABLE_NEW_CELL', 'TABLE'], # TODO same here
+    ('TABLE', 'end'):            ['#ACTION_TABLE_CREATE'],
 }
 
 math_ll_table = {

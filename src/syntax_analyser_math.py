@@ -15,7 +15,7 @@ from ..data.characters_db import *
 # TODO [optimalization] go from using collections to python arrays or dictionaries (?)
 # TODO [bug] when you start with \sum (display mode) and the sub/super overflows
 # the start vertical line moves left with them
-
+# TODO [feature] numbers for equation lines
 
 # class for levels
 class Levels:
@@ -456,7 +456,7 @@ class MathSyntaxAnalyser:
 
             # set width to start and height lower
             self.p.width = ms.init_params.width
-            self.p.height -= 1.0 * self.d.text_scale
+            self.p.height -= 1.0 * self.d.text_scale  # TODO line height not 1.0
             return True
 
         elif action == '#ACTION_MATRIX_NEW_CELL':

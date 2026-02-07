@@ -75,8 +75,11 @@ block_actions = {
     'displaymath': '#ACTION_MATH_MODE_DISPLAY',
 
     # bullet points
-    'enumerate':    '#ACTION_INIT_ITEM',
-    'itemize':      '#ACTION_INIT_ITEM'
+    'enumerate':    '#ACTION_ITEM_INIT',
+    'itemize':      '#ACTION_ITEM_INIT',
+
+    # tables
+    'tabular':      '#ACTION_TABLE_INIT'
 }
 
 # context-dependent epsilon productions

@@ -24,6 +24,16 @@ class ItemizeState:
         self.nest_array = nest_array
 
 
+class TableState:
+    def __init__(self, parent_coll, init_params):
+        self.parent_coll = parent_coll
+        self.init_params = init_params
+        self.table_coll = ''
+        self.cell_colls = []
+        self.obj_array = [[]]
+        self.row_num = 0
+
+
 class SyntaxAnalyser:
     def __init__(self, lex, context, custom_prop):
         self.stack = ['$', 'PROG']
@@ -150,7 +160,7 @@ class SyntaxAnalyser:
             return True
 
         # <ITEMIZE> actions
-        elif action == '#ACTION_INIT_ITEM':
+        elif action == '#ACTION_ITEM_INIT':
             # save current environment
             nest_array = []
             for state in reversed(self.state_stack):
@@ -164,14 +174,14 @@ class SyntaxAnalyser:
             self.state_stack.append(ItemizeState(nest_array))
             return True
 
-        elif action == '#ACTION_SAVE_ITEM':
+        elif action == '#ACTION_ITEM_SAVE':
             # overwrite default bullet point value
             token = self.lex.get_token()
             its = self.state_stack[-1]
             its.custom_bullet = token.value
             return True
 
-        elif action == '#ACTION_ADD_ITEM':
+        elif action == '#ACTION_ITEM_ADD':
             its = self.state_stack[-1]
             nest_lvl = get_nest_level(its.nest_array, self.block[-1])
 
@@ -192,7 +202,7 @@ class SyntaxAnalyser:
             gen_bullet_point(self.p, len(its.nest_array))
             return True
 
-        elif action == '#ACTION_END_ITEM':
+        elif action == '#ACTION_ITEM_END':
             # set new line when main itemize/enumerate end
             its = self.state_stack[-1]
             if len(its.nest_array) == 1:
@@ -219,6 +229,87 @@ class SyntaxAnalyser:
         elif action.startswith('#ACTION_MATH_MODE_'):
             self.d.math_mode = action.removeprefix('#ACTION_MATH_MODE_').lower()
             return self.enter_math_mode()
+
+        # TABULAR
+        elif action == '#ACTION_ALIGN_SAVE':
+            #TODO save alignment
+            alignment = self.lex.get_token()
+            return True
+
+        elif action == '#ACTION_ALIGN_LINE':
+            #TODO save vertical line
+            alignment = self.lex.get_token()
+            return True
+
+        elif action == '#ACTION_TABLE_INIT':
+            ts = TableState(self.d.current_coll, self.p.create_copy())
+            self.state_stack.append(ts)
+
+            # table body collection
+            ts.table_coll = gen_new_collection("TableBodyCollection", ts.parent_coll)
+
+            # first table cell collection
+            self.d.current_coll = gen_new_collection("TableCellCollection", ts.table_coll)
+            ts.cell_colls.append(self.d.current_coll)
+            ts.obj_array[ts.row_num].append(self.d.current_coll)
+            return True
+
+        elif action == '#ACTION_TABLE_HLINE':
+            # TODO generate a line
+            return True
+
+        elif action == '#ACTION_TABLE_NEW_ROW':
+            token = self.lex.get_token()
+            ts = self.state_stack[-1]
+
+            # table cell collection
+            self.d.current_coll = gen_new_collection("TableCellCollection", ts.table_coll)
+            ts.cell_colls.append(self.d.current_coll)
+
+            # add new array that represents row
+            ts.obj_array.append([])
+            ts.row_num += 1
+            ts.obj_array[ts.row_num].append(self.d.current_coll)
+
+            # set width to start and height lower
+            self.p.width = ts.init_params.width
+            self.p.line.height -= 1.0 * self.d.text_scale  # TODO LINE HEIGHT not 1.0
+            return True
+
+        elif action == '#ACTION_TABLE_NEW_CELL':
+            token = self.lex.get_token()
+            ts = self.state_stack[-1]
+
+            # table cell collection
+            self.d.current_coll = gen_new_collection("TableCellCollection", ts.table_coll)
+            ts.cell_colls.append(self.d.current_coll)
+
+            # add collection to row
+            ts.obj_array[ts.row_num].append(self.d.current_coll)
+            return True
+
+        elif action == '#ACTION_TABLE_CREATE':
+            ts = self.state_stack[-1]
+
+            # link objects to table collection
+            body_coll = bpy.data.collections.get(ts.table_coll)
+            for coll_name in ts.cell_colls:
+                coll = bpy.data.collections.get(coll_name)
+                if coll is None:
+                    continue
+
+                # join all objects into one parent collection
+                for obj in list(coll.objects):
+                    body_coll.objects.link(obj)
+                    coll.objects.unlink(obj)
+
+                # remove table cell collection
+                bpy.data.collections.remove(coll)
+
+            # join table collection into parent collection
+            gen_join_collections(ts.table_coll, ts.parent_coll)
+            self.d.current_coll = ts.parent_coll  # set current collection
+            return True
 
         else:
             print(f"Unknown action: '{action}'")
