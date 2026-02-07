@@ -50,7 +50,7 @@ class SyntaxAnalyser:
         # TODO clean lookup
         key = token.value if (token.type in special_token_type) else token.type
 
-        if stack_top in epsilon_rules and epsilon_rules[stack_top] != (token.type, token.value):
+        if stack_top in epsilon_rules and (token.type, token.value) not in epsilon_rules[stack_top]:
             key = 'epsilon'
 
         if stack_top == 'PROG':
@@ -165,7 +165,7 @@ class SyntaxAnalyser:
             nest_array = []
             for state in reversed(self.state_stack):
                 if isinstance(state, ItemizeState):
-                    nest_array = state.nest_array
+                    nest_array = state.nest_array.copy()
                     break
 
             nest_array.append(self.block[-1])
@@ -203,11 +203,11 @@ class SyntaxAnalyser:
             return True
 
         elif action == '#ACTION_ITEM_END':
+            its = self.state_stack.pop()
+
             # set new line when main itemize/enumerate end
-            its = self.state_stack[-1]
             if len(its.nest_array) == 1:
                 self.execute_action("#ACTION_NEW_LINE")
-            self.state_stack.pop()
             return True
 
         # <FONT CHANGE> actions
@@ -289,7 +289,7 @@ class SyntaxAnalyser:
             return True
 
         elif action == '#ACTION_TABLE_CREATE':
-            ts = self.state_stack[-1]
+            ts = self.state_stack.pop()
 
             # link objects to table collection
             body_coll = bpy.data.collections.get(ts.table_coll)
