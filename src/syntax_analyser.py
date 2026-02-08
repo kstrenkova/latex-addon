@@ -142,7 +142,7 @@ class SyntaxAnalyser:
                 self.block.append(token.value)
                 return True
 
-            print("Block value", token.value, "is not correct or supported!")
+            print("Block value '{token.value}' is not correct or supported!")
             return False
 
         elif action == '#ACTION_BLOCK_VERIFY_END':
@@ -151,7 +151,7 @@ class SyntaxAnalyser:
                 self.block.pop()
                 return True
 
-            print("Block value in begin", self.block[-1], "doesn't match the value in end", token.value)
+            print("Block value in begin '{self.block[-1]}' doesn't match the value in end '{token.value}!'")
             return False
 
         # <CONST> actions
@@ -237,7 +237,7 @@ class SyntaxAnalyser:
         elif action == '#ACTION_GENERATE_VERB':
             content, err = self.lex.get_verb_content()
             if len(err) > 0:
-                print("Error:", err)
+                print("Syntax error:", err)
                 return False
 
             gen_text_object(self.p, self.d, content, 'verb')
@@ -256,6 +256,9 @@ class SyntaxAnalyser:
             # save individual letters as column alignment
             for c in token.value:
                 ts.align.columns.append(ColumnAlignment(c))
+                if c not in table_alignments:
+                    print("Syntax error: Tabular alignment '{align.type}' is not correct or supported!")
+                    return False
 
             return True
 
@@ -356,18 +359,21 @@ class SyntaxAnalyser:
             # gets the furthest x position
             body_coll = bpy.data.collections.get(ts.table_coll)
             if len(body_coll.all_objects):
-                line_length_x = gen_bound(body_coll.name, 'x', 'max')
                 line_length_y = gen_bound(body_coll.name, 'y', 'min')
+
+                # TODO make generated lines go into a collection!!
+                # generate all vertical lines
+                for x_pos in ts.align.vline_pos:
+                    # TODO make small adjustments when not having hline
+                    # it should also start at the last hline that is before the first row
+                    y_pos = ts.init_params.height if len(ts.hline_pos) == 0 else ts.hline_pos[0]
+                    gen_line_object(self.d.context, ts.init_params, x_pos, y_pos, line_length_y, 'y')
+
+                line_length_x = gen_bound(body_coll.name, 'x', 'max')
 
                 # generate all horizontal lines
                 for y_pos in ts.hline_pos:
                     gen_line_object(self.d.context, ts.init_params, ts.init_params.width, y_pos, line_length_x)
-
-                # generate all vertical lines
-                for x_pos in ts.align.vline_pos:
-                    # TODO make small adjustments when not having hline
-                    y_pos = ts.init_params.height if len(ts.hline_pos) == 0 else ts.hline_pos[0]
-                    gen_line_object(self.d.context, ts.init_params, x_pos, y_pos, line_length_y, 'y')
 
             # join table collection into parent collection
             gen_join_collections(ts.table_coll, ts.parent_coll)
@@ -427,7 +433,7 @@ class SyntaxAnalyser:
                     self.stack.pop()
                     self.lex.get_token()
                 else:
-                    print(f"Syntax Error: Expected '{stack_top}' but got '{terminal}'")
+                    print(f"Syntax Error: Expected '{stack_top}' but got '{terminal}!'")
                     return False
 
             # non-terminal

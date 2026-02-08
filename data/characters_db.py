@@ -108,13 +108,10 @@ end_tokens = {
 }
 
 # supported width units
-units = [
-    "cm",
-    "pt",
-    "in",
-    "em",
-    "mm"
-]
+units = ['cm', 'pt', 'in', 'em', 'mm']
+
+# supported table alignment types
+table_alignments =  ['c', 'l', 'r', 'p', 'm', 'b']
 
 # UNICODE DATABASE
 
