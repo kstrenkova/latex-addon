@@ -477,7 +477,7 @@ class MathSyntaxAnalyser:
             ms = self.state_stack[-1]
 
             # position matrix
-            gen_matrix_pos(self.d.context, ms.obj_array, self.p)
+            gen_box_position_center(ms.obj_array, self.p)
 
             # calculate matrix height
             ms.size.min_y = gen_bound(ms.parent_coll, 'y', 'min')
@@ -504,19 +504,8 @@ class MathSyntaxAnalyser:
             self.p.height = ms.init_params.height
 
             # link objects to matrix collection
-            body_coll = bpy.data.collections.get(ms.mx_coll)
             for coll_name in ms.cell_colls:
-                coll = bpy.data.collections.get(coll_name)
-                if coll is None:
-                    continue
-
-                # join all objects into one parent collection
-                for obj in list(coll.objects):
-                    body_coll.objects.link(obj)
-                    coll.objects.unlink(obj)
-
-                # remove matrix cell collection
-                bpy.data.collections.remove(coll)
+                gen_join_collections(coll_name, ms.mx_coll)
 
             # join matrix collection into parent collection
             gen_join_collections(ms.mx_coll, ms.parent_coll)

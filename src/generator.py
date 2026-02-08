@@ -6,7 +6,7 @@
 import bpy
 
 from bpy_extras.object_utils import object_data_add  # add sqrt symbol
-from ..data.characters_db import unicode_chars_big, LINE_SPACE, PAR_SPACE, LINE_THICKNESS
+from ..data.characters_db import *
 from .syntax_utils import change_font
 
 from mathutils import Vector  # vertices
@@ -465,9 +465,9 @@ def gen_calculate_bound(objects, axis, ftype):
     # save position of all objects
     positions = []
     for obj in objects:
-            obj.select_set(True)
-            bbox = [obj.matrix_world @ Vector(corner) for corner in obj.bound_box]
-            positions.append(getattr(bbox[corner_index], axis))
+        obj.select_set(True)
+        bbox = [obj.matrix_world @ Vector(corner) for corner in obj.bound_box]
+        positions.append(getattr(bbox[corner_index], axis))
 
     func = max if ftype == 'max' else min
     return func(positions)  # return max or min from all positions
@@ -484,7 +484,7 @@ def gen_bound_for_array(objects, axis, ftype):
     return gen_calculate_bound(objects, axis, ftype)
 
 
-# # function returns the extreme for objects in a collection
+# function returns the extreme for objects in a collection
 def gen_bound(collection, axis, ftype):
     bpy.ops.object.select_all(action='DESELECT')  # deselect all objects
     objects = bpy.data.collections[collection].all_objects
@@ -494,129 +494,130 @@ def gen_bound(collection, axis, ftype):
     return gen_calculate_bound(objects, axis, ftype)
 
 
-# function positions matrix figure
-def gen_matrix_pos(context, obj_array, param):
+# function returns the max width of the given column
+def get_max_column_width(obj_array, col):
+    max_width = 0
+    for row in obj_array:
+        if col < len(row):
+            cell_width = gen_bound(row[col], 'x', 'max')
+            max_width = max(max_width, cell_width)
+    return max_width
+
+
+# function returns the max height of the given row
+def get_min_row_height(row, max_col):
+      min_height = float('inf')
+      for col in range(max_col):
+          if col < len(row):
+              collection = row[col]
+              cell_bottom = gen_bound(collection, 'y', 'min')
+              min_height = min(min_height, cell_bottom)
+
+      return min_height
+
+
+# function returns the max height of the given row
+def get_max_row_height(row, max_col):
+    max_height = float('-inf')
+    for col in range(max_col):
+        if col < len(row):
+            collection = row[col]
+            cell_height = gen_bound(collection, 'y', 'max')
+            max_height = max(max_height, cell_height)
+
+    return max_height
+
+
+# function moves the next column horizontally right
+def gen_move_column(obj_array, col, offset):
+    for row in obj_array:
+        if col < len(row):
+            collection = row[col]
+
+            # find current minimum position
+            min_x = gen_bound(collection, 'x', 'min')
+
+            # move all objects in this cell
+            for obj in bpy.data.collections[collection].all_objects:
+                obj.location.x += (offset - min_x)
+
+
+# function moves the next row vertically down
+def gen_move_row(row, num_columns, move_by):
+      for col in range(num_columns):
+          if col < len(row):
+              collection = row[col]
+              for obj in bpy.data.collections[collection].all_objects:
+                  obj.location.y -= move_by
+
+
+# function centers objects horizontally within their column cell
+def gen_column_cells_center_x(obj_array, col, max_col_width):
+    for row in obj_array:
+        if col < len(row):
+            collection = row[col]
+            cell_width = gen_bound(collection, 'x', 'max')
+
+            # calculate the horizontal movement
+            move_by = (max_col_width - cell_width) / 2
+
+            # move all objects in this cell
+            for obj in bpy.data.collections[collection].all_objects:
+                obj.location.x += move_by
+
+
+# function centers matrix horizontally
+def gen_matrix_center_x(obj_array, param, max_col):
+
+    for col in range(max_col):
+        # find max width for the current column
+        max_col_width = get_max_column_width(obj_array, col)
+
+        # move objects in next collumn
+        if (col + 1) < max_col:
+            col_start = max_col_width + GRID_SPACE * param.scale
+            gen_move_column(obj_array, col + 1, col_start)
+
+        # center objects in this column
+        gen_column_cells_center_x(obj_array, col, max_col_width)
+
+
+def gen_matrix_center_y(obj_array, param, max_col):
+    # initialize row minimum
+    min_row_height = None
+
+    for row in obj_array:
+        # skip empty rows
+        if len(row) == 0:
+            continue
+
+        # find max height for the current row
+        max_row_height = get_max_row_height(row, max_col)
+
+        # check for first iteration
+        if min_row_height is not None:
+            # move row if its highest point cuts into the upper row
+            if max_row_height > min_row_height:
+                move_by = max_row_height - min_row_height + GRID_SPACE * param.scale
+                gen_move_row(row, max_col, move_by)
+
+        # find min height for the current row
+        min_row_height = get_min_row_height(row, max_col)
+
+
+# function positions matrix or table figure
+def gen_box_position_center(obj_array, param):
     # return if matrix has no objects
     if not len(obj_array):
         return
 
     # get maximum number of cells in row
-    max_cell_x = 0
+    max_col = 0
     for row in obj_array:
-        max_cell_x = max(max_cell_x, len(row))
+        max_col = max(max_col, len(row))
 
-    gen_matrix_x(context, obj_array, param, max_cell_x)  # center by x axis
-    gen_matrix_y(obj_array, param, max_cell_x)  # move by y axis
-
-
-# function centers matrix horizontally
-def gen_matrix_x(context, obj_array, param, max_cell_x):
-    i = 0  # collumn number
-
-    while i < max_cell_x:
-        max_width = 0
-        # iterate through rows
-        for row in obj_array:
-            # getting maximum width in collumn 'i'
-            if i >= len(row):
-                cell_width = 0
-            else:
-                collection = row[i]
-                cell_width = gen_bound(collection, 'x', 'max')
-
-            max_width = max(max_width, cell_width)
-
-        # iterate through rows
-        for row in obj_array:
-            # deselect all objects
-            bpy.ops.object.select_all(action='DESELECT')
-
-            # move objects in next collumn
-            if (i+1) < len(row):
-                collection = row[i+1]
-
-                # select objects and find minimum x position
-                min_x = gen_bound(collection, 'x', 'min')
-
-            # set x position
-            for obj in context.selected_objects:
-                old_location = obj.location.x
-                obj.location.x = max_width + (old_location - min_x) + 0.5 * param.scale
-
-        # iterate through rows
-        for row in obj_array:
-            # center objects in row
-            if len(row) > i:
-                collection = row[i]
-                cell_width = gen_bound(collection, 'x', 'max')
-                gen_center(cell_width, max_width, collection)
-
-        i += 1  # next collumn
-
-
-# function moves matrix vertically
-def gen_matrix_y(obj_array, param, max_cell_x):
-    is_init = False  # set initialisation flag
-
-    # iterate through rows
-    for row in obj_array:
-        # if the row is not empty
-        if len(row):
-            # getting maximum height in row
-            i = 0  # collumn number
-            while i < max_cell_x:
-                # first collumn
-                if i == 0:
-                    collection = row[i]
-                    cell_height = gen_bound(collection, 'y', 'max')
-                    max_height = cell_height
-                # less collumns than maximum
-                elif i >= len(row):
-                    cell_height = max_height
-                else:
-                    collection = row[i]
-                    cell_height = gen_bound(collection, 'y', 'max')
-
-                max_height = max(max_height, cell_height)
-                i += 1  # next cell
-
-            # first iteration
-            if not is_init:
-                min_height = max_height + 0.1 * param.scale
-                is_init = True
-
-            # move row if its highest point cuts into the upper row
-            if max_height > (min_height - 0.1 * param.scale):
-                i = 0  # collumn number
-                while i < max_cell_x:
-                    # row is not empty
-                    if i < len(row):
-                        collection = row[i]
-                        move_by = max_height - min_height + 0.5 * param.scale  # space
-
-                        # move objects lower
-                        for obj in bpy.data.collections[collection].all_objects:
-                            obj.location.y -= move_by
-
-                    i += 1  # next cell
-
-            # getting minimum height in row
-            i = 0  # collumn number
-            while i < max_cell_x:
-                # first collumn
-                if i == 0:
-                    collection = row[i]
-                    cell_height = gen_bound(collection, 'y', 'min')
-                    min_height = cell_height
-                # less collumns than maximum
-                elif i >= len(row):
-                    cell_height = min_height
-                else:
-                    collection = row[i]
-                    cell_height = gen_bound(collection, 'y', 'min')
-
-                min_height = min(min_height, cell_height)
-                i += 1  # next cell
+    gen_matrix_center_x(obj_array, param, max_col)
+    gen_matrix_center_y(obj_array, param, max_col)
 
 
 # TODO vmatrix and Vmatrix have tricky space after left bracket

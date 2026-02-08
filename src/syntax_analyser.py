@@ -319,9 +319,11 @@ class SyntaxAnalyser:
 
         elif action == '#ACTION_TABLE_HLINE':
             ts = self.state_stack[-1]
-            self.p.line.min_y -= BASE_SPACE * self.p.scale
-            ts.hline_pos.append(self.p.line.min_y)
             self.p.line.height -= BASE_SPACE * self.p.scale
+            self.p.line.min_y -= BASE_SPACE * self.p.scale
+
+            # save position of the horizontal line
+            ts.hline_pos.append(self.p.line.min_y)
             return True
 
         elif action == '#ACTION_TABLE_NEW_ROW':
@@ -340,6 +342,7 @@ class SyntaxAnalyser:
             # set width to start and height lower
             self.p.width = ts.init_params.width
             gen_adjust_new_line(self.p, self.d.base_coll, LINE_SPACE)
+            # TODO check out why it works with self.d.base_coll
             return True
 
         elif action == '#ACTION_TABLE_NEW_CELL':
@@ -357,20 +360,13 @@ class SyntaxAnalyser:
         elif action == '#ACTION_TABLE_CREATE':
             ts = self.state_stack.pop()
 
+            # position table
+            gen_box_position_center(ts.obj_array, self.p)
+
             # link objects to table collection
             body_coll = bpy.data.collections.get(ts.table_coll)
             for coll_name in ts.cell_colls:
-                coll = bpy.data.collections.get(coll_name)
-                if coll is None:
-                    continue
-
-                # join all objects into one parent collection
-                for obj in list(coll.objects):
-                    body_coll.objects.link(obj)
-                    coll.objects.unlink(obj)
-
-                # remove table cell collection
-                bpy.data.collections.remove(coll)
+                gen_join_collections(coll_name, ts.table_coll)
 
             # gets the furthest x position
             if len(body_coll.all_objects):

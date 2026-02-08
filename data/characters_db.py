@@ -5,6 +5,7 @@
 
 MIN_SPACE =  0.1
 BASE_SPACE = 0.3
+GRID_SPACE = 0.5
 LINE_SPACE = 1.0
 INDENTATION = 0.6
 PAR_SPACE = 2.0  # TODO change 2.0 for the correct value
@@ -245,6 +246,7 @@ unicode_chars = {
     'dagger': '\u2020',
     'ddagger': '\u2021',
     'bullet': '\u2022',
+    'ldots': '\u2026',
     'amalg': '\u2210',
     'mp': '\u2213',
     'setminus': '\u2216',
@@ -345,7 +347,9 @@ unicode_chars = {
     'angle': '\u2220',
     'therefore': '\u2234',
     'because': '\u2235',
+    'vdots': '\u22ee',
     'cdots': '\u22ef',
+    'ddots': '\u22f1',
     'varnothing': '\u2300',
     'blacksquare': '\u25a0',
     'square': '\u25a1',
