@@ -16,6 +16,7 @@ from ..data.characters_db import *
 # TODO checkout mathfonts not used only on upper letters
 # TODO research what the default value should be for \par and for itemize
 # TODO [feature] add \newline
+# TODO vertical lines do not appear after last column
 
 
 class ItemizeState:
@@ -38,6 +39,7 @@ class TableAlignment:
     def __init__(self):
         self.columns = []
         self.vline = []
+        self.vline_pos = []
 
 
 class TableState:
@@ -276,32 +278,16 @@ class SyntaxAnalyser:
             token = self.lex.get_token()
             ts = self.state_stack[-1]
 
-            # alignment values for the current column
+            # get alignment width for the current column
             align = ts.align.columns[-1]
-            width = token.value
-            unit = None
-
-            if align.type not in ['p', 'm', 'b']:
-                print("Syntax error: Alignment", align.type, "does not support width specification!")
+            get_unit, err = get_alignment_width(align, token.value)
+            if len(err) > 0:
+                print("Error:", err)
                 return False
 
-            # check whether the token includes units
-            if not token.value.replace('.', '', 1).isdigit():
-                for u in units:
-                    if width.endswith(u):
-                        width = width.replace(u, '')
-                        unit = u
-                        break
-
-            try:
-                # get the numeric value of the width
-                align.width = float(width)
-            except ValueError:
-                print(f"Syntax error: Invalid numeric value '{width}' in width specification!")
-                return False
-
-            # save units from current token or get the next one
-            align.unit = unit if unit else self.lex.get_token().value
+            # get the next token to save unit
+            if get_unit:
+                align.unit = self.lex.get_token().value
             return True
 
         elif action == '#ACTION_TABLE_INIT':
@@ -319,8 +305,8 @@ class SyntaxAnalyser:
 
         elif action == '#ACTION_TABLE_HLINE':
             ts = self.state_stack[-1]
-            self.p.line.height -= BASE_SPACE * self.p.scale
-            self.p.line.min_y -= BASE_SPACE * self.p.scale
+            self.p.line.height -= SMALL_SPACE * self.p.scale
+            self.p.line.min_y -= SMALL_SPACE * self.p.scale
 
             # save position of the horizontal line
             ts.hline_pos.append(self.p.line.min_y)
@@ -361,20 +347,27 @@ class SyntaxAnalyser:
             ts = self.state_stack.pop()
 
             # position table
-            gen_box_position_center(ts.obj_array, self.p)
+            gen_box_position_center(ts.obj_array, self.p, ts.align)
 
             # link objects to table collection
-            body_coll = bpy.data.collections.get(ts.table_coll)
             for coll_name in ts.cell_colls:
                 gen_join_collections(coll_name, ts.table_coll)
 
             # gets the furthest x position
+            body_coll = bpy.data.collections.get(ts.table_coll)
             if len(body_coll.all_objects):
-                line_length = gen_bound(body_coll.name, 'x', 'max')
+                line_length_x = gen_bound(body_coll.name, 'x', 'max')
+                line_length_y = gen_bound(body_coll.name, 'y', 'min')
 
                 # generate all horizontal lines
                 for y_pos in ts.hline_pos:
-                    gen_line_object(self.d.context, ts.init_params, line_length, y_pos)
+                    gen_line_object(self.d.context, ts.init_params, ts.init_params.width, y_pos, line_length_x)
+
+                # generate all vertical lines
+                for x_pos in ts.align.vline_pos:
+                    # TODO make small adjustments when not having hline
+                    y_pos = ts.init_params.height if len(ts.hline_pos) == 0 else ts.hline_pos[0]
+                    gen_line_object(self.d.context, ts.init_params, x_pos, y_pos, line_length_y, 'y')
 
             # join table collection into parent collection
             gen_join_collections(ts.table_coll, ts.parent_coll)

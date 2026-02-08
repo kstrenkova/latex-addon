@@ -368,9 +368,8 @@ class MathSyntaxAnalyser:
                 line_length = fs.nwidth
                 center_coll = fs.dcoll
 
-            # generating fraction line
-            y_pos = self.p.height + 0.3 * self.p.scale,
-            gen_line_object(self.d.context, fs.init_params, line_length, y_pos)
+            # generate fraction line
+            gen_frac_line(self.d.context, fs.init_params, line_length)
             self.p.line.line_objs.append(self.d.context.active_object)
 
             # center numerator and denominator

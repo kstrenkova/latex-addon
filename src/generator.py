@@ -106,17 +106,25 @@ def gen_adjust_new_line(param, collection, line_space):
 
 
 # function generates line object
-def gen_line_object(context, param, x_pos, y_pos):
-    # calculate line parameters
-    line_height = LINE_THICKNESS * param.scale
-    line_width = x_pos - param.width + 0.1 * param.scale
+def gen_line_object(context, param, x_pos, y_pos, line_length, axis='x'):
+    # calculate line thickness
+    line_thickness = LINE_THICKNESS * param.scale
 
-    verts = [
-        Vector((0.0, -line_height, 0.0)),
-        Vector((0.0, line_height, 0.0)),
-        Vector((line_width, line_height, 0.0)),
-        Vector((line_width, -line_height, 0.0))
-    ]
+    if axis == 'x':
+        verts = [
+            Vector((0.0, -line_thickness, 0.0)),
+            Vector((0.0, line_thickness, 0.0)),
+            Vector((line_length, line_thickness, 0.0)),
+            Vector((line_length, -line_thickness, 0.0))
+        ]
+    else:
+        verts = [
+            Vector((-line_thickness, 0.0, 0.0)),
+            Vector((line_thickness, 0.0, 0.0)),
+            Vector((line_thickness, line_length, 0.0)),
+            Vector((-line_thickness, line_length, 0.0))
+        ]
+
     edges = []
     faces = [[0, 1, 2, 3]]
 
@@ -126,11 +134,7 @@ def gen_line_object(context, param, x_pos, y_pos):
 
     # location of line
     line_obj = context.active_object
-    line_obj.location = Vector((
-        param.width,
-        y_pos,
-        0.0
-    ))
+    line_obj.location = Vector((x_pos, y_pos, 0.0))
 
 
 # function gets object into collection
@@ -291,6 +295,14 @@ def gen_sqrt_move(context, obj, param, sqrt_param, move):
                 v.co.y = move_by_bottom + line_size_bottom
 
 
+# function generates fraction line
+def gen_frac_line(context, param, line_length):
+    x_pos = param.width
+    y_pos = param.height + 0.3 * param.scale
+    line_end = line_length - param.width + MIN_SPACE * param.scale
+    gen_line_object(context, param, x_pos, y_pos, line_end)
+
+
 # function moves objects in fraction
 def gen_frac_move(param, collection, mode):
     # get highest or lowest point in collection
@@ -363,8 +375,7 @@ def gen_calculate(param, text_scale, levels, symbol=None):
 
     # special vertical move for large symbols
     if symbol in unicode_chars_big.values():
-        # TODO 0.2 is a magic constant
-        param.height -= 0.2 * text_scale  # move lower
+        param.height -= SMALL_SPACE * text_scale  # move lower
 
 
 # function moves sum symbol according to given parameters
@@ -495,6 +506,16 @@ def gen_bound(collection, axis, ftype):
 
 
 # function returns the max width of the given column
+def get_min_column_width(obj_array, col):
+    min_width = float('inf')
+    for row in obj_array:
+        if col < len(row):
+            cell_width = gen_bound(row[col], 'x', 'min')
+            min_width = min(min_width, cell_width)
+    return min_width
+
+
+# function returns the max width of the given column
 def get_max_column_width(obj_array, col):
     max_width = 0
     for row in obj_array:
@@ -566,12 +587,36 @@ def gen_column_cells_center_x(obj_array, col, max_col_width):
                 obj.location.x += move_by
 
 
-# function centers matrix horizontally
-def gen_matrix_center_x(obj_array, param, max_col):
+# function makes space for vertical lines that
+# will be generated before the current column in the table
+def gen_abstract_vline(obj_array, scale, col, align):
+    # find the beginning of the current column
+    x_pos = get_min_column_width(obj_array, col)
+    line_count = align.vline[col]
+
+    # save position and create space
+    for _ in range(line_count):
+        align.vline_pos.append(x_pos)
+        x_pos += SMALL_SPACE
+
+    move_by = (line_count * SMALL_SPACE + LINE_THICKNESS) * scale
+    return move_by
+
+
+# function centers cells in matrix/table horizontally
+def gen_box_center_x(obj_array, param, align=None):
+    # calculate the max number of columns
+    max_col = max(len(row) for row in obj_array)
 
     for col in range(max_col):
+
+        # check for any vertical lines in table
+        move_by = 0
+        if align is not None and align.vline[col] > 0:
+            move_by = gen_abstract_vline(obj_array, param.scale, col, align)
+
         # find max width for the current column
-        max_col_width = get_max_column_width(obj_array, col)
+        max_col_width = get_max_column_width(obj_array, col) + move_by
 
         # move objects in next collumn
         if (col + 1) < max_col:
@@ -582,7 +627,11 @@ def gen_matrix_center_x(obj_array, param, max_col):
         gen_column_cells_center_x(obj_array, col, max_col_width)
 
 
-def gen_matrix_center_y(obj_array, param, max_col):
+# function centers cells in matrix/table vertically
+def gen_box_center_y(obj_array, param):
+    # calculate the max number of columns
+    max_col = max(len(row) for row in obj_array)
+
     # initialize row minimum
     min_row_height = None
 
@@ -606,18 +655,13 @@ def gen_matrix_center_y(obj_array, param, max_col):
 
 
 # function positions matrix or table figure
-def gen_box_position_center(obj_array, param):
+def gen_box_position_center(obj_array, param, align=None):
     # return if matrix has no objects
     if not len(obj_array):
         return
 
-    # get maximum number of cells in row
-    max_col = 0
-    for row in obj_array:
-        max_col = max(max_col, len(row))
-
-    gen_matrix_center_x(obj_array, param, max_col)
-    gen_matrix_center_y(obj_array, param, max_col)
+    gen_box_center_x(obj_array, param, align)
+    gen_box_center_y(obj_array, param)
 
 
 # TODO vmatrix and Vmatrix have tricky space after left bracket
@@ -735,3 +779,30 @@ def gen_bullet_point(param, nest_lvl):
 
     gen_move_position(obj, param)
     param.width += 0.3 * param.scale  # space after bullet point
+
+
+# functions saves width that comes with alignemnt for the current column
+def get_alignment_width(align, width):
+    # check if width is set for the correct alignment type
+    if align.type not in ['p', 'm', 'b']:
+        return "", "Syntax error: Alignment '{align.type}' does not support width specification!"
+
+    # check whether the token includes units
+    for u in units:
+        if width.endswith(u):
+            width = width.replace(u, '')
+            align.unit = u
+            break
+
+    try:
+        # get the numeric value of the width
+        align.width = float(width)
+    except ValueError:
+        return "", "Syntax error: Invalid numeric value '{width}' in width specification!"
+
+    # get unit from the next token
+    if len(align.unit) == 0:
+        return True, ""
+
+    # unit is already saved
+    return False, ""
