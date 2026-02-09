@@ -16,7 +16,7 @@ from ..data.characters_db import *
 # TODO checkout mathfonts not used only on upper letters
 # TODO research what the default value should be for \par and for itemize
 # TODO [feature] add \newline
-# TODO vertical lines do not appear after last column
+# TODO [bug] Whitespaces are making mess in the first cell of table
 
 
 class ItemizeState:
@@ -367,13 +367,13 @@ class SyntaxAnalyser:
                     # TODO make small adjustments when not having hline
                     # it should also start at the last hline that is before the first row
                     y_pos = ts.init_params.height if len(ts.hline_pos) == 0 else ts.hline_pos[0]
-                    gen_line_object(self.d.context, ts.init_params, x_pos, y_pos, line_length_y, 'y')
+                    gen_line_object(self.d.context, ts.init_params, ts.table_coll, x_pos, y_pos, line_length_y, 'y')
 
                 line_length_x = gen_bound(body_coll.name, 'x', 'max')
 
                 # generate all horizontal lines
                 for y_pos in ts.hline_pos:
-                    gen_line_object(self.d.context, ts.init_params, ts.init_params.width, y_pos, line_length_x)
+                    gen_line_object(self.d.context, ts.init_params, ts.table_coll, ts.init_params.width, y_pos, line_length_x)
 
             # join table collection into parent collection
             gen_join_collections(ts.table_coll, ts.parent_coll)

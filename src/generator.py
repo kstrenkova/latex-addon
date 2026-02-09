@@ -106,7 +106,7 @@ def gen_adjust_new_line(param, collection, line_space):
 
 
 # function generates line object
-def gen_line_object(context, param, x_pos, y_pos, line_length, axis='x'):
+def gen_line_object(context, param, collection, x_pos, y_pos, line_length, axis='x'):
     # calculate line thickness
     line_thickness = LINE_THICKNESS * param.scale
 
@@ -136,20 +136,8 @@ def gen_line_object(context, param, x_pos, y_pos, line_length, axis='x'):
     line_obj = context.active_object
     line_obj.location = Vector((x_pos, y_pos, 0.0))
 
-
-# function gets object into collection
-def gen_into_collection(collection, symbol):
-    for obj in bpy.data.collections[collection].objects:
-        # object is already in collection
-        if obj.name == symbol.name:
-            return
-
-    # unlink from all collections
-    for coll in symbol.users_collection:
-        coll.objects.unlink(symbol)
-
-    # link object into the correct collection
-    bpy.data.collections[collection].objects.link(symbol)
+    # save line into the current collection
+    gen_object_to_collection(line_obj, collection)
 
 
 # function creates new collection
@@ -190,6 +178,16 @@ def gen_activate_collection(collection):
     for layer in layer_collection.children:
         if layer.name == collection:
             bpy.context.view_layer.active_layer_collection = layer
+
+
+# function adds object to a specific collection
+def gen_object_to_collection(obj, collection):
+    # unlink from all collections
+    for coll in obj.users_collection:
+        coll.objects.unlink(obj)
+
+    # link object into the correct collection
+    bpy.data.collections[collection].objects.link(obj)
 
 
 # function generates square root symbol
@@ -296,11 +294,11 @@ def gen_sqrt_move(context, obj, param, sqrt_param, move):
 
 
 # function generates fraction line
-def gen_frac_line(context, param, line_length):
+def gen_frac_line(context, param, collection, line_length):
     x_pos = param.width
     y_pos = param.height + 0.3 * param.scale
     line_end = line_length - param.width + MIN_SPACE * param.scale
-    gen_line_object(context, param, x_pos, y_pos, line_end)
+    gen_line_object(context, param, collection, x_pos, y_pos, line_end)
 
 
 # function moves objects in fraction
@@ -550,17 +548,22 @@ def get_max_row_height(row, max_col):
 
 
 # function moves the next column horizontally right
-def gen_move_column(obj_array, col, offset):
+def gen_move_column(obj_array, col, offset, version='relative'):
     for row in obj_array:
         if col < len(row):
             collection = row[col]
 
-            # find current minimum position
-            min_x = gen_bound(collection, 'x', 'min')
+            if version == 'relative':
+                # find current minimum position
+                min_x = gen_bound(collection, 'x', 'min')
+                move_by = offset - min_x
+            else:
+                # move by constant amount
+                move_by = offset
 
             # move all objects in this cell
             for obj in bpy.data.collections[collection].all_objects:
-                obj.location.x += (offset - min_x)
+                obj.location.x += move_by
 
 
 # function moves the next row vertically down
@@ -595,9 +598,15 @@ def gen_column_cells_align_x(obj_array, col, max_col_width, alignment='c'):
 # funtion moves the current column for vertical lines
 # that will be generated before it
 def gen_move_column_for_vline(obj_array, param, col, align):
-    # calculate space for vertical lines
-    min_col_width = x_pos = get_min_column_width(obj_array, col)
-    line_count = align.vline[col]  # number of vertical lines before current column
+    # number of vertical lines before current column
+    line_count = align.vline[col]
+
+    # skip if no lines
+    if line_count == 0:
+        return
+
+    # get the starting position
+    x_pos = get_min_column_width(obj_array, col)
 
     # save position and create space
     for _ in range(line_count):
@@ -605,16 +614,22 @@ def gen_move_column_for_vline(obj_array, param, col, align):
         x_pos += SMALL_SPACE
 
     # move next column to make space for vertical lines
-    vline_space = (SMALL_SPACE + LINE_THICKNESS) * line_count * param.scale
-    gen_move_column(obj_array, col, min_col_width + vline_space)
+    vline_space = (SMALL_SPACE * (line_count - 1) + LINE_THICKNESS * line_count) * param.scale
+    gen_move_column(obj_array, col, vline_space, 'const')
 
 
-# function saves positiona of vertical lines after the last column
+# function saves positions of vertical lines after the last column
 def gen_last_column_vline(obj_array, param, col, align):
+    # number of vertical lines after current column
+    line_count = align.vline[col+1]
+
+    # skip if no lines
+    if line_count == 0:
+        return
+
     # calculate the starting position
     x_pos = get_max_column_width(obj_array, col)
-    x_pos += GRID_SPACE * param.scale
-    line_count = align.vline[col+1]  # number of vertical lines after current column
+    x_pos += 2 * GRID_SPACE * param.scale
 
     # save position of vertical lines
     for _ in range(line_count):
@@ -627,6 +642,7 @@ def gen_last_column_vline(obj_array, param, col, align):
 def gen_box_align_x(obj_array, param, align=None):
     # calculate the max number of columns
     max_col = max(len(row) for row in obj_array)
+    padding = GRID_SPACE * param.scale
 
     for col in range(max_col):
         # check for any vertical lines in table
@@ -634,21 +650,23 @@ def gen_box_align_x(obj_array, param, align=None):
             gen_move_column_for_vline(obj_array, param, col, align)
 
             # check for vertical line after the last column
-            if col == (max_col - 1) and len(align.vline) > (col + 1):
+            if (col + 1) == max_col and len(align.vline) > (col + 1):
                 gen_last_column_vline(obj_array, param, col, align)
+
+        if align is not None:
+            # add padding before the column for tables
+            gen_move_column(obj_array, col, padding, 'const')
 
         # find max width for the current column
         max_col_width = get_max_column_width(obj_array, col)
 
         # move objects in next collumn
         if (col + 1) < max_col:
-            col_start = max_col_width + GRID_SPACE * param.scale
-            gen_move_column(obj_array, col + 1, col_start)
+            gen_move_column(obj_array, col + 1, max_col_width + padding)
 
         if align is not None:
             # align cells horizontally based on alignment type
-            atype = align.columns[col].type
-            gen_column_cells_align_x(obj_array, col, max_col_width, atype)
+            gen_column_cells_align_x(obj_array, col, max_col_width, align.columns[col].type)
         else:
             # always center for matrix
             gen_column_cells_align_x(obj_array, col, max_col_width)

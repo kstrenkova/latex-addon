@@ -302,8 +302,8 @@ class MathSyntaxAnalyser:
 
             # generating sqrt symbol
             sqrt_obj = gen_sqrt_sym(self.d.context)
-            gen_into_collection(sqs.parent_coll, self.d.context.active_object)
-            self.p.line.line_objs.append(self.d.context.active_object)
+            gen_object_to_collection(sqrt_obj, sqs.parent_coll)
+            self.p.line.line_objs.append(sqrt_obj)
 
             # move sqrt symbol
             gen_sqrt_move(self.d.context, sqrt_obj, sqs.init_params, sqrt_param, use_param)
@@ -368,13 +368,12 @@ class MathSyntaxAnalyser:
                 line_length = fs.nwidth
                 center_coll = fs.dcoll
 
-            # generate fraction line
-            gen_frac_line(self.d.context, fs.init_params, line_length)
-            self.p.line.line_objs.append(self.d.context.active_object)
-
             # center numerator and denominator
             gen_center(fs.nwidth, fs.dwidth, center_coll)
-            gen_into_collection(fs.dcoll, self.d.context.active_object)
+
+            # generate fraction line
+            gen_frac_line(self.d.context, fs.init_params, self.d.current_coll, line_length)
+            self.p.line.line_objs.append(self.d.context.active_object)
 
             # join numerator and denominator collections
             gen_join_collections(fs.dcoll, fs.ncoll)
@@ -399,9 +398,8 @@ class MathSyntaxAnalyser:
             token = self.lex.get_token()
             c = token.value if token.value not in unicode_chars_big else unicode_chars_big[token.value]
 
-            # generate big symbol and add it to collection
+            # generate big symbols
             gen_text_object(self.p, self.d, c, 'math', self.levels, token.value)
-            gen_into_collection(self.d.current_coll, self.d.context.active_object)
             return True
 
         # <MATRIX> actions
