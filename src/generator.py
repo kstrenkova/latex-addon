@@ -74,7 +74,7 @@ def gen_text_object(param, defaults, text, font_type, levels=None, symbol=None):
 
 
 # function calculates and adjusts the height for new line
-def gen_adjust_new_line(param, collection, line_space):
+def gen_adjust_new_line(param, collection, line_space, init_width=0.0):
     # no objects have been generated yet
     if len(bpy.data.collections[collection].all_objects) == 0:
         return
@@ -83,7 +83,7 @@ def gen_adjust_new_line(param, collection, line_space):
     if len(param.line.line_objs) == 0:
         param.line.min_y -= line_space * param.scale
         param.line.height = param.line.min_y - line_space
-        param.width = 0.0
+        param.width = init_width
         return
 
     # calculate overflow
@@ -102,7 +102,7 @@ def gen_adjust_new_line(param, collection, line_space):
     param.line.line_objs.clear()
 
     param.line.height = param.line.min_y - line_space
-    param.width = 0.0
+    param.width = init_width
 
 
 # function generates line object
@@ -463,6 +463,8 @@ def gen_center(obj1, obj2, collection):
 
 # calculate the extreme for set axis and type (min/max)
 def gen_calculate_bound(objects, axis, ftype):
+    bpy.ops.object.select_all(action='DESELECT')  # deselect all objects
+
     # determine which corner index to check
     if axis == 'x' and ftype == 'max':
         corner_index = 4
@@ -495,31 +497,20 @@ def gen_bound_for_array(objects, axis, ftype):
 
 # function returns the extreme for objects in a collection
 def gen_bound(collection, axis, ftype):
-    bpy.ops.object.select_all(action='DESELECT')  # deselect all objects
     objects = bpy.data.collections[collection].all_objects
     if not objects:
-        return 0
+        return None
 
     return gen_calculate_bound(objects, axis, ftype)
 
 
 # function returns the max width of the given column
-def get_min_column_width(obj_array, col):
-    min_width = float('inf')
-    for row in obj_array:
-        if col < len(row):
-            cell_width = gen_bound(row[col], 'x', 'min')
-            min_width = min(min_width, cell_width)
-    return min_width
-
-
-# function returns the max width of the given column
-def get_max_column_width(obj_array, col):
-    max_width = 0
+def get_max_column_width(obj_array, col, max_width):
     for row in obj_array:
         if col < len(row):
             cell_width = gen_bound(row[col], 'x', 'max')
-            max_width = max(max_width, cell_width)
+            if cell_width is not None:
+                max_width = max(max_width, cell_width)
     return max_width
 
 
@@ -530,7 +521,8 @@ def get_min_row_height(row, max_col):
           if col < len(row):
               collection = row[col]
               cell_bottom = gen_bound(collection, 'y', 'min')
-              min_height = min(min_height, cell_bottom)
+              if cell_bottom is not None:
+                min_height = min(min_height, cell_bottom)
 
       return min_height
 
@@ -542,7 +534,8 @@ def get_max_row_height(row, max_col):
         if col < len(row):
             collection = row[col]
             cell_height = gen_bound(collection, 'y', 'max')
-            max_height = max(max_height, cell_height)
+            if cell_height is not None:
+                max_height = max(max_height, cell_height)
 
     return max_height
 
@@ -556,7 +549,7 @@ def gen_move_column(obj_array, col, offset, version='relative'):
             if version == 'relative':
                 # find current minimum position
                 min_x = gen_bound(collection, 'x', 'min')
-                move_by = offset - min_x
+                move_by = offset - min_x if min_x is not None else 0.0
             else:
                 # move by constant amount
                 move_by = offset
@@ -580,7 +573,7 @@ def gen_column_cells_align_x(obj_array, col, max_col_width, alignment='c'):
     for row in obj_array:
         if col < len(row):
             collection = row[col]
-            cell_width = gen_bound(collection, 'x', 'max')
+            cell_width = gen_bound(collection, 'x', 'max') or 0.0
 
             # calculate the horizontal movement based on alignment
             if alignment == 'c':
@@ -597,16 +590,13 @@ def gen_column_cells_align_x(obj_array, col, max_col_width, alignment='c'):
 
 # funtion moves the current column for vertical lines
 # that will be generated before it
-def gen_move_column_for_vline(obj_array, param, col, align):
+def gen_move_column_for_vline(obj_array, param, col, align, x_pos):
     # number of vertical lines before current column
     line_count = align.vline[col]
 
     # skip if no lines
     if line_count == 0:
         return
-
-    # get the starting position
-    x_pos = get_min_column_width(obj_array, col)
 
     # save position and create space
     for _ in range(line_count):
@@ -619,7 +609,7 @@ def gen_move_column_for_vline(obj_array, param, col, align):
 
 
 # function saves positions of vertical lines after the last column
-def gen_last_column_vline(obj_array, param, col, align):
+def gen_last_column_vline(col, align, x_pos):
     # number of vertical lines after current column
     line_count = align.vline[col+1]
 
@@ -627,49 +617,62 @@ def gen_last_column_vline(obj_array, param, col, align):
     if line_count == 0:
         return
 
-    # calculate the starting position
-    x_pos = get_max_column_width(obj_array, col)
-    x_pos += 2 * GRID_SPACE * param.scale
-
     # save position of vertical lines
     for _ in range(line_count):
         align.vline_pos.append(x_pos)
         x_pos += SMALL_SPACE
 
 
-# function aligns cells horizontally by alignment type
-# for matrix it is always centered
-def gen_box_align_x(obj_array, param, align=None):
+# function aligns cells horizontally for matrix
+def gen_matrix_align_x(obj_array, param):
     # calculate the max number of columns
     max_col = max(len(row) for row in obj_array)
     padding = GRID_SPACE * param.scale
 
     for col in range(max_col):
-        # check for any vertical lines in table
-        if align is not None and len(align.vline) > col:
-            gen_move_column_for_vline(obj_array, param, col, align)
-
-            # check for vertical line after the last column
-            if (col + 1) == max_col and len(align.vline) > (col + 1):
-                gen_last_column_vline(obj_array, param, col, align)
-
-        if align is not None:
-            # add padding before the column for tables
-            gen_move_column(obj_array, col, padding, 'const')
-
         # find max width for the current column
-        max_col_width = get_max_column_width(obj_array, col)
+        # TODO make matrix handle empty columns
+        max_col_width = get_max_column_width(obj_array, col, 0)
 
         # move objects in next collumn
         if (col + 1) < max_col:
             gen_move_column(obj_array, col + 1, max_col_width + padding)
 
-        if align is not None:
-            # align cells horizontally based on alignment type
-            gen_column_cells_align_x(obj_array, col, max_col_width, align.columns[col].type)
-        else:
-            # always center for matrix
-            gen_column_cells_align_x(obj_array, col, max_col_width)
+        # always center for matrix
+        gen_column_cells_align_x(obj_array, col, max_col_width)
+
+
+# function aligns cells horizontally by alignment type
+def gen_table_align_x(obj_array, param, align):
+    # calculate the max number of columns
+    max_col = max(len(row) for row in obj_array)
+    prev_col_width = param.width
+    padding = GRID_SPACE * param.scale
+
+    for col in range(max_col):
+        # check for any vertical lines in current column
+        if len(align.vline) > col:
+            gen_move_column_for_vline(obj_array, param, col, align, prev_col_width)
+
+        # add padding before the column
+        gen_move_column(obj_array, col, padding, 'const')
+
+        # find max width for the current column
+        max_col_width = get_max_column_width(obj_array, col, prev_col_width)
+
+        # increase padding for empty columns
+        prev_col_width = max_col_width + padding * (3 if prev_col_width == max_col_width else 1)
+
+        if len(align.vline) > (col + 1) and (col + 1) == max_col:
+            # check for vertical line after the last column
+            gen_last_column_vline(col, align, prev_col_width)
+
+        # move objects in next collumn
+        if (col + 1) < max_col:
+            gen_move_column(obj_array, col + 1, prev_col_width)
+
+        # align cells horizontally based on alignment type
+        gen_column_cells_align_x(obj_array, col, max_col_width, align.columns[col].type)
 
 
 # function centers cells in matrix/table vertically
@@ -705,7 +708,11 @@ def gen_box_position_center(obj_array, param, align=None):
     if not len(obj_array):
         return
 
-    gen_box_align_x(obj_array, param, align)
+    if align is None:
+        gen_matrix_align_x(obj_array, param)
+    else:
+        gen_table_align_x(obj_array, param, align)
+
     gen_box_center_y(obj_array, param)
 
 

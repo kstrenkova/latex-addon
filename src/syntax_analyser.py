@@ -330,7 +330,7 @@ class SyntaxAnalyser:
 
             # set width to start and height lower
             self.p.width = ts.init_params.width
-            gen_adjust_new_line(self.p, self.d.base_coll, LINE_SPACE)
+            gen_adjust_new_line(self.p, self.d.base_coll, LINE_SPACE, self.p.width)
             # TODO check out why it works with self.d.base_coll
             return True
 
@@ -359,17 +359,15 @@ class SyntaxAnalyser:
             # gets the furthest x position
             body_coll = bpy.data.collections.get(ts.table_coll)
             if len(body_coll.all_objects):
-                line_length_y = gen_bound(body_coll.name, 'y', 'min')
+                # TODO small overflow on vertical lines length
+                y_pos = gen_bound(body_coll.name, 'y', 'max') + BASE_SPACE * self.p.scale
+                line_length_y = gen_bound(body_coll.name, 'y', 'min') - y_pos - SMALL_SPACE * self.p.scale
 
-                # TODO make generated lines go into a collection!!
                 # generate all vertical lines
                 for x_pos in ts.align.vline_pos:
-                    # TODO make small adjustments when not having hline
-                    # it should also start at the last hline that is before the first row
-                    y_pos = ts.init_params.height if len(ts.hline_pos) == 0 else ts.hline_pos[0]
                     gen_line_object(self.d.context, ts.init_params, ts.table_coll, x_pos, y_pos, line_length_y, 'y')
 
-                line_length_x = gen_bound(body_coll.name, 'x', 'max')
+                line_length_x = gen_bound(body_coll.name, 'x', 'max') - ts.init_params.width
 
                 # generate all horizontal lines
                 for y_pos in ts.hline_pos:
