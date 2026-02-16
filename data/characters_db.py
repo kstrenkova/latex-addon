@@ -14,15 +14,6 @@ PAR_SPACE = 2.0  # TODO change 2.0 for the correct value
 LINE_THICKNESS = 0.025
 SQRT_WIDTH = 0.855927586555481
 
-# TODO cleanup
-special_token_type = {
-    'COMMAND',
-    '_CLOSE_CURLY',
-    '_OPEN_CURLY',
-    '_OPEN_ANGLE',
-    '_CLOSE_ANGLE'
-}
-
 # numeric values of space commands
 space_sizes = {
     '!':    -0.1,
@@ -57,7 +48,7 @@ char_type = {
     '^': '_CARET',
     '_': '_UNDERSCORE',
     '&': '_AMPERSAND',
-    '$': 'dollar',
+    '$': '_DOLLAR',
 }
 
 # characters that can be escaped with a backslash
@@ -68,7 +59,7 @@ special_chars = [
     '_CARET',
     '_UNDERSCORE',
     '_AMPERSAND',
-    'dollar',
+    '_DOLLAR',
 ]
 
 # block types and their setup actions
@@ -101,7 +92,7 @@ epsilon_rules = {
 
 # tokens that end math mode
 end_tokens = {
-    ('dollar', '$'),
+    ('_DOLLAR', '$'),
     ('COMMAND', '\)'),
     ('COMMAND', '\]'),
     ('COMMAND', 'end')

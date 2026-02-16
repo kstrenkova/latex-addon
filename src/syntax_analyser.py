@@ -56,7 +56,7 @@ class TableState:
 
 class SyntaxAnalyser:
     def __init__(self, lex, context, custom_prop):
-        self.stack = ['$', 'PROG']
+        self.stack = ['$$$', 'PROG']
         self.state_stack = []
         self.block = []
 
@@ -67,8 +67,7 @@ class SyntaxAnalyser:
 
     # function returns the next rule
     def choose_rule(self, stack_top, token):
-        # TODO clean lookup
-        key = token.value if (token.type in special_token_type) else token.type
+        key = token.value if token.type == 'COMMAND' else token.type
 
         if stack_top in epsilon_rules and (token.type, token.value) not in epsilon_rules[stack_top]:
             key = 'epsilon'
@@ -84,10 +83,6 @@ class SyntaxAnalyser:
     # function calls the mathematical syntax analyser
     def enter_math_mode(self):
         token = self.lex.peek_token()
-
-        # consume token when symbols were used instead of environment
-        if token.value in ['$', '\(', '\[']:
-            self.lex.get_token()
 
         # change starting position for display mode
         if self.d.math_mode == 'display':
@@ -162,12 +157,6 @@ class SyntaxAnalyser:
 
         # new line (\\)
         elif action == '#ACTION_NEW_LINE':
-            token = self.lex.peek_token()
-
-            # consume token when enter is explicitely used
-            if token.type == '_ENTER':
-                self.lex.get_token()
-
             gen_adjust_new_line(self.p, self.d.base_coll, LINE_SPACE)
             return True
 
@@ -263,7 +252,6 @@ class SyntaxAnalyser:
             return True
 
         elif action == '#ACTION_ALIGN_LINE':
-            token = self.lex.get_token()
             ts = self.state_stack[-1]
 
             # add vertical line before the current column
@@ -316,7 +304,6 @@ class SyntaxAnalyser:
             return True
 
         elif action == '#ACTION_TABLE_NEW_ROW':
-            token = self.lex.get_token()
             ts = self.state_stack[-1]
 
             # table cell collection
@@ -335,7 +322,6 @@ class SyntaxAnalyser:
             return True
 
         elif action == '#ACTION_TABLE_NEW_CELL':
-            token = self.lex.get_token()
             ts = self.state_stack[-1]
 
             # table cell collection
@@ -410,7 +396,7 @@ class SyntaxAnalyser:
                 continue
 
             # successful parsing
-            if stack_top == '$' and token.type == 'END':
+            if stack_top == '$$$' and token.type == 'END':
                 print("Success!")
                 self.stack.pop()
                 break
@@ -424,14 +410,11 @@ class SyntaxAnalyser:
 
             # terminal
             elif not stack_top.isupper():
-                #TODO cleanup
-                terminal = token.value if token.type != 'dollar' else token.type
-
-                if stack_top == terminal:
+                if stack_top == token.value:
                     self.stack.pop()
                     self.lex.get_token()
                 else:
-                    print(f"Syntax Error: Expected '{stack_top}' but got '{terminal}!'")
+                    print(f"Syntax Error: Expected '{stack_top}' but got '{token.value}'")
                     return False
 
             # non-terminal

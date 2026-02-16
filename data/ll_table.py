@@ -18,6 +18,7 @@ ll_table = {
     ('TERM', '_CLOSE_BRACKET'):   ['CONST'],
 
     # <TERM> -> <COMMAND>
+    ('TERM', '_OPEN_CURLY'):      ['COMMAND'],
     ('TERM', 'par'):              ['COMMAND'],
     ('TERM', 'textbf'):           ['COMMAND'],
     ('TERM', 'textit'):           ['COMMAND'],
@@ -25,7 +26,7 @@ ll_table = {
     ('TERM', 'verb'):             ['COMMAND'],
 
     # <TERM> -> <MATH_MODE>
-    ('TERM', 'dollar'):           ['MATH_MODE'],
+    ('TERM', '_DOLLAR'):          ['MATH_MODE'],
     ('TERM', '\('):               ['MATH_MODE'],
     ('TERM', '\['):               ['MATH_MODE'],
 
@@ -38,6 +39,7 @@ ll_table = {
     ('MORE_TERM', '_ENTER'):           ['TERM', 'MORE_TERM'],
     ('MORE_TERM', '_SPECIAL_CHAR'):    ['TERM', 'MORE_TERM'],
     ('MORE_TERM', '_PIPE'):            ['TERM', 'MORE_TERM'],
+    ('MORE_TERM', '_OPEN_CURLY'):      ['TERM', 'MORE_TERM'],
     ('MORE_TERM', '_OPEN_BRACKET'):    ['TERM', 'MORE_TERM'],
     ('MORE_TERM', '_CLOSE_BRACKET'):   ['TERM', 'MORE_TERM'],
     ('MORE_TERM', 'par'):              ['TERM', 'MORE_TERM'],
@@ -46,11 +48,11 @@ ll_table = {
     ('MORE_TERM', 'texttt'):           ['TERM', 'MORE_TERM'],
     ('MORE_TERM', 'verb'):             ['TERM', 'MORE_TERM'],
     ('MORE_TERM', 'begin'):            ['TERM', 'MORE_TERM'],
-    ('MORE_TERM', 'dollar'):           ['TERM', 'MORE_TERM'],
+    ('MORE_TERM', '_DOLLAR'):          ['TERM', 'MORE_TERM'],
     ('MORE_TERM', '\('):               ['TERM', 'MORE_TERM'],
     ('MORE_TERM', '\['):               ['TERM', 'MORE_TERM'],
     # <MORE_TERM> -> epsilon
-    ('MORE_TERM', '}'):                ['epsilon'],
+    ('MORE_TERM', '_CLOSE_CURLY'):     ['epsilon'],
     ('MORE_TERM', 'item'):             ['epsilon'],
     ('MORE_TERM', 'end'):              ['epsilon'],
     ('MORE_TERM', 'END'):              ['epsilon'],
@@ -58,13 +60,16 @@ ll_table = {
     # --- CONST ---
     # <CONST> -> text
     ('CONST', '_TEXT'):                ['#ACTION_GENERATE_TEXT'],
-    ('CONST', '_ENTER'):               ['#ACTION_NEW_LINE'],
     ('CONST', '_SPECIAL_CHAR'):        ['#ACTION_GENERATE_TEXT'],
     ('CONST', '_PIPE'):                ['#ACTION_GENERATE_TEXT'],
     ('CONST', '_OPEN_BRACKET'):        ['#ACTION_GENERATE_TEXT'],
     ('CONST', '_CLOSE_BRACKET'):       ['#ACTION_GENERATE_TEXT'],
 
+    # <CONST> -> enter
+    ('CONST', '_ENTER'):               ['\\', '#ACTION_NEW_LINE'],
+
     # --- COMMAND ---
+    ('COMMAND', '_OPEN_CURLY'):        ['{', 'MORE_TERM', '}'],
     ('COMMAND', 'par'):                ['par', '#ACTION_PARAGRAPH'],
 
     # <COMMAND> -> change_font { MORE_TERM }
@@ -79,9 +84,9 @@ ll_table = {
     # <MATH_MODE> -> $ <MATH_INLINE_PROG> $
     # <MATH_MODE> -> \( <MATH_INLINE_PROG> \)
     # <MATH_MODE> -> \[ <MATH_DISPLAY_PROG> \[
-    ('MATH_MODE', 'dollar'):           ['#ACTION_MATH_MODE_INLINE', 'dollar'],
-    ('MATH_MODE', '\('):               ['#ACTION_MATH_MODE_INLINE', '\)'],
-    ('MATH_MODE', '\['):               ['#ACTION_MATH_MODE_DISPLAY', '\]'],
+    ('MATH_MODE', '_DOLLAR'):          ['$',  '#ACTION_MATH_MODE_INLINE',  '$'],
+    ('MATH_MODE', '\('):               ['\(', '#ACTION_MATH_MODE_INLINE',  '\)'],
+    ('MATH_MODE', '\['):               ['\[', '#ACTION_MATH_MODE_DISPLAY', '\]'],
 
     # --- BLOCK ---
     # <BLOCK> -> begin { text } <BLOCK_CONTENT> end { text }
@@ -93,7 +98,7 @@ ll_table = {
     ],
 
     ('BLOCK_CONTENT', 'item'):         ['ITEMIZE'],
-    ('BLOCK_CONTENT', '{'):            ['{', 'ALIGN', '}', 'TABLE'], # TODO BETTER
+    ('BLOCK_CONTENT', '_OPEN_CURLY'):  ['{', 'ALIGN', '}', 'TABLE'], # TODO BETTER
     ('BLOCK_CONTENT', '_ANY'):         ['MORE_TERM'],
     ('BLOCK_CONTENT', 'begin'):        ['BLOCK'],  # TODO fix when begin is at the beginning
     ('BLOCK_CONTENT', 'end'):          ['epsilon'],
@@ -106,10 +111,10 @@ ll_table = {
 
     # <ITEM> -> [ <MORE_TERM> ] <MORE_TERM> <ITEMIZE>
     # <ITEM> -> <MORE_TERM> <ITEMIZE>
-    ('ITEM', '['):               ['[', '#ACTION_ITEM_SAVE', ']', '#ACTION_ITEM_ADD', 'MORE_TERM', 'ITEMIZE'],
+    ('ITEM', '_OPEN_ANGLE'):     ['[', '#ACTION_ITEM_SAVE', ']', '#ACTION_ITEM_ADD', 'MORE_TERM', 'ITEMIZE'],
     # TODO other types
     ('ITEM', '_TEXT'):           ['#ACTION_ITEM_ADD', 'MORE_TERM', 'ITEMIZE'],
-    ('ITEM', 'dollar'):          ['#ACTION_ITEM_ADD', 'MORE_TERM', 'ITEMIZE'],
+    ('ITEM', '_DOLLAR'):         ['#ACTION_ITEM_ADD', 'MORE_TERM', 'ITEMIZE'],
     ('ITEM', '_OPEN_BRACKET'):   ['#ACTION_ITEM_ADD', 'MORE_TERM', 'ITEMIZE'],
 
     # --- TABULAR ---
@@ -117,13 +122,13 @@ ll_table = {
     # <ALIGN> -> | <ALIGN>
     # <ALIGN> -> epsilon
     ('ALIGN', '_TEXT'):          ['#ACTION_ALIGN_SAVE', 'COL_WIDTH'],
-    ('ALIGN', '_PIPE'):          ['#ACTION_ALIGN_LINE', 'ALIGN'],
-    ('ALIGN', '}'):              ['epsilon'],
+    ('ALIGN', '_PIPE'):          ['|', '#ACTION_ALIGN_LINE', 'ALIGN'],
+    ('ALIGN', '_CLOSE_CURLY'):   ['epsilon'],
 
     # <COL_WIDTH> -> { text } <ALIGN>
     # <COL_WIDTH> -> epsilon
-    ('COL_WIDTH', '{'):        ['{', '#ACTION_COL_WIDTH', '}', 'ALIGN'],
-    ('COL_WIDTH', 'epsilon'):  ['ALIGN'],
+    ('COL_WIDTH', '_OPEN_CURLY'): ['{', '#ACTION_COL_WIDTH', '}', 'ALIGN'],
+    ('COL_WIDTH', 'epsilon'):     ['ALIGN'],
 
     # <TABLE> -> <CONST>
     # <TABLE> -> <COMMAND>
@@ -134,8 +139,8 @@ ll_table = {
     # <TABLE> -> epsilon
     ('TABLE', '_TEXT'):          ['CONST', 'TABLE'],
     ('TABLE', 'hline'):          ['hline', '#ACTION_TABLE_HLINE', 'TABLE'],
-    ('TABLE', '_ENTER'):         ['#ACTION_TABLE_NEW_ROW', 'TABLE'],  # TODO be able to add the _ENTER as the first symbol and treat it as terminal
-    ('TABLE', '_AMPERSAND'):     ['#ACTION_TABLE_NEW_CELL', 'TABLE'], # TODO same here
+    ('TABLE', '_ENTER'):         ['\\', '#ACTION_TABLE_NEW_ROW',  'TABLE'],
+    ('TABLE', '_AMPERSAND'):     ['&',  '#ACTION_TABLE_NEW_CELL', 'TABLE'],
     ('TABLE', 'end'):            ['#ACTION_TABLE_CREATE'],
 }
 
@@ -151,14 +156,14 @@ math_ll_table = {
     ('TERM', '_ENTER'):           ['CONST'],
     ('TERM', '_UNDERSCORE'):      ['CONST'],
     ('TERM', '_CARET'):           ['CONST'],
-    ('TERM', '['):                ['CONST'],
-    ('TERM', ']'):                ['CONST'],
+    ('TERM', '_OPEN_ANGLE'):      ['CONST'],
+    ('TERM', '_CLOSE_ANGLE'):     ['CONST'],
     ('TERM', '_PIPE'):            ['CONST'],
     ('TERM', '_OPEN_BRACKET'):    ['CONST'],
     ('TERM', '_CLOSE_BRACKET'):   ['CONST'],
 
     # <TERM> -> <COMMAND>
-    ('TERM', '{'):                ['COMMAND'],
+    ('TERM', '_OPEN_CURLY'):      ['COMMAND'],
     ('TERM', 'sqrt'):             ['COMMAND'],
     ('TERM', 'frac'):             ['COMMAND'],
     ('TERM', 'dfrac'):            ['COMMAND'],
@@ -182,12 +187,12 @@ math_ll_table = {
     ('MORE_TERM', 'enter'):          ['TERM', 'MORE_TERM'],
     ('MORE_TERM', '_UNDERSCORE'):    ['TERM', 'MORE_TERM'],
     ('MORE_TERM', '_CARET'):         ['TERM', 'MORE_TERM'],
-    ('MORE_TERM', '['):              ['TERM', 'MORE_TERM'],
-    ('MORE_TERM', ']'):              ['TERM', 'MORE_TERM'],
+    ('MORE_TERM', '_OPEN_ANGLE'):    ['TERM', 'MORE_TERM'],
+    ('MORE_TERM', '_CLOSE_ANGLE'):   ['TERM', 'MORE_TERM'],
     ('MORE_TERM', '_PIPE'):          ['TERM', 'MORE_TERM'],
     ('MORE_TERM', '_OPEN_BRACKET'):  ['TERM', 'MORE_TERM'],
     ('MORE_TERM', '_CLOSE_BRACKET'): ['TERM', 'MORE_TERM'],
-    ('MORE_TERM', '{'):              ['TERM', 'MORE_TERM'],
+    ('MORE_TERM', '_OPEN_CURLY'):    ['TERM', 'MORE_TERM'],
     ('MORE_TERM', 'sqrt'):           ['TERM', 'MORE_TERM'],
     ('MORE_TERM', 'frac'):           ['TERM', 'MORE_TERM'],
     ('MORE_TERM', 'dfrac'):          ['TERM', 'MORE_TERM'],
@@ -201,12 +206,10 @@ math_ll_table = {
     ('MORE_TERM', '_SPACE_COMMAND'): ['TERM', 'MORE_TERM'],
     ('MORE_TERM', '_MATH_SYMBOL'):   ['TERM', 'MORE_TERM'],
     ('MORE_TERM', 'begin'):          ['TERM', 'MORE_TERM'],
-    ('MORE_TERM', 'dollar'):         ['TERM', 'MORE_TERM'],
     # <MORE_TERM> -> epsilon
-    ('MORE_TERM', '}'):              ['epsilon'],
-    ('MORE_TERM', '$'):              ['epsilon'],
+    ('MORE_TERM', '_CLOSE_CURLY'):   ['epsilon'],
     ('MORE_TERM', 'end'):            ['epsilon'],
-    ('MORE_TERM', 'dollar'):         ['epsilon'],
+    ('MORE_TERM', '_DOLLAR'):        ['epsilon'],
     ('MORE_TERM', '\)'):             ['epsilon'],
     ('MORE_TERM', '\]'):             ['epsilon'],
     ('MORE_TERM', 'END'):            ['epsilon'],
@@ -214,8 +217,8 @@ math_ll_table = {
     # --- CONST ---
     # <CONST> -> text
     ('CONST', '_TEXT'):              ['#ACTION_GENERATE_TEXT'],
-    ('CONST', '['):                  ['#ACTION_GENERATE_TEXT'],
-    ('CONST', ']'):                  ['#ACTION_GENERATE_TEXT'],
+    ('CONST', '_OPEN_ANGLE'):        ['#ACTION_GENERATE_TEXT'],
+    ('CONST', '_CLOSE_ANGLE'):       ['#ACTION_GENERATE_TEXT'],
     ('CONST', '_PIPE'):              ['#ACTION_GENERATE_TEXT'],
     ('CONST', '_OPEN_BRACKET'):      ['#ACTION_GENERATE_TEXT'],
     ('CONST', '_CLOSE_BRACKET'):     ['#ACTION_GENERATE_TEXT'],
@@ -235,7 +238,7 @@ math_ll_table = {
     # <EI_TERM> -> special_symbols
     ('EI_TERM', '_SPECIAL_CHAR'):   ['#ACTION_GENERATE_TEXT'],
     # <EI_TERM> -> { <MORE_TERM> }
-    ('EI_TERM', '{'):               ['COMMAND'],
+    ('EI_TERM', '_OPEN_CURLY'):     ['COMMAND'],
     # <EI_TERM> -> <COMMAND>
     ('EI_TERM', 'sqrt'):            ['COMMAND'],
     ('EI_TERM', 'frac'):            ['COMMAND'],
@@ -254,7 +257,7 @@ math_ll_table = {
 
     # --- COMMAND ---
     # <COMMAND> -> { <MORE_TERM> }
-    ('COMMAND', '{'):               ['{', 'MORE_TERM', '}'],
+    ('COMMAND', '_OPEN_CURLY'):     ['{', 'MORE_TERM', '}'],
 
     # <COMMAND> -> sqrt <SQRT>
     ('COMMAND', 'sqrt'):            ['sqrt', 'SQRT'],
@@ -282,7 +285,7 @@ math_ll_table = {
     # <MATH_FONT> -> text <MATH_FONT>
     # <MATH_FONT> -> epsilon
     ('MATH_FONT', '_TEXT'):         ['#ACTION_GENERATE_MATH_LETTER', 'MATH_FONT'],
-    ('MATH_FONT', '}'):             ['#ACTION_REMOVE_MATH_FONT'],
+    ('MATH_FONT', '_CLOSE_CURLY'):  ['#ACTION_REMOVE_MATH_FONT'],
 
     # <COMMAND> -> space_commands
     ('COMMAND', '_SPACE_COMMAND'):  ['#ACTION_SPACE'],
@@ -290,20 +293,20 @@ math_ll_table = {
 
     # --- SQRT ---
     # <SQRT> -> [ <MORE_TERM> ] { <MORE_TERM> }
-    ('SQRT', '['): [
+    ('SQRT', '_OPEN_ANGLE'): [
         '[', '#ACTION_SQRT_INDEX_BEGIN',     'MORE_TERM', ']',
         '{', '#ACTION_SQRT_INIT_WITH_INDEX', 'MORE_TERM', '}',
         '#ACTION_SQRT_CREATE'
     ],
     # <SQRT> -> { <MORE_TERM> }
-    ('SQRT', '{'): [
+    ('SQRT', '_OPEN_CURLY'): [
         '{', '#ACTION_SQRT_INIT', 'MORE_TERM', '}',
         '#ACTION_SQRT_CREATE'
     ],
 
     # --- FRAC ---
     # <FRAC> -> { <MORE_TERM> } { <MORE_TERM> }
-    ('FRAC', '{'): [
+    ('FRAC', '_OPEN_CURLY'): [
         '{', '#ACTION_FRAC_INIT', 'MORE_TERM', '}', '#ACTION_FRAC_UP',
         '{', 'MORE_TERM', '}', '#ACTION_FRAC_DOWN'
     ],
@@ -329,12 +332,12 @@ math_ll_table = {
     ('MATRIX', '_TEXT'):            ['CONST', 'MATRIX'],
     ('MATRIX', '_SPECIAL_CHAR'):    ['CONST', 'MATRIX'],
     ('MATRIX', '_UNDERSCORE'):      ['CONST', 'MATRIX'],
-    ('MATRIX', '{'):                ['COMMAND', 'MATRIX'],
+    ('MATRIX', '_OPEN_CURLY'):      ['COMMAND', 'MATRIX'],
     ('MATRIX', '_MATH_SYMBOL'):     ['COMMAND', 'MATRIX'],
     ('MATRIX', 'sqrt'):             ['COMMAND', 'MATRIX'],
     ('MATRIX', 'frac'):             ['COMMAND', 'MATRIX'],
     ('MATRIX', 'begin'):            ['BLOCK', 'MATRIX'],
-    ('MATRIX', '_ENTER'):           ['#ACTION_MATRIX_NEW_ROW', 'MATRIX'],
-    ('MATRIX', '_AMPERSAND'):       ['#ACTION_MATRIX_NEW_CELL', 'MATRIX'],
+    ('MATRIX', '_ENTER'):           ['\\', '#ACTION_MATRIX_NEW_ROW',  'MATRIX'],
+    ('MATRIX', '_AMPERSAND'):       ['&',  '#ACTION_MATRIX_NEW_CELL', 'MATRIX'],
     ('MATRIX', 'end'):              ['epsilon'],
 }

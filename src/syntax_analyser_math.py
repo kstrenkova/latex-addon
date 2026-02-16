@@ -82,7 +82,7 @@ class MatrixSize:
 
 class MathSyntaxAnalyser:
     def __init__(self, lex, defaults, parameters):
-        self.stack = ['$', 'PROG']
+        self.stack = ['$$$', 'PROG']
         self.state_stack = []
 
         self.lex = lex
@@ -94,14 +94,13 @@ class MathSyntaxAnalyser:
         self.levels = Levels(frac_array)
 
     def math_mode_end(self, stack_top, token):
-        if stack_top != '$':
+        if stack_top != '$$$':
             return False
 
         return (token.type, token.value) in end_tokens
 
     def choose_rule(self, stack_top, token):
-        # TODO clean lookup
-        key = token.value if (token.type in special_token_type) else token.type
+        key = token.value if token.type == 'COMMAND' else token.type
 
         if stack_top in epsilon_rules and (token.type, token.value) not in epsilon_rules[stack_top]:
             key = 'epsilon'
@@ -441,7 +440,6 @@ class MathSyntaxAnalyser:
             return True
 
         elif action == '#ACTION_MATRIX_NEW_ROW':
-            token = self.lex.get_token()
             ms = self.state_stack[-1]
 
             # matrix cell collection
@@ -459,7 +457,6 @@ class MathSyntaxAnalyser:
             return True
 
         elif action == '#ACTION_MATRIX_NEW_CELL':
-            token = self.lex.get_token()
             ms = self.state_stack[-1]
 
             # matrix cell collection
@@ -547,7 +544,6 @@ class MathSyntaxAnalyser:
             # non-terminal
             else:
                 rule = self.choose_rule(stack_top, token)
-
                 if rule:
                     self.stack.pop()
                     if rule != ['epsilon']:
