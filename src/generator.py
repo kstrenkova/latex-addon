@@ -649,6 +649,9 @@ def gen_table_align_x(obj_array, param, align):
     prev_col_width = param.width
     padding = GRID_SPACE * param.scale
 
+    # save the starting width for cline command
+    align.column_width.append(param.width)
+
     for col in range(max_col):
         # check for any vertical lines in current column
         if len(align.vline) > col:
@@ -662,6 +665,9 @@ def gen_table_align_x(obj_array, param, align):
 
         # increase padding for empty columns
         prev_col_width = max_col_width + padding * (3 if prev_col_width == max_col_width else 1)
+
+        # save each column width for cline command
+        align.column_width.append(prev_col_width)
 
         if len(align.vline) > (col + 1) and (col + 1) == max_col:
             # check for vertical line after the last column
@@ -837,7 +843,7 @@ def gen_bullet_point(param, nest_lvl):
 def get_alignment_width(align, width):
     # check if width is set for the correct alignment type
     if align.type not in ['p', 'm', 'b']:
-        return "", "Syntax error: Alignment '{align.type}' does not support width specification!"
+        return "", f"Alignment '{align.type}' does not support width specification!"
 
     # check whether the token includes units
     for u in units:
@@ -850,7 +856,7 @@ def get_alignment_width(align, width):
         # get the numeric value of the width
         align.width = float(width)
     except ValueError:
-        return "", "Syntax error: Invalid numeric value '{width}' in width specification!"
+        return "", f"Invalid numeric value '{width}' in width specification!"
 
     # get unit from the next token
     if len(align.unit) == 0:
@@ -858,3 +864,32 @@ def get_alignment_width(align, width):
 
     # unit is already saved
     return False, ""
+
+
+# function parses string that describes \cline range
+def parse_cline_range(range):
+    # check for hyphen in the cline range
+    if '-' not in range:
+        return "", f"Missing hyphen in \cline! Expected format 'start-end', got: '{range}.'"
+
+    items = range.split('-')
+
+    if len(items) != 2:
+        return "", "Too many hyphens in \cline! Please provide exactly two numbers."
+
+    try:
+        # convert both values into integers
+        start = int(items[0])
+        end = int(items[1])
+    except ValueError:
+        return "", f"Both values in \cline must be numbers. Got: '{items[0]}' and '{items[1]}'"
+
+    # check if first number is smaller than the second one
+    if start > end:
+        return "", f"In \cline, start column ({start}) cannot be greater than end column ({end})."
+
+    # check if starting number is bigger than 1
+    if start < 1:
+        return "", f"In \cline, column numbers must be 1 or greater. Got: {start}"
+
+    return (start, end), ""

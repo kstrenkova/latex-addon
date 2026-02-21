@@ -40,6 +40,17 @@ class TableAlignment:
         self.columns = []
         self.vline = []
         self.vline_pos = []
+        self.column_width = []
+
+
+class TableHorizontalLines:
+    def __init__(self):
+        self.hline_pos = []
+        self.cline_pos = []
+        self.cline_range = []
+
+    def save_cline_range(self, start, end):
+        self.cline_range.append((start, end))
 
 
 class TableState:
@@ -51,7 +62,7 @@ class TableState:
         self.obj_array = [[]]
         self.row_num = 0
         self.align = TableAlignment()
-        self.hline_pos = []
+        self.hline = TableHorizontalLines()
 
 
 class SyntaxAnalyser:
@@ -183,6 +194,7 @@ class SyntaxAnalyser:
 
         elif action == '#ACTION_ITEM_SAVE':
             # overwrite default bullet point value
+            # TODO use get_token_until
             token = self.lex.get_token()
             its = self.state_stack[-1]
             its.custom_bullet = token.value
@@ -266,6 +278,7 @@ class SyntaxAnalyser:
             return True
 
         elif action == '#ACTION_COL_WIDTH':
+            # TODO use get_token_until
             token = self.lex.get_token()
             ts = self.state_stack[-1]
 
@@ -273,7 +286,7 @@ class SyntaxAnalyser:
             align = ts.align.columns[-1]
             get_unit, err = get_alignment_width(align, token.value)
             if len(err) > 0:
-                print("Error:", err)
+                print("Syntax error:", err)
                 return False
 
             # get the next token to save unit
@@ -300,7 +313,30 @@ class SyntaxAnalyser:
             self.p.line.min_y -= SMALL_SPACE * self.p.scale
 
             # save position of the horizontal line
-            ts.hline_pos.append(self.p.line.min_y)
+            ts.hline.hline_pos.append(self.p.line.min_y)
+            return True
+
+        elif action == '#ACTION_TABLE_CLINE':
+            ts = self.state_stack[-1]
+            self.p.line.height -= SMALL_SPACE * self.p.scale
+            self.p.line.min_y -= SMALL_SPACE * self.p.scale
+
+            # save position of the horizontal line
+            ts.hline.cline_pos.append(self.p.line.min_y)
+
+            # get cline range string
+            content, err = self.lex.get_token_until('_TEXT', '}')
+            if len(err) > 0:
+                print("Syntax error:", err)
+                return False
+
+            range, err = parse_cline_range(content)
+            if len(err) > 0:
+                print("Syntax error:", err)
+                return False
+
+            start, end = range
+            ts.hline.save_cline_range(start, end)
             return True
 
         elif action == '#ACTION_TABLE_NEW_ROW':
@@ -345,6 +381,7 @@ class SyntaxAnalyser:
             # gets the furthest x position
             body_coll = bpy.data.collections.get(ts.table_coll)
             if len(body_coll.all_objects):
+                # TODO cleanup, make a function
                 # TODO small overflow on vertical lines length
                 y_pos = gen_bound(body_coll.name, 'y', 'max') + BASE_SPACE * self.p.scale
                 line_length_y = gen_bound(body_coll.name, 'y', 'min') - y_pos - SMALL_SPACE * self.p.scale
@@ -355,9 +392,19 @@ class SyntaxAnalyser:
 
                 line_length_x = gen_bound(body_coll.name, 'x', 'max') - ts.init_params.width
 
-                # generate all horizontal lines
-                for y_pos in ts.hline_pos:
+                # generate all horizontal lines (hline)
+                for y_pos in ts.hline.hline_pos:
                     gen_line_object(self.d.context, ts.init_params, ts.table_coll, ts.init_params.width, y_pos, line_length_x)
+
+                # generate all partial horizontal lines (cline)
+                for y_pos, (start, end) in zip(ts.hline.cline_pos, ts.hline.cline_range):
+                    # clamp start and end to number of columns
+                    start = min(start, len(ts.align.column_width) - 1)
+                    end = min(end, len(ts.align.column_width) - 1)
+
+                    x_pos = ts.align.column_width[start - 1]
+                    line_length_x = ts.align.column_width[end] - x_pos
+                    gen_line_object(self.d.context, ts.init_params, ts.table_coll, x_pos, y_pos, line_length_x)
 
             # join table collection into parent collection
             gen_join_collections(ts.table_coll, ts.parent_coll)

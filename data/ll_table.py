@@ -134,11 +134,13 @@ ll_table = {
     # <TABLE> -> <COMMAND>
     # <TABLE> -> <BLOCK>
     # <TABLE> -> hline <TABLE>
+    # <TABLE> -> cline { text } <TABLE>
     # <TABLE> -> enter <TABLE>
     # <TABLE> -> & <TABLE>
     # <TABLE> -> epsilon
     ('TABLE', '_TEXT'):          ['CONST', 'TABLE'],
     ('TABLE', 'hline'):          ['hline', '#ACTION_TABLE_HLINE', 'TABLE'],
+    ('TABLE', 'cline'):          [ 'cline', '{', '#ACTION_TABLE_CLINE', '}', 'TABLE'],
     ('TABLE', '_ENTER'):         ['\\', '#ACTION_TABLE_NEW_ROW',  'TABLE'],
     ('TABLE', '_AMPERSAND'):     ['&',  '#ACTION_TABLE_NEW_CELL', 'TABLE'],
     ('TABLE', 'end'):            ['#ACTION_TABLE_CREATE'],

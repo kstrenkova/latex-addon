@@ -117,12 +117,32 @@ class LexicalAnalyser:
         self.position = start_position
         return token
 
+    def get_token_until(self, token_type, end_symbol):
+        content = []
+        while not self.is_end():
+            token = self.peek_token()
+
+            # return all tokens until the end symbol
+            if token.value == end_symbol:
+                return ''.join(content), ""
+
+            # validate token type match
+            if token.type != token_type:
+                return "", f"Unexpected token '{token.value}' of type {token.type}. Expected {token_type}."
+
+            # save current token
+            token = self.get_token()
+            content.append(token.value)
+
+        return "", f"Missing closing symbol '{end_symbol}'!"
+
     # function returns the full \verb command content
     def get_verb_content(self):
+        pipe = '|'
         content = []
         while not self.is_end():
             c = self.get_char()
-            if c == '|':
+            if c == pipe:
                 return ''.join(content), ""
 
             # skip new lines but leave spaces
@@ -130,4 +150,4 @@ class LexicalAnalyser:
                 content.append(c)
             self.position += 1
 
-        return "", "Missing | symbol in function \verb!"
+        return "", f"Missing closing symbol '{pipe}' in function \verb!"
