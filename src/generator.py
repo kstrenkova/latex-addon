@@ -843,7 +843,7 @@ def gen_bullet_point(param, nest_lvl):
 def get_alignment_width(align, width):
     # check if width is set for the correct alignment type
     if align.type not in ['p', 'm', 'b']:
-        return "", f"Alignment '{align.type}' does not support width specification!"
+        return f"Alignment '{align.type}' does not support width specification!"
 
     # check whether the token includes units
     for u in units:
@@ -852,18 +852,17 @@ def get_alignment_width(align, width):
             align.unit = u
             break
 
+    if len(align.unit) == 0:
+        return f"Invalid unit in column width specification '{width}'!"
+
     try:
         # get the numeric value of the width
         align.width = float(width)
     except ValueError:
-        return "", f"Invalid numeric value '{width}' in width specification!"
+        return f"Invalid numeric value '{width}' in column width specification!"
 
-    # get unit from the next token
-    if len(align.unit) == 0:
-        return True, ""
-
-    # unit is already saved
-    return False, ""
+    # no errors
+    return ""
 
 
 # function parses string that describes \cline range

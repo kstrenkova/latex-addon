@@ -194,7 +194,7 @@ class SyntaxAnalyser:
 
         elif action == '#ACTION_ITEM_SAVE':
             # overwrite default bullet point value
-            # TODO use get_token_until
+            # TODO save all items, even commands
             token = self.lex.get_token()
             its = self.state_stack[-1]
             its.custom_bullet = token.value
@@ -278,20 +278,19 @@ class SyntaxAnalyser:
             return True
 
         elif action == '#ACTION_COL_WIDTH':
-            # TODO use get_token_until
-            token = self.lex.get_token()
             ts = self.state_stack[-1]
-
-            # get alignment width for the current column
-            align = ts.align.columns[-1]
-            get_unit, err = get_alignment_width(align, token.value)
+            content, err = self.lex.get_token_until('_TEXT', '}')
             if len(err) > 0:
                 print("Syntax error:", err)
                 return False
 
-            # get the next token to save unit
-            if get_unit:
-                align.unit = self.lex.get_token().value
+            # get alignment width for the current column
+            align = ts.align.columns[-1]
+            err = get_alignment_width(align, content)
+            if len(err) > 0:
+                print("Syntax error:", err)
+                return False
+
             return True
 
         elif action == '#ACTION_TABLE_INIT':
