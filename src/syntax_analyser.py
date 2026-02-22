@@ -48,6 +48,10 @@ class TableHorizontalLines:
         self.hline_pos = []
         self.cline_pos = []
         self.cline_range = []
+        self.cline_new = True
+
+    def reset_cline(self):
+        self.cline_new = True
 
     def save_cline_range(self, start, end):
         self.cline_range.append((start, end))
@@ -334,8 +338,12 @@ class SyntaxAnalyser:
 
         elif action == '#ACTION_TABLE_CLINE':
             ts = self.state_stack[-1]
-            self.p.line.height -= SMALL_SPACE * self.p.scale
-            self.p.line.min_y -= SMALL_SPACE * self.p.scale
+
+            # move only for the first cline in one row
+            if ts.hline.cline_new:
+                self.p.line.height -= SMALL_SPACE * self.p.scale
+                self.p.line.min_y -= SMALL_SPACE * self.p.scale
+                ts.hline.cline_new = False
 
             # save position of the horizontal line
             ts.hline.cline_pos.append(self.p.line.min_y)
@@ -408,6 +416,7 @@ class SyntaxAnalyser:
 
         elif action == '#ACTION_TABLE_NEW_CELL':
             ts = self.state_stack[-1]
+            ts.hline.reset_cline()  # mark end of consequent cline commands
 
             # table cell collection
             self.d.current_coll = gen_new_collection("TableCellCollection", ts.table_coll)
