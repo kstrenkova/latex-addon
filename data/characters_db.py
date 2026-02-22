@@ -13,6 +13,8 @@ PAR_SPACE = 2.0  # TODO change 2.0 for the correct value
 
 LINE_THICKNESS = 0.025
 SQRT_WIDTH = 0.855927586555481
+SQRT_LINE_TOP = 0.05929052829742433
+SQRT_LINE_BOTTOM = 0.14427322149276733
 
 # numeric values of space commands
 space_sizes = {

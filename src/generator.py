@@ -101,7 +101,7 @@ def gen_adjust_new_line(param, collection, line_space, init_width=0.0):
     # reset line objects
     param.line.line_objs.clear()
 
-    param.line.height = param.line.min_y - line_space
+    param.line.height = param.line.min_y - line_space * param.scale
     param.width = init_width
 
 
@@ -232,7 +232,7 @@ def gen_sqrt_sym(context):
 
 
 # function moves sqrt symbol according to given parameters
-def gen_sqrt_move(context, obj, param, sqrt_param, move):
+def gen_sqrt_move(obj, param, sqrt_param, move):
     # position sqrt
     param.height -= 0.25 * param.scale
     gen_set_position(obj, param)
@@ -250,7 +250,7 @@ def gen_sqrt_move(context, obj, param, sqrt_param, move):
     vertices = obj_data.vertices
 
     # common parameters
-    text_height = param.height - (0.2 * param.scale)
+    text_height = param.height - (SMALL_SPACE * param.scale)
 
     # find vertex extremes
     x_coords = [v.co.x for v in vertices]
@@ -264,8 +264,8 @@ def gen_sqrt_move(context, obj, param, sqrt_param, move):
         if v.co.x == max_x:
             v.co.x = sqrt_param['x_pos'] - param.width  # x position
 
-    line_size_top = 0.05929052829742433 * param.scale  # size of upper line
-    move_by_top = sqrt_param['y_max'] - text_height + (0.2 * param.scale)  # y location and space
+    line_size_top = SQRT_LINE_TOP * param.scale  # size of upper line
+    move_by_top = sqrt_param['y_max'] - text_height + (SMALL_SPACE * param.scale)  # y location and space
 
     # if height of sqrt is not correct
     if (max_y - 0.06) <= move_by_top:
@@ -278,7 +278,7 @@ def gen_sqrt_move(context, obj, param, sqrt_param, move):
             elif v.co.y >= threshold_top:
                 v.co.y = move_by_top
 
-    line_size_bottom = 0.14427322149276733 * param.scale  #  space between lowest points
+    line_size_bottom = SQRT_LINE_BOTTOM * param.scale  #  space between lowest points
     move_by_bottom = sqrt_param['y_min'] - text_height
 
     # if low point of sqrt is not correct
@@ -827,13 +827,12 @@ def get_numbering_default(level, index):
 
 # function calculates positions around bullet point
 def gen_bullet_point(param, nest_lvl):
-    # TODO scale
     obj = bpy.context.active_object  # save active object
 
     bbox = [obj.matrix_world @ Vector(corner) for corner in obj.bound_box]
     obj_dimension = bbox[4].x * param.scale
     nested_space = nest_lvl * PAR_SPACE * param.scale
-    param.width = (nested_space - obj_dimension) * param.scale  # space before bullet point
+    param.width = (nested_space - obj_dimension)  # space before bullet point
 
     gen_move_position(obj, param)
     param.width += 0.3 * param.scale  # space after bullet point
@@ -909,3 +908,52 @@ def get_multi_span_number(multi, action, content):
         cmd_name = '\\multicolumn' if 'COL' in action else '\\multirow'
         err = f"Invalid integer value '{content}' in {cmd_name} specification!"
         return err
+
+
+# function generates all vertical, horizontal, and partial lines for a table
+def generate_table_lines(context, scale, ts):
+    body_coll = bpy.data.collections.get(ts.table_coll)
+
+    # return if table has no objects
+    if len(body_coll.all_objects) == 0:
+        return
+
+    y_pos = None
+    max_y = gen_bound(body_coll.name, 'y', 'max')
+
+    # search for lines above the table
+    for pos in reversed(ts.hline.hline_pos):
+        if pos > max_y:
+            y_pos = pos
+            break
+
+    # if no lines were found above the table
+    if y_pos is None:
+        y_pos = max_y + SMALL_SPACE * scale
+
+    min_y = gen_bound(body_coll.name, 'y', 'min')
+    line_length_v = min_y - y_pos - SMALL_SPACE * scale
+
+    # generate all vertical lines
+    for x_pos in ts.align.vline_pos:
+        gen_line_object(context, ts.init_params, ts.table_coll, x_pos, y_pos, line_length_v, 'y')
+
+    x_pos = ts.init_params.width
+    line_length_h = gen_bound(body_coll.name, 'x', 'max') - ts.init_params.width
+
+    # generate all horizontal lines (hline)
+    for y_pos in ts.hline.hline_pos:
+        gen_line_object(context, ts.init_params, ts.table_coll, x_pos, y_pos, line_length_h)
+
+    max_col = len(ts.align.column_width) - 1
+
+    # generate all partial horizontal lines (cline)
+    for y_pos, (start, end) in zip(ts.hline.cline_pos, ts.hline.cline_range):
+        # clamp start and end to number of columns
+        start = min(start, max_col)
+        end = min(end, max_col)
+
+        x_pos = ts.align.column_width[start - 1]
+        line_length_c = ts.align.column_width[end] - x_pos
+
+        gen_line_object(context, ts.init_params, ts.table_coll, x_pos, y_pos, line_length_c)

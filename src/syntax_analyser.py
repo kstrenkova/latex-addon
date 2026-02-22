@@ -15,8 +15,9 @@ from ..data.characters_db import *
 
 # TODO checkout mathfonts not used only on upper letters
 # TODO research what the default value should be for \par and for itemize
-# TODO [feature] add \newline
 # TODO [bug] Whitespaces are making mess in the first cell of table
+# TODO it seems vertical lines in tables will need to be created for each row
+# because of multicolumn that ignores alignment and uses its own in second argument
 
 
 class ItemizeState:
@@ -411,7 +412,6 @@ class SyntaxAnalyser:
             # set width to start and height lower
             self.p.width = ts.init_params.width
             gen_adjust_new_line(self.p, self.d.base_coll, LINE_SPACE, self.p.width)
-            # TODO check out why it works with self.d.base_coll
             return True
 
         elif action == '#ACTION_TABLE_NEW_CELL':
@@ -436,33 +436,8 @@ class SyntaxAnalyser:
                 for coll_name in row:
                     gen_join_collections(coll_name, ts.table_coll)
 
-            # gets the furthest x position
-            body_coll = bpy.data.collections.get(ts.table_coll)
-            if len(body_coll.all_objects):
-                # TODO cleanup, make a function
-                # TODO small overflow on vertical lines length
-                y_pos = gen_bound(body_coll.name, 'y', 'max') + BASE_SPACE * self.p.scale
-                line_length_y = gen_bound(body_coll.name, 'y', 'min') - y_pos - SMALL_SPACE * self.p.scale
-
-                # generate all vertical lines
-                for x_pos in ts.align.vline_pos:
-                    gen_line_object(self.d.context, ts.init_params, ts.table_coll, x_pos, y_pos, line_length_y, 'y')
-
-                line_length_x = gen_bound(body_coll.name, 'x', 'max') - ts.init_params.width
-
-                # generate all horizontal lines (hline)
-                for y_pos in ts.hline.hline_pos:
-                    gen_line_object(self.d.context, ts.init_params, ts.table_coll, ts.init_params.width, y_pos, line_length_x)
-
-                # generate all partial horizontal lines (cline)
-                for y_pos, (start, end) in zip(ts.hline.cline_pos, ts.hline.cline_range):
-                    # clamp start and end to number of columns
-                    start = min(start, len(ts.align.column_width) - 1)
-                    end = min(end, len(ts.align.column_width) - 1)
-
-                    x_pos = ts.align.column_width[start - 1]
-                    line_length_x = ts.align.column_width[end] - x_pos
-                    gen_line_object(self.d.context, ts.init_params, ts.table_coll, x_pos, y_pos, line_length_x)
+            # generate all table lines
+            generate_table_lines(self.d.context, self.p.scale, ts)
 
             # join table collection into parent collection
             gen_join_collections(ts.table_coll, ts.parent_coll)

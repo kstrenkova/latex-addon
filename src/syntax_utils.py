@@ -6,6 +6,8 @@
 import bpy
 import os.path
 
+# TODO remove unused fonts
+
 FONT_CACHE = {}
 
 
@@ -56,9 +58,7 @@ def preload_fonts(context, user_fonts):
     font_mode = {
         'math':     ('STIX Two Math Regular',        'STIXTwoMath-Regular.ttf'),
         'teletype': ('Latin Modern Mono 10 Regular', 'latin-modern-mono.mmono10-regular.otf'),
-        'verb':     ('Latin Modern Mono 10 Regular', 'latin-modern-mono.mmono10-regular.otf')
-        # TODO decide if we want a different mathcal font
-        # 'mathcal':  ('Latin Modern Math Regular', 'latinmodern-math.otf')
+        'verb':     ('Latin Modern Mono 10 Regular', 'latin-modern-mono.mmono10-regular.otf'),
     }
 
     src_dir = os.path.dirname(os.path.dirname(__file__))
@@ -82,8 +82,6 @@ def preload_fonts(context, user_fonts):
         user_font = bpy.data.fonts[font]
         font_size = get_font_scale(context, user_font)
         FONT_CACHE[mode] = {'font': user_font, 'size': font_size}
-
-    print("FONT CACHE:", FONT_CACHE.items())
 
 
 # function that gets font scale that is needed

@@ -304,7 +304,7 @@ class MathSyntaxAnalyser:
             self.p.line.line_objs.append(sqrt_obj)
 
             # move sqrt symbol
-            gen_sqrt_move(self.d.context, sqrt_obj, sqs.init_params, sqrt_param, use_param)
+            gen_sqrt_move(sqrt_obj, sqs.init_params, sqrt_param, use_param)
 
             # join collection into parent collection
             gen_join_collections(sqs.sqcoll, sqs.parent_coll)
