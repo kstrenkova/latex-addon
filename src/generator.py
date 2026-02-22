@@ -892,3 +892,20 @@ def parse_cline_range(range):
         return "", f"In \cline, column numbers must be 1 or greater. Got: {start}"
 
     return (start, end), ""
+
+
+# function saves the span number for multicolumn and multirow commands
+def get_multi_span_number(multi, action, content):
+    try:
+        # check the span number is integer and save it
+        span = int(content)
+        if 'COL' in action:
+            multi.col_span = span
+        else:
+            multi.row_span = span
+        return ""
+
+    except ValueError:
+        cmd_name = '\\multicolumn' if 'COL' in action else '\\multirow'
+        err = f"Invalid integer value '{content}' in {cmd_name} specification!"
+        return err

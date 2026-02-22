@@ -64,7 +64,6 @@ class MatrixState:
         self.init_params = init_params
         self.size = MatrixSize()
         self.mx_coll = ''
-        self.cell_colls = []
         self.obj_array = [[]]
         self.row_num = 0
         self.brackets = 'matrix'
@@ -435,7 +434,6 @@ class MathSyntaxAnalyser:
 
             # first matrix cell collection
             self.d.current_coll = gen_new_collection("MatrixCellCollection", ms.mx_coll)
-            ms.cell_colls.append(self.d.current_coll)
             ms.obj_array[ms.row_num].append(self.d.current_coll)
             return True
 
@@ -444,7 +442,6 @@ class MathSyntaxAnalyser:
 
             # matrix cell collection
             self.d.current_coll = gen_new_collection("MatrixCellCollection", ms.mx_coll)
-            ms.cell_colls.append(self.d.current_coll)
 
             # add new array that represents row
             ms.obj_array.append([])
@@ -461,7 +458,6 @@ class MathSyntaxAnalyser:
 
             # matrix cell collection
             self.d.current_coll = gen_new_collection("MatrixCellCollection", ms.mx_coll)
-            ms.cell_colls.append(self.d.current_coll)
 
             # add collection to row
             ms.obj_array[ms.row_num].append(self.d.current_coll)
@@ -498,8 +494,9 @@ class MathSyntaxAnalyser:
             self.p.height = ms.init_params.height
 
             # link objects to matrix collection
-            for coll_name in ms.cell_colls:
-                gen_join_collections(coll_name, ms.mx_coll)
+            for row in ms.obj_array:
+                for coll_name in row:
+                    gen_join_collections(coll_name, ms.mx_coll)
 
             # join matrix collection into parent collection
             gen_join_collections(ms.mx_coll, ms.parent_coll)

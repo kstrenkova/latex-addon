@@ -137,13 +137,32 @@ ll_table = {
     # <TABLE> -> cline { text } <TABLE>
     # <TABLE> -> enter <TABLE>
     # <TABLE> -> & <TABLE>
+    # <TABLE> -> multicolumn { text } { text } { <MULTI> } <TABLE>
+    # <TABLE> -> multirow    { text } { text } { <MULTI> } <TABLE>
     # <TABLE> -> epsilon
     ('TABLE', '_TEXT'):          ['CONST', 'TABLE'],
     ('TABLE', 'hline'):          ['hline', '#ACTION_TABLE_HLINE', 'TABLE'],
     ('TABLE', 'cline'):          [ 'cline', '{', '#ACTION_TABLE_CLINE', '}', 'TABLE'],
     ('TABLE', '_ENTER'):         ['\\', '#ACTION_TABLE_NEW_ROW',  'TABLE'],
     ('TABLE', '_AMPERSAND'):     ['&',  '#ACTION_TABLE_NEW_CELL', 'TABLE'],
+    ('TABLE', 'multicolumn'): [
+        'multicolumn', '{', '#ACTION_TABLE_MULTICOL_NUMBER', '}',
+        '{', '#ACTION_TABLE_MULTICOL_ALIGN', '}',
+        '{', 'MULTI', '}', 'TABLE'
+    ],
+    ('TABLE', 'multirow'): [
+        'multirow', '{', '#ACTION_TABLE_MULTIROW_NUMBER', '}',
+        '{', '#ACTION_TABLE_MULTIROW_WIDTH', '}',
+        '{', 'MULTI', '}', 'TABLE'
+    ],
     ('TABLE', 'end'):            ['#ACTION_TABLE_CREATE'],
+
+    # TODO add all multirow/multicolumn rules
+    # TODO multirow can be in multirow but not vise versa
+    # <MULTI> -> <CONST>
+    # <MULTI> -> epsilon
+    ('MULTI', '_TEXT'):          ['CONST', 'MULTI'],
+    ('MULTI', '_CLOSE_CURLY'):   ['epsilon'],
 }
 
 math_ll_table = {

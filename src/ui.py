@@ -14,6 +14,8 @@ TMP_TEXT_EDIT = "tmp_latex_text_edit"
 
 # TODO [bug] fix messy letters in generate_1_object when thickness is not zero
 # TODO [bug] fix different final position for 1 object vs multiple objects
+# TODO [optimalization] Add annotations to function headers
+
 
 # function gets all of the loaded fonts
 def get_loaded_fonts(self, context):

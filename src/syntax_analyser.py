@@ -53,16 +53,33 @@ class TableHorizontalLines:
         self.cline_range.append((start, end))
 
 
+class TableMultiCell:
+    def __init__(self):
+        self.col_span = 1
+        self.row_span = 1
+        self.col_align = 'c'
+        self.row_width = -1
+        self.cell_span = {}
+
+    def reset_col_span(self):
+        self.col_span = 1
+        self.col_align = 'c'
+
+    def reset_row_span(self):
+        self.row_span = 1
+        self.row_width = -1
+
+
 class TableState:
     def __init__(self, parent_coll, init_params):
         self.parent_coll = parent_coll
         self.init_params = init_params
         self.table_coll = ''
-        self.cell_colls = []
         self.obj_array = [[]]
         self.row_num = 0
         self.align = TableAlignment()
         self.hline = TableHorizontalLines()
+        self.multi = TableMultiCell()
 
 
 class SyntaxAnalyser:
@@ -258,7 +275,8 @@ class SyntaxAnalyser:
             for c in token.value:
                 ts.align.columns.append(ColumnAlignment(c))
                 if c not in table_alignments:
-                    print("Syntax error: Tabular alignment '{align.type}' is not correct or supported!")
+                    err = f"Tabular alignment '{align.type}' is not correct or supported!"
+                    print("Syntax error:", err)
                     return False
 
             return True
@@ -302,7 +320,6 @@ class SyntaxAnalyser:
 
             # first table cell collection
             self.d.current_coll = gen_new_collection("TableCellCollection", ts.table_coll)
-            ts.cell_colls.append(self.d.current_coll)
             ts.obj_array[ts.row_num].append(self.d.current_coll)
             return True
 
@@ -338,12 +355,45 @@ class SyntaxAnalyser:
             ts.hline.save_cline_range(start, end)
             return True
 
+        elif action in ('#ACTION_TABLE_MULTICOL_NUMBER', '#ACTION_TABLE_MULTIROW_NUMBER'):
+            ts = self.state_stack[-1]
+            content, err = self.lex.get_token_until('_TEXT', '}')
+            if len(err) > 0:
+                print("Syntax error:", err)
+                return False
+
+            err = get_multi_span_number(ts.multi, action, content)
+            if len(err) > 0:
+                print("Syntax error:", err)
+                return False
+
+            return True
+
+        elif action == '#ACTION_TABLE_MULTICOL_ALIGN':
+            ts = self.state_stack[-1]
+            content, err = self.lex.get_token_until('_TEXT', '}')
+            if len(err) > 0:
+                print("Syntax error:", err)
+                return False
+
+            # TODO get alignment (only 1 + optional vertical lines)
+            return True
+
+        elif action == '#ACTION_TABLE_MULTIROW_WIDTH':
+            ts = self.state_stack[-1]
+            content, err = self.lex.get_token_until('_TEXT', '}')
+            if len(err) > 0:
+                print("Syntax error:", err)
+                return False
+
+            # TODO get width
+            return True
+
         elif action == '#ACTION_TABLE_NEW_ROW':
             ts = self.state_stack[-1]
 
             # table cell collection
             self.d.current_coll = gen_new_collection("TableCellCollection", ts.table_coll)
-            ts.cell_colls.append(self.d.current_coll)
 
             # add new array that represents row
             ts.obj_array.append([])
@@ -361,7 +411,6 @@ class SyntaxAnalyser:
 
             # table cell collection
             self.d.current_coll = gen_new_collection("TableCellCollection", ts.table_coll)
-            ts.cell_colls.append(self.d.current_coll)
 
             # add collection to row
             ts.obj_array[ts.row_num].append(self.d.current_coll)
@@ -374,8 +423,9 @@ class SyntaxAnalyser:
             gen_box_position_center(ts.obj_array, self.p, ts.align)
 
             # link objects to table collection
-            for coll_name in ts.cell_colls:
-                gen_join_collections(coll_name, ts.table_coll)
+            for row in ts.obj_array:
+                for coll_name in row:
+                    gen_join_collections(coll_name, ts.table_coll)
 
             # gets the furthest x position
             body_coll = bpy.data.collections.get(ts.table_coll)
