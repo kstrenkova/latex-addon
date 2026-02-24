@@ -158,7 +158,7 @@ ll_table = {
     ('TABLE', 'end'):            ['#ACTION_TABLE_CREATE'],
 
     # TODO add all multirow/multicolumn rules
-    # TODO multirow can be in multirow but not vise versa
+    # TODO multirow can be in multicolumn but not vise versa
     # <MULTI> -> <CONST>
     # <MULTI> -> epsilon
     ('MULTI', '_TEXT'):          ['CONST', 'MULTI'],

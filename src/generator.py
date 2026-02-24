@@ -505,12 +505,38 @@ def gen_bound(collection, axis, ftype):
 
 
 # function returns the max width of the given column
-def get_max_column_width(obj_array, col, max_width):
-    for row in obj_array:
+def get_max_column_width(obj_array, col, max_width, cell_span={}):
+    for i, row in enumerate(obj_array):
+        # check for multicolumn
+        cell = cell_span.get((i, col), {})
+        extra_col = cell.get('col_span', 1) - 1
+
+        if col < len(row) and extra_col > 0:
+            cell_width = gen_bound(row[col], 'x', 'max')
+            if cell_width is not None:
+                # push current width into last multicolumn cell
+                last_col = (i, col + extra_col)
+                if last_col not in cell_span:
+                    cell_span[last_col] = {
+                        'col_span': 1,
+                        'row_span': 1,
+                        'col_align': 'c',
+                        'span_width': cell_width
+                    }
+                else:
+                    cell_span[last_col]['span_width'] = cell_width
+            continue
+
+        # normal cell
         if col < len(row):
             cell_width = gen_bound(row[col], 'x', 'max')
             if cell_width is not None:
                 max_width = max(max_width, cell_width)
+
+        # check whether multicolumn cell is not the wider than current column
+        if 'span_width' in cell:
+            max_width = max(max_width, cell['span_width'])
+
     return max_width
 
 
@@ -568,24 +594,58 @@ def gen_move_row(row, num_columns, move_by):
                   obj.location.y -= move_by
 
 
+# function calculates horizontal offset and moves all objects in the collection
+def apply_alignment_x(collection, alignment, max_width):
+    # get max width of objects in current collection
+    cell_width = gen_bound(collection, 'x', 'max') or 0.0
+
+    # calculate the horizontal movement based on alignment
+    if alignment == 'c':
+        move_by = (max_width - cell_width) / 2
+    elif alignment == 'r':
+        move_by = max_width - cell_width
+    else:
+        move_by = 0  # alignment 'l' is the default
+
+    # move all objects in this cell
+    if move_by != 0:
+        for obj in bpy.data.collections[collection].all_objects:
+            obj.location.x += move_by
+
+
 # function aligns objects horizontally in the current column
-def gen_column_cells_align_x(obj_array, col, max_col_width, alignment='c'):
-    for row in obj_array:
+def gen_column_cells_align_x(obj_array, col, max_col_width, alignment='c', cell_span={}):
+    for i, row in enumerate(obj_array):
         if col < len(row):
+            # ignore alignment for multicolumn
+            cell = cell_span.get((i, col), {})
+            if cell.get('col_span', 1) > 1:
+                continue
+
             collection = row[col]
-            cell_width = gen_bound(collection, 'x', 'max') or 0.0
+            apply_alignment_x(collection, max_col_width, alignment)
 
-            # calculate the horizontal movement based on alignment
-            if alignment == 'c':
-                move_by = (max_col_width - cell_width) / 2
-            elif alignment == 'r':
-                move_by = max_col_width - cell_width
-            else:
-                move_by = 0  # alignment 'l' is the default
 
-            # move all objects in this cell
-            for obj in bpy.data.collections[collection].all_objects:
-                obj.location.x += move_by
+# function aligns content of cells horizontally for multicolumn command
+def gen_multicolumn_cells_align_x(obj_array, param, align, cell_span):
+    for (row, col), span_info in cell_span.items():
+        col_span = span_info['col_span']
+        col_align = span_info['col_align']
+
+        # process multicolumn only
+        if col_span == 1:
+            continue
+
+        # last column of multicolumn span
+        last_col = col + col_span
+
+        # get current cell
+        if row < len(obj_array) and last_col < len(obj_array[row]):
+            # get width of the last column without padding
+            total_width = align.column_width[last_col] - GRID_SPACE * param.scale
+
+            collection = obj_array[row][col]
+            apply_alignment_x(collection, col_align, total_width)
 
 
 # funtion moves the current column for vertical lines
@@ -643,7 +703,7 @@ def gen_matrix_align_x(obj_array, param):
 
 
 # function aligns cells horizontally by alignment type
-def gen_table_align_x(obj_array, param, align):
+def gen_table_align_x(obj_array, param, align, cell_span):
     # calculate the max number of columns
     max_col = max(len(row) for row in obj_array)
     prev_col_width = param.width
@@ -661,7 +721,7 @@ def gen_table_align_x(obj_array, param, align):
         gen_move_column(obj_array, col, padding, 'const')
 
         # find max width for the current column
-        max_col_width = get_max_column_width(obj_array, col, prev_col_width)
+        max_col_width = get_max_column_width(obj_array, col, prev_col_width, cell_span)
 
         # increase padding for empty columns
         prev_col_width = max_col_width + padding * (3 if prev_col_width == max_col_width else 1)
@@ -678,7 +738,10 @@ def gen_table_align_x(obj_array, param, align):
             gen_move_column(obj_array, col + 1, prev_col_width)
 
         # align cells horizontally based on alignment type
-        gen_column_cells_align_x(obj_array, col, max_col_width, align.columns[col].type)
+        gen_column_cells_align_x(obj_array, col, max_col_width, align.columns[col].type, cell_span)
+
+    # special alignment for multicolumn
+    gen_multicolumn_cells_align_x(obj_array, param, align, cell_span)
 
 
 # function centers cells in matrix/table vertically
@@ -709,7 +772,7 @@ def gen_box_center_y(obj_array, param):
 
 
 # function positions matrix or table figure
-def gen_box_position_center(obj_array, param, align=None):
+def gen_box_position_center(obj_array, param, align=None, cell_span=None):
     # return if matrix has no objects
     if not len(obj_array):
         return
@@ -717,7 +780,7 @@ def gen_box_position_center(obj_array, param, align=None):
     if align is None:
         gen_matrix_align_x(obj_array, param)
     else:
-        gen_table_align_x(obj_array, param, align)
+        gen_table_align_x(obj_array, param, align, cell_span)
 
     gen_box_center_y(obj_array, param)
 
@@ -911,7 +974,7 @@ def get_multi_span_number(multi, action, content):
 
 
 # function generates all vertical, horizontal, and partial lines for a table
-def generate_table_lines(context, scale, ts):
+def gen_table_lines(context, scale, ts):
     body_coll = bpy.data.collections.get(ts.table_coll)
 
     # return if table has no objects

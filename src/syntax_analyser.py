@@ -324,8 +324,7 @@ class SyntaxAnalyser:
             ts.table_coll = gen_new_collection("TableBodyCollection", ts.parent_coll)
 
             # first table cell collection
-            self.d.current_coll = gen_new_collection("TableCellCollection", ts.table_coll)
-            ts.obj_array[ts.row_num].append(self.d.current_coll)
+            self.execute_action('#ACTION_TABLE_NEW_CELL')
             return True
 
         elif action == '#ACTION_TABLE_HLINE':
@@ -355,12 +354,12 @@ class SyntaxAnalyser:
                 print("Syntax error:", err)
                 return False
 
-            range, err = parse_cline_range(content)
+            cline_range, err = parse_cline_range(content)
             if len(err) > 0:
                 print("Syntax error:", err)
                 return False
 
-            start, end = range
+            start, end = cline_range
             ts.hline.save_cline_range(start, end)
             return True
 
@@ -401,13 +400,12 @@ class SyntaxAnalyser:
         elif action == '#ACTION_TABLE_NEW_ROW':
             ts = self.state_stack[-1]
 
-            # table cell collection
-            self.d.current_coll = gen_new_collection("TableCellCollection", ts.table_coll)
-
             # add new array that represents row
             ts.obj_array.append([])
             ts.row_num += 1
-            ts.obj_array[ts.row_num].append(self.d.current_coll)
+
+            # add initial cell to the row
+            self.execute_action('#ACTION_TABLE_NEW_CELL')
 
             # set width to start and height lower
             self.p.width = ts.init_params.width
@@ -418,18 +416,31 @@ class SyntaxAnalyser:
             ts = self.state_stack[-1]
             ts.hline.reset_cline()  # mark end of consequent cline commands
 
+            if ts.multi.col_span > 1:
+                col = len(ts.obj_array[ts.row_num]) - 1
+                ts.multi.cell_span[(ts.row_num, col)] = {
+                    'row_span': ts.multi.row_span,
+                    'col_span': ts.multi.col_span,
+                    'col_align': ts.multi.col_align
+                }
+
+                # add placeholder collections for multicolumn
+                extra_col = ts.multi.col_span - 1
+                for _ in range(extra_col):
+                    placeholder = gen_new_collection("TableCellPlaceholder", ts.table_coll)
+                    ts.obj_array[ts.row_num].append(placeholder)
+                ts.multi.reset_col_span()
+
             # table cell collection
             self.d.current_coll = gen_new_collection("TableCellCollection", ts.table_coll)
-
-            # add collection to row
-            ts.obj_array[ts.row_num].append(self.d.current_coll)
+            ts.obj_array[ts.row_num].append(self.d.current_coll)  # add collection to row
             return True
 
         elif action == '#ACTION_TABLE_CREATE':
             ts = self.state_stack.pop()
 
             # position table
-            gen_box_position_center(ts.obj_array, self.p, ts.align)
+            gen_box_position_center(ts.obj_array, self.p, ts.align, ts.multi.cell_span)
 
             # link objects to table collection
             for row in ts.obj_array:
@@ -437,7 +448,7 @@ class SyntaxAnalyser:
                     gen_join_collections(coll_name, ts.table_coll)
 
             # generate all table lines
-            generate_table_lines(self.d.context, self.p.scale, ts)
+            gen_table_lines(self.d.context, self.p.scale, ts)
 
             # join table collection into parent collection
             gen_join_collections(ts.table_coll, ts.parent_coll)
