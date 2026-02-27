@@ -35,13 +35,23 @@ class ColumnAlignment:
         self.unit = ''
 
 
-# whole table alignment
+class VLinePosition:
+    def __init__(self, x_pos, col_num):
+        self.x_pos = x_pos
+        self.y_pos = []
+        self.col_num = col_num
+
+
 class TableAlignment:
     def __init__(self):
         self.columns = []
         self.vline = []
         self.vline_pos = []
         self.column_width = []
+        self.row_y = []
+
+    def add_vline_pos(self, x_pos, col_num):
+        self.vline_pos.append(VLinePosition(x_pos, col_num))
 
 
 class TableHorizontalLines:
@@ -81,10 +91,13 @@ class TableState:
         self.init_params = init_params
         self.table_coll = ''
         self.obj_array = [[]]
-        self.row_num = 0
         self.align = TableAlignment()
         self.hline = TableHorizontalLines()
         self.multi = TableMultiCell()
+
+    # returns the index of the current row
+    def get_row_num(self) -> int:
+        return len(self.obj_array) - 1
 
 
 class SyntaxAnalyser:
@@ -384,7 +397,19 @@ class SyntaxAnalyser:
                 print("Syntax error:", err)
                 return False
 
-            # TODO get alignment (only 1 + optional vertical lines)
+            # TODO make it work
+            # calculate current column and span of multicolumn command
+            first_col = len(ts.align.columns)
+            row = ts.get_row_num()
+            multi_col = len(ts.obj_array[row]) - 1
+            last_col = first_col + ts.multi.cell_span.get(row, multi_col)
+
+            # save alignment and overwrite vertical lines
+            err = parse_multicol_alignment(ts, first_col, last_col, content)
+            if len(err) > 0:
+                print("Syntax error:", err)
+                return False
+
             return True
 
         elif action == '#ACTION_TABLE_MULTIROW_WIDTH':
@@ -402,23 +427,31 @@ class SyntaxAnalyser:
 
             # add new array that represents row
             ts.obj_array.append([])
-            ts.row_num += 1
 
             # add initial cell to the row
             self.execute_action('#ACTION_TABLE_NEW_CELL')
 
-            # set width to start and height lower
+            # set width to start
             self.p.width = ts.init_params.width
-            gen_adjust_new_line(self.p, self.d.base_coll, LINE_SPACE, self.p.width)
+
+            # set height lower and record the y positions
+            start_y = self.p.line.min_y
+            gen_adjust_new_line(self.p, self.d.base_coll, LINE_SPACE, ts.init_params.width)
+            end_y = self.p.line.min_y - (SMALL_SPACE * self.p.scale)
+
+            # save row y positions
+            ts.align.row_y.append((start_y, end_y))
             return True
 
         elif action == '#ACTION_TABLE_NEW_CELL':
             ts = self.state_stack[-1]
             ts.hline.reset_cline()  # mark end of consequent cline commands
 
+            row = ts.get_row_num()
+
             if ts.multi.col_span > 1:
-                col = len(ts.obj_array[ts.row_num]) - 1
-                ts.multi.cell_span[(ts.row_num, col)] = {
+                col = len(ts.obj_array[row]) - 1
+                ts.multi.cell_span[(row, col)] = {
                     'row_span': ts.multi.row_span,
                     'col_span': ts.multi.col_span,
                     'col_align': ts.multi.col_align
@@ -428,16 +461,17 @@ class SyntaxAnalyser:
                 extra_col = ts.multi.col_span - 1
                 for _ in range(extra_col):
                     placeholder = gen_new_collection("TableCellPlaceholder", ts.table_coll)
-                    ts.obj_array[ts.row_num].append(placeholder)
+                    ts.obj_array[row].append(placeholder)
                 ts.multi.reset_col_span()
 
             # table cell collection
             self.d.current_coll = gen_new_collection("TableCellCollection", ts.table_coll)
-            ts.obj_array[ts.row_num].append(self.d.current_coll)  # add collection to row
+            ts.obj_array[row].append(self.d.current_coll)  # add collection to row
             return True
 
         elif action == '#ACTION_TABLE_CREATE':
             ts = self.state_stack.pop()
+            gen_cleanup_last_row(ts.obj_array)
 
             # position table
             gen_box_position_center(ts.obj_array, self.p, ts.align, ts.multi.cell_span)

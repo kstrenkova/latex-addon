@@ -141,6 +141,7 @@ ll_table = {
     # <TABLE> -> multirow    { text } { text } { <MULTI> } <TABLE>
     # <TABLE> -> epsilon
     ('TABLE', '_TEXT'):          ['CONST', 'TABLE'],
+    ('TABLE', '_DOLLAR'):        ['MATH_MODE', 'TABLE'],
     ('TABLE', 'hline'):          ['hline', '#ACTION_TABLE_HLINE', 'TABLE'],
     ('TABLE', 'cline'):          [ 'cline', '{', '#ACTION_TABLE_CLINE', '}', 'TABLE'],
     ('TABLE', '_ENTER'):         ['\\', '#ACTION_TABLE_NEW_ROW',  'TABLE'],

@@ -82,7 +82,7 @@ def gen_adjust_new_line(param, collection, line_space, init_width=0.0):
     # multiple new lines in the row
     if len(param.line.line_objs) == 0:
         param.line.min_y -= line_space * param.scale
-        param.line.height = param.line.min_y - line_space
+        param.line.height = param.line.min_y - line_space * param.scale
         param.width = init_width
         return
 
@@ -92,11 +92,16 @@ def gen_adjust_new_line(param, collection, line_space, init_width=0.0):
     overflow = max_y - lmin_y if (max_y > lmin_y) else 0
 
     # move objects down
-    for obj in param.line.line_objs:
-        obj.location.y -= overflow
+    if overflow > 0:
+        for obj in param.line.line_objs:
+            obj.location.y -= overflow
 
-    # save current lowest point
-    param.line.min_y = gen_bound_for_array(param.line.line_objs, 'y', 'min')
+    # get real and expected lowest point
+    real_min_y = gen_bound_for_array(param.line.line_objs, 'y', 'min')
+    expected_min_y = lmin_y - (1.2 * line_space * param.scale)
+
+    # save the lowest point
+    param.line.min_y = min(real_min_y, expected_min_y)
 
     # reset line objects
     param.line.line_objs.clear()
@@ -660,7 +665,7 @@ def gen_move_column_for_vline(obj_array, param, col, align, x_pos):
 
     # save position and create space
     for _ in range(line_count):
-        align.vline_pos.append(x_pos)
+        align.add_vline_pos(x_pos, col)
         x_pos += SMALL_SPACE
 
     # move next column to make space for vertical lines
@@ -679,7 +684,7 @@ def gen_last_column_vline(col, align, x_pos):
 
     # save position of vertical lines
     for _ in range(line_count):
-        align.vline_pos.append(x_pos)
+        align.add_vline_pos(x_pos, col+1)
         x_pos += SMALL_SPACE
 
 
@@ -748,15 +753,12 @@ def gen_table_align_x(obj_array, param, align, cell_span):
 def gen_box_center_y(obj_array, param):
     # calculate the max number of columns
     max_col = max(len(row) for row in obj_array)
+    padding = GRID_SPACE * param.scale
 
     # initialize row minimum
     min_row_height = None
 
     for row in obj_array:
-        # skip empty rows
-        if len(row) == 0:
-            continue
-
         # find max height for the current row
         max_row_height = get_max_row_height(row, max_col)
 
@@ -764,11 +766,32 @@ def gen_box_center_y(obj_array, param):
         if min_row_height is not None:
             # move row if its highest point cuts into the upper row
             if max_row_height > min_row_height:
-                move_by = max_row_height - min_row_height + GRID_SPACE * param.scale
+                move_by = max_row_height - min_row_height + padding
                 gen_move_row(row, max_col, move_by)
 
         # find min height for the current row
         min_row_height = get_min_row_height(row, max_col)
+
+
+# function aligns cells for table vertically to center
+def gen_table_align_y(obj_array, param, align):
+    # calculate the max number of columns
+    max_col = max(len(row) for row in obj_array)
+
+    # initialize row minimum
+    min_row_height = None
+
+    for i, row in enumerate(obj_array):
+
+        # find max height for the current row
+        max_row_height = get_max_row_height(row, max_col)
+
+        # find min height for the current row
+        min_row_height = get_min_row_height(row, max_col)
+
+        # TODO make work for multicolumn
+        for vline in align.vline_pos:
+            vline.y_pos.append(align.row_y[i])
 
 
 # function positions matrix or table figure
@@ -779,10 +802,10 @@ def gen_box_position_center(obj_array, param, align=None, cell_span=None):
 
     if align is None:
         gen_matrix_align_x(obj_array, param)
+        gen_box_center_y(obj_array, param)
     else:
         gen_table_align_x(obj_array, param, align, cell_span)
-
-    gen_box_center_y(obj_array, param)
+        gen_table_align_y(obj_array, param, align)
 
 
 # TODO vmatrix and Vmatrix have tricky space after left bracket
@@ -956,6 +979,37 @@ def parse_cline_range(range):
     return (start, end), ""
 
 
+# TODO
+# function parses multicolumn alignment into vertical lines and alignment
+def parse_multicol_alignment(ts, first_col, last_col, content):
+    # reset vertical lines for multicolumn
+    ts.align.vline[first_col] = 0
+    ts.align.vline[last_col] = 0
+
+    if len(ts.align.vline) <= last_col:
+        # add zeros to match the number of the last column
+        zero_num = (last_col + 1) - len(ts.align.vline)
+        ts.align.vline.extend([0] * zero_num)
+
+    alignment = ""
+    for c in content:
+        if c != '|':
+            alignment.append(c)
+
+    if alignment not in table_alignments:
+        return f"Unsupported alignment '{alignment}' in \multicolumn command!"
+
+    row = ts.get_row_num()
+    multi_col = len(ts.obj_array[row]) - 1
+    ts.multi.cell_span[row, multi_col]['col_align'] = alignment
+
+    index = content.index(alignment)
+    vline_first = content[:index]
+    vline_last = content[index+1:]
+
+    return ""
+
+
 # function saves the span number for multicolumn and multirow commands
 def get_multi_span_number(multi, action, content):
     try:
@@ -973,6 +1027,25 @@ def get_multi_span_number(multi, action, content):
         return err
 
 
+# function removes the last row if it only contains one empty collection
+def gen_cleanup_last_row(obj_array):
+    if not obj_array:
+        return
+
+    last_row = obj_array[-1]
+
+    if len(last_row) != 1:
+        return
+
+    # get last row collection
+    coll = bpy.data.collections.get(last_row[0])
+
+    # remove the collection if empty
+    if coll and not coll.all_objects:
+        bpy.data.collections.remove(coll)
+        obj_array.pop()
+
+
 # function generates all vertical, horizontal, and partial lines for a table
 def gen_table_lines(context, scale, ts):
     body_coll = bpy.data.collections.get(ts.table_coll)
@@ -981,25 +1054,11 @@ def gen_table_lines(context, scale, ts):
     if len(body_coll.all_objects) == 0:
         return
 
-    y_pos = None
-    max_y = gen_bound(body_coll.name, 'y', 'max')
-
-    # search for lines above the table
-    for pos in reversed(ts.hline.hline_pos):
-        if pos > max_y:
-            y_pos = pos
-            break
-
-    # if no lines were found above the table
-    if y_pos is None:
-        y_pos = max_y + SMALL_SPACE * scale
-
-    min_y = gen_bound(body_coll.name, 'y', 'min')
-    line_length_v = min_y - y_pos - SMALL_SPACE * scale
-
     # generate all vertical lines
-    for x_pos in ts.align.vline_pos:
-        gen_line_object(context, ts.init_params, ts.table_coll, x_pos, y_pos, line_length_v, 'y')
+    for vline in ts.align.vline_pos:
+        for (start_y, end_y) in vline.y_pos:
+            line_length_v = end_y - start_y
+            gen_line_object(context, ts.init_params, ts.table_coll, vline.x_pos, start_y, line_length_v, 'y')
 
     x_pos = ts.init_params.width
     line_length_h = gen_bound(body_coll.name, 'x', 'max') - ts.init_params.width

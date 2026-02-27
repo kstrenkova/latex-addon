@@ -65,8 +65,11 @@ class MatrixState:
         self.size = MatrixSize()
         self.mx_coll = ''
         self.obj_array = [[]]
-        self.row_num = 0
         self.brackets = 'matrix'
+
+    # returns the index of the current row
+    def get_row_num(self) -> int:
+        return len(self.obj_array) - 1
 
 
 # class for matrix dimensions
@@ -434,7 +437,7 @@ class MathSyntaxAnalyser:
 
             # first matrix cell collection
             self.d.current_coll = gen_new_collection("MatrixCellCollection", ms.mx_coll)
-            ms.obj_array[ms.row_num].append(self.d.current_coll)
+            ms.obj_array[ms.get_row_num()].append(self.d.current_coll)
             return True
 
         elif action == '#ACTION_MATRIX_NEW_ROW':
@@ -445,8 +448,7 @@ class MathSyntaxAnalyser:
 
             # add new array that represents row
             ms.obj_array.append([])
-            ms.row_num += 1
-            ms.obj_array[ms.row_num].append(self.d.current_coll)
+            ms.obj_array[ms.get_row_num()].append(self.d.current_coll)
 
             # set width to start and height lower
             self.p.width = ms.init_params.width
@@ -460,11 +462,12 @@ class MathSyntaxAnalyser:
             self.d.current_coll = gen_new_collection("MatrixCellCollection", ms.mx_coll)
 
             # add collection to row
-            ms.obj_array[ms.row_num].append(self.d.current_coll)
+            ms.obj_array[ms.get_row_num()].append(self.d.current_coll)
             return True
 
         elif action == '#ACTION_MATRIX_CREATE':
             ms = self.state_stack[-1]
+            gen_cleanup_last_row(ms.obj_array)
 
             # position matrix
             gen_box_position_center(ms.obj_array, self.p)
