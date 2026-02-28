@@ -974,27 +974,30 @@ def gen_bullet_point(param, nest_lvl):
     param.width += 0.3 * param.scale  # space after bullet point
 
 
-# functions saves width that comes with alignemnt for the current column
-def get_alignment_width(align, width):
-    # check if width is set for the correct alignment type
-    if align.type not in ['p', 'm', 'b']:
-        return f"Alignment '{align.type}' does not support width specification!"
+# function parses width string and updates target object
+def parse_table_width(target, content, msg, is_multirow=False):
+    # multirow special case
+    if is_multirow:
+        if content == '*':
+            return ""
+    else:
+        # check alignment type
+        if getattr(target, 'type', '') not in ['p', 'm', 'b']:
+            return f"Alignment '{target.type}' does not support width specification!"
 
-    # check whether the token includes units
     for u in units:
-        if width.endswith(u):
-            width = width.replace(u, '')
-            align.unit = u
+        if content.endswith(u):
+            content = content[:-len(u)]
+            target.unit = u
             break
 
-    if len(align.unit) == 0:
-        return f"Invalid unit in column width specification '{width}'!"
+    if len(target.unit) == 0:
+        return f"Invalid unit '{content}' in {msg} width specification!"
 
     try:
-        # get the numeric value of the width
-        align.width = float(width)
+        target.width = float(content)
     except ValueError:
-        return f"Invalid numeric value '{width}' in column width specification!"
+        return f"Invalid numeric value '{content}' in {msg} width specification!!"
 
     # no errors
     return ""
@@ -1036,8 +1039,8 @@ def parse_multicol_alignment(multi, content):
         return "Alignment in \\multicolumn command is empty!"
 
     # save the alignment and number of vertical lines
-    multi.vline_before = len(content) - len(content.lstrip('|'))
-    multi.vline_after = len(content) - len(content.rstrip('|'))
+    multi.col.before = len(content) - len(content.lstrip('|'))
+    multi.col.after = len(content) - len(content.rstrip('|'))
     alignment = content.strip('|')
 
     # check format
@@ -1048,7 +1051,7 @@ def parse_multicol_alignment(multi, content):
     if alignment not in table_alignments:
         return f"Unsupported alignment '{alignment}' in \\multicolumn command! Use one of: {', '.join(table_alignments)}"
 
-    multi.col_align = alignment
+    multi.col.align = alignment
     return ""
 
 
@@ -1058,9 +1061,9 @@ def get_multi_span_number(multi, action, content):
         # check the span number is integer and save it
         span = int(content)
         if 'COL' in action:
-            multi.col_span = span
+            multi.col.span = span
         else:
-            multi.row_span = span
+            multi.row.span = span
         return ""
 
     except ValueError:
@@ -1073,16 +1076,16 @@ def get_multi_span_number(multi, action, content):
 def save_multicol_info(ts):
     row = ts.get_row_num()
 
-    if ts.multi.col_span > 1:
+    if ts.multi.col.span > 1:
         col = len(ts.obj_array[row]) - 1
         ts.multi.save_cell_span((row, col))
 
         # add placeholder collections for multicolumn
-        extra_col = ts.multi.col_span - 1
+        extra_col = ts.multi.col.span - 1
         for _ in range(extra_col):
             placeholder = gen_new_collection("TableCellPlaceholder", ts.table_coll)
             ts.obj_array[row].append(placeholder)
-        ts.multi.reset_col_span()
+        ts.multi.col.reset_col_span()
 
 
 # function removes the last row if it only contains one empty collection
@@ -1105,7 +1108,7 @@ def gen_cleanup_last_row(obj_array):
 
 
 # function generates all vertical, horizontal, and partial lines for a table
-def gen_table_lines(context, scale, ts):
+def gen_table_lines(context, ts):
     body_coll = bpy.data.collections.get(ts.table_coll)
 
     # return if table has no objects

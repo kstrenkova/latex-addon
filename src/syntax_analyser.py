@@ -65,37 +65,52 @@ class TableHorizontalLines:
         self.cline_new = True
 
 
-class TableMultiCell:
+class MultiRow():
     def __init__(self):
-        self.col_span = 1
-        self.col_align = 'c'
-        self.vline_before = 0
-        self.vline_after = 0
-        self.vline_pos = []
-        self.row_span = 1
-        self.row_width = -1
-        self.cell_span = {}
-
-    def reset_col_span(self):
-        self.col_span = 1
-        self.col_align = 'c'
-        self.vline_before = 0
-        self.vline_after = 0
+        self.span = 1
+        self.width = -1
+        self.unit = ''
 
     def reset_row_span(self):
-        self.row_span = 1
-        self.row_width = -1
+        self.span = 1
+        self.width = -1
+        self.unit = ''
+
+
+class MultiCol():
+    def __init__(self):
+        self.span = 1
+        self.align = 'c'
+        self.before = 0
+        self.after = 0
+
+    def reset_col_span(self):
+        self.span = 1
+        self.align = 'c'
+        self.before = 0
+        self.after = 0
+
+
+class TableMultiCell:
+    def __init__(self):
+        self.row = MultiRow()
+        self.col = MultiCol()
+        self.vline_pos = []
+        self.cell_span = {}
 
     # saves the multi-span state
     def save_cell_span(self, cell):
         self.cell_span[cell] = {
-            'row_span': self.row_span,
-            'col_span': self.col_span,
-            'col_align': self.col_align,
-            'vline_before': self.vline_before,
-            'vline_after': self.vline_after,
+            'row_span': self.row.span,
+            'row_width': self.row.width,
+            'row_unit': self.row.unit,
+            'col_span': self.col.span,
+            'col_align': self.col.align,
+            'vline_before': self.col.before,
+            'vline_after': self.col.after,
         }
 
+    # save multicolumn width in case it's the longest row
     def add_span_width(self, cell, span_wdith):
         if cell not in self.cell_span:
             self.save_cell_span(cell)
@@ -345,7 +360,7 @@ class SyntaxAnalyser:
 
             # get alignment width for the current column
             align = ts.align.columns[-1]
-            err = get_alignment_width(align, content)
+            err = parse_table_width(align, content, 'column')
             if len(err) > 0:
                 print("Syntax error:", err)
                 return False
@@ -435,7 +450,11 @@ class SyntaxAnalyser:
                 print("Syntax error:", err)
                 return False
 
-            # TODO get width
+            err = parse_table_width(ts.multi.row, content, '\\multirow', True)
+            if len(err) > 0:
+                print("Syntax error:", err)
+                return False
+
             return True
 
         elif action == '#ACTION_TABLE_NEW_ROW':
@@ -492,7 +511,7 @@ class SyntaxAnalyser:
                     gen_join_collections(coll_name, ts.table_coll)
 
             # generate all table lines
-            gen_table_lines(self.d.context, self.p.scale, ts)
+            gen_table_lines(self.d.context, ts)
 
             # join table collection into parent collection
             gen_join_collections(ts.table_coll, ts.parent_coll)
