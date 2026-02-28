@@ -16,8 +16,8 @@ from ..data.characters_db import *
 # TODO checkout mathfonts not used only on upper letters
 # TODO research what the default value should be for \par and for itemize
 # TODO [bug] Whitespaces are making mess in the first cell of table
-# TODO it seems vertical lines in tables will need to be created for each row
-# because of multicolumn that ignores alignment and uses its own in second argument
+# TODO [fix] Make multicolumn content move if it's aligned right and has multiple
+# vlines at the end
 
 
 class ItemizeState:
@@ -36,10 +36,10 @@ class ColumnAlignment:
 
 
 class VLinePosition:
-    def __init__(self, x_pos, col_num):
+    def __init__(self, x_pos, ID):
+        self.ID = ID  # it can be defined either by row or column number
         self.x_pos = x_pos
         self.y_pos = []
-        self.col_num = col_num
 
 
 class TableAlignment:
@@ -50,8 +50,8 @@ class TableAlignment:
         self.column_width = []
         self.row_y = []
 
-    def add_vline_pos(self, x_pos, col_num):
-        self.vline_pos.append(VLinePosition(x_pos, col_num))
+    def add_vline_pos(self, x_pos, ID):
+        self.vline_pos.append(VLinePosition(x_pos, ID))
 
 
 class TableHorizontalLines:
@@ -64,25 +64,45 @@ class TableHorizontalLines:
     def reset_cline(self):
         self.cline_new = True
 
-    def save_cline_range(self, start, end):
-        self.cline_range.append((start, end))
-
 
 class TableMultiCell:
     def __init__(self):
         self.col_span = 1
-        self.row_span = 1
         self.col_align = 'c'
+        self.vline_before = 0
+        self.vline_after = 0
+        self.vline_pos = []
+        self.row_span = 1
         self.row_width = -1
         self.cell_span = {}
 
     def reset_col_span(self):
         self.col_span = 1
         self.col_align = 'c'
+        self.vline_before = 0
+        self.vline_after = 0
 
     def reset_row_span(self):
         self.row_span = 1
         self.row_width = -1
+
+    # saves the multi-span state
+    def save_cell_span(self, cell):
+        self.cell_span[cell] = {
+            'row_span': self.row_span,
+            'col_span': self.col_span,
+            'col_align': self.col_align,
+            'vline_before': self.vline_before,
+            'vline_after': self.vline_after,
+        }
+
+    def add_span_width(self, cell, span_wdith):
+        if cell not in self.cell_span:
+            self.save_cell_span(cell)
+        self.cell_span[cell]['span_width'] = span_wdith
+
+    def add_vline_pos(self, x_pos, ID):
+        self.vline_pos.append(VLinePosition(x_pos, ID))
 
 
 class TableState:
@@ -134,24 +154,27 @@ class SyntaxAnalyser:
         if self.d.math_mode == 'display':
             self.execute_action('#ACTION_NEW_LINE')
 
-        latex_coll = self.d.base_coll
-        self.d.current_coll = gen_new_collection("MathematicalEqCollection", self.d.base_coll)
+        # save currently used collections
+        text_current_coll = self.d.current_coll
+        latex_base_coll = self.d.base_coll
+
+        # generate collection for math mode
+        self.d.current_coll = gen_new_collection("MathematicalEqCollection", latex_base_coll)
         self.d.base_coll = self.d.current_coll
 
         # activate the collection for mathematical equations
-        gen_set_active_collection(latex_coll, self.d.current_coll)
-
-        # call math syntax analyser
-        math_syntax = MathSyntaxAnalyser(self.lex, self.d, self.p)
+        gen_set_active_collection(latex_base_coll, self.d.current_coll)
 
         print("Entering math mode!")
 
+        # call math syntax analyser
+        math_syntax = MathSyntaxAnalyser(self.lex, self.d, self.p)
         if not math_syntax.parse():
             warn_msg = 'Mathematical equation was not fully generated.'
             print(warn_msg)
             return False
 
-        self.d.base_coll = latex_coll
+        self.d.base_coll = latex_base_coll
         print("Returned from math mode!")
 
         # consume redundant whitespace
@@ -164,9 +187,9 @@ class SyntaxAnalyser:
             self.execute_action('#ACTION_NEW_LINE')
 
         # join collection into parent collection
-        gen_join_collections(self.d.current_coll, self.d.base_coll)
+        gen_join_collections(self.d.current_coll, text_current_coll)
         gen_activate_collection(self.d.base_coll)
-        self.d.current_coll = latex_coll
+        self.d.current_coll = text_current_coll
         return True
 
 
@@ -315,7 +338,7 @@ class SyntaxAnalyser:
 
         elif action == '#ACTION_COL_WIDTH':
             ts = self.state_stack[-1]
-            content, err = self.lex.get_token_until('_TEXT', '}')
+            content, err = self.lex.get_token_until(['_TEXT'], '}')
             if len(err) > 0:
                 print("Syntax error:", err)
                 return False
@@ -362,23 +385,23 @@ class SyntaxAnalyser:
             ts.hline.cline_pos.append(self.p.line.min_y)
 
             # get cline range string
-            content, err = self.lex.get_token_until('_TEXT', '}')
+            content, err = self.lex.get_token_until(['_TEXT'], '}')
             if len(err) > 0:
                 print("Syntax error:", err)
                 return False
 
+            # parse cline range string
             cline_range, err = parse_cline_range(content)
             if len(err) > 0:
                 print("Syntax error:", err)
                 return False
 
-            start, end = cline_range
-            ts.hline.save_cline_range(start, end)
+            ts.hline.cline_range.append(cline_range)
             return True
 
         elif action in ('#ACTION_TABLE_MULTICOL_NUMBER', '#ACTION_TABLE_MULTIROW_NUMBER'):
             ts = self.state_stack[-1]
-            content, err = self.lex.get_token_until('_TEXT', '}')
+            content, err = self.lex.get_token_until(['_TEXT'], '}')
             if len(err) > 0:
                 print("Syntax error:", err)
                 return False
@@ -392,20 +415,13 @@ class SyntaxAnalyser:
 
         elif action == '#ACTION_TABLE_MULTICOL_ALIGN':
             ts = self.state_stack[-1]
-            content, err = self.lex.get_token_until('_TEXT', '}')
+            content, err = self.lex.get_token_until(['_TEXT', '_PIPE'], '}')
             if len(err) > 0:
                 print("Syntax error:", err)
                 return False
 
-            # TODO make it work
-            # calculate current column and span of multicolumn command
-            first_col = len(ts.align.columns)
-            row = ts.get_row_num()
-            multi_col = len(ts.obj_array[row]) - 1
-            last_col = first_col + ts.multi.cell_span.get(row, multi_col)
-
             # save alignment and overwrite vertical lines
-            err = parse_multicol_alignment(ts, first_col, last_col, content)
+            err = parse_multicol_alignment(ts.multi, content)
             if len(err) > 0:
                 print("Syntax error:", err)
                 return False
@@ -414,7 +430,7 @@ class SyntaxAnalyser:
 
         elif action == '#ACTION_TABLE_MULTIROW_WIDTH':
             ts = self.state_stack[-1]
-            content, err = self.lex.get_token_until('_TEXT', '}')
+            content, err = self.lex.get_token_until(['_TEXT'], '}')
             if len(err) > 0:
                 print("Syntax error:", err)
                 return False
@@ -425,11 +441,12 @@ class SyntaxAnalyser:
         elif action == '#ACTION_TABLE_NEW_ROW':
             ts = self.state_stack[-1]
 
+            # special info saving for multicolumn
+            save_multicol_info(ts)
+
             # add new array that represents row
             ts.obj_array.append([])
-
-            # add initial cell to the row
-            self.execute_action('#ACTION_TABLE_NEW_CELL')
+            self.execute_action('#ACTION_TABLE_NEW_CELL')  # initial cell
 
             # set width to start
             self.p.width = ts.init_params.width
@@ -447,26 +464,19 @@ class SyntaxAnalyser:
             ts = self.state_stack[-1]
             ts.hline.reset_cline()  # mark end of consequent cline commands
 
-            row = ts.get_row_num()
+            # special info saving for multicolumn
+            save_multicol_info(ts)
 
-            if ts.multi.col_span > 1:
-                col = len(ts.obj_array[row]) - 1
-                ts.multi.cell_span[(row, col)] = {
-                    'row_span': ts.multi.row_span,
-                    'col_span': ts.multi.col_span,
-                    'col_align': ts.multi.col_align
-                }
-
-                # add placeholder collections for multicolumn
-                extra_col = ts.multi.col_span - 1
-                for _ in range(extra_col):
-                    placeholder = gen_new_collection("TableCellPlaceholder", ts.table_coll)
-                    ts.obj_array[row].append(placeholder)
-                ts.multi.reset_col_span()
-
-            # table cell collection
+            # add table cell collection to row
             self.d.current_coll = gen_new_collection("TableCellCollection", ts.table_coll)
-            ts.obj_array[row].append(self.d.current_coll)  # add collection to row
+            row = ts.obj_array[ts.get_row_num()]
+            row.append(self.d.current_coll)
+
+            if len(row) > len(ts.align.columns):
+                err = f"Table has more columns than defined in column specification!"
+                print("Syntax error:", err)
+                return False
+
             return True
 
         elif action == '#ACTION_TABLE_CREATE':
@@ -474,7 +484,7 @@ class SyntaxAnalyser:
             gen_cleanup_last_row(ts.obj_array)
 
             # position table
-            gen_box_position_center(ts.obj_array, self.p, ts.align, ts.multi.cell_span)
+            gen_box_position_center(ts.obj_array, self.p, ts.align, ts.multi, ts.multi.cell_span)
 
             # link objects to table collection
             for row in ts.obj_array:

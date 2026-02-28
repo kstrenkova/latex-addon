@@ -510,9 +510,10 @@ def gen_bound(collection, axis, ftype):
 
 
 # function returns the max width of the given column
-def get_max_column_width(obj_array, col, max_width, cell_span={}):
+def get_max_column_width(obj_array, col, max_width, multi=None):
     for i, row in enumerate(obj_array):
         # check for multicolumn
+        cell_span = getattr(multi, 'cell_span', {})
         cell = cell_span.get((i, col), {})
         extra_col = cell.get('col_span', 1) - 1
 
@@ -521,15 +522,7 @@ def get_max_column_width(obj_array, col, max_width, cell_span={}):
             if cell_width is not None:
                 # push current width into last multicolumn cell
                 last_col = (i, col + extra_col)
-                if last_col not in cell_span:
-                    cell_span[last_col] = {
-                        'col_span': 1,
-                        'row_span': 1,
-                        'col_align': 'c',
-                        'span_width': cell_width
-                    }
-                else:
-                    cell_span[last_col]['span_width'] = cell_width
+                multi.add_span_width(last_col, cell_width)
             continue
 
         # normal cell
@@ -628,7 +621,7 @@ def gen_column_cells_align_x(obj_array, col, max_col_width, alignment='c', cell_
                 continue
 
             collection = row[col]
-            apply_alignment_x(collection, max_col_width, alignment)
+            apply_alignment_x(collection, alignment, max_col_width)
 
 
 # function aligns content of cells horizontally for multicolumn command
@@ -666,11 +659,39 @@ def gen_move_column_for_vline(obj_array, param, col, align, x_pos):
     # save position and create space
     for _ in range(line_count):
         align.add_vline_pos(x_pos, col)
-        x_pos += SMALL_SPACE
+        x_pos += SMALL_SPACE * param.scale
 
     # move next column to make space for vertical lines
     vline_space = (SMALL_SPACE * (line_count - 1) + LINE_THICKNESS * line_count) * param.scale
     gen_move_column(obj_array, col, vline_space, 'const')
+
+    # return used space for multicolumn vline calculation
+    return vline_space - line_count * LINE_THICKNESS * param.scale
+
+
+# function moves the current cell for vertical lines
+def gen_move_multicolumn_for_vline(collection, param, row, multi, span_info, x_pos, version):
+    # number of vertical lines
+    line_count = span_info[f'vline_{version}']
+
+    # skip if no lines
+    if line_count == 0:
+        return
+
+    direction = 1 if version == 'before' else -1
+
+    # save position and create space
+    for _ in range(line_count):
+        multi.add_vline_pos(x_pos, row)
+        x_pos += (SMALL_SPACE * direction)
+
+    # calculate the space
+    vline_space = (SMALL_SPACE * (line_count - 1) + LINE_THICKNESS * line_count) * param.scale
+    move_by = vline_space * direction
+
+    # move the cell content to make space for vertical lines
+    for obj in bpy.data.collections[collection].all_objects:
+        obj.location.x += move_by
 
 
 # function saves positions of vertical lines after the last column
@@ -708,7 +729,7 @@ def gen_matrix_align_x(obj_array, param):
 
 
 # function aligns cells horizontally by alignment type
-def gen_table_align_x(obj_array, param, align, cell_span):
+def gen_table_align_x(obj_array, param, align, multi, cell_span):
     # calculate the max number of columns
     max_col = max(len(row) for row in obj_array)
     prev_col_width = param.width
@@ -719,14 +740,28 @@ def gen_table_align_x(obj_array, param, align, cell_span):
 
     for col in range(max_col):
         # check for any vertical lines in current column
+        vline_space = 0
         if len(align.vline) > col:
-            gen_move_column_for_vline(obj_array, param, col, align, prev_col_width)
+            vline_space = gen_move_column_for_vline(obj_array, param, col, align, prev_col_width)
+
+        # process multicolumns
+        total_space = prev_col_width + vline_space
+        for (r, c), span_info in cell_span.items():
+
+            if span_info['col_span'] > 1:
+                collection = obj_array[r][c]
+                # check if the multicolumn starts at this column
+                if c == col:
+                    gen_move_multicolumn_for_vline(collection, param, r, multi, span_info, total_space, 'before')
+                # check if the multicolumn ends right before this column
+                elif (c + span_info['col_span']) == col:
+                    gen_move_multicolumn_for_vline(collection, param, r, multi, span_info, total_space, 'after')
 
         # add padding before the column
         gen_move_column(obj_array, col, padding, 'const')
 
         # find max width for the current column
-        max_col_width = get_max_column_width(obj_array, col, prev_col_width, cell_span)
+        max_col_width = get_max_column_width(obj_array, col, prev_col_width, multi)
 
         # increase padding for empty columns
         prev_col_width = max_col_width + padding * (3 if prev_col_width == max_col_width else 1)
@@ -774,28 +809,43 @@ def gen_box_center_y(obj_array, param):
 
 
 # function aligns cells for table vertically to center
-def gen_table_align_y(obj_array, param, align):
-    # calculate the max number of columns
-    max_col = max(len(row) for row in obj_array)
+def gen_table_align_y(obj_array, param, align, multi, cell_span):
 
-    # initialize row minimum
-    min_row_height = None
+    # save multicolumn ranges per row
+    remove_ranges = {}
+    for (r, c), span_info in cell_span.items():
+        if span_info['col_span'] > 1:
+            start_col = c + 1
+            end_col = c + span_info['col_span']
 
-    for i, row in enumerate(obj_array):
+            # add new row info if not present
+            if r not in remove_ranges:
+                remove_ranges[r] = []
 
-        # find max height for the current row
-        max_row_height = get_max_row_height(row, max_col)
+            # save range of multicolumn
+            remove_ranges[r].append((start_col, end_col))
 
-        # find min height for the current row
-        min_row_height = get_min_row_height(row, max_col)
+    for i, _ in enumerate(obj_array):
+        # get list of ranges
+        row_ranges = remove_ranges.get(i, [])
 
-        # TODO make work for multicolumn
+        # save vertical lines for normal columns
         for vline in align.vline_pos:
-            vline.y_pos.append(align.row_y[i])
+            # check whether vline should be hidden
+            is_hidden = any(start <= vline.ID <= end for start, end in row_ranges)
+
+            # save y position for non-hidden vertical lines
+            if not is_hidden:
+                vline.y_pos.append(align.row_y[i])
+
+        # save vertical lines for multicolumn
+        for vline in multi.vline_pos:
+            if vline.ID == i:
+                vline.y_pos.append(align.row_y[i])
 
 
 # function positions matrix or table figure
-def gen_box_position_center(obj_array, param, align=None, cell_span=None):
+def gen_box_position_center(obj_array, param, align=None, multi=None, cell_span=None):
     # return if matrix has no objects
     if not len(obj_array):
         return
@@ -804,8 +854,8 @@ def gen_box_position_center(obj_array, param, align=None, cell_span=None):
         gen_matrix_align_x(obj_array, param)
         gen_box_center_y(obj_array, param)
     else:
-        gen_table_align_x(obj_array, param, align, cell_span)
-        gen_table_align_y(obj_array, param, align)
+        gen_table_align_x(obj_array, param, align, multi, cell_span)
+        gen_table_align_y(obj_array, param, align, multi, cell_span)
 
 
 # TODO vmatrix and Vmatrix have tricky space after left bracket
@@ -979,34 +1029,26 @@ def parse_cline_range(range):
     return (start, end), ""
 
 
-# TODO
+# TODO make it work for p{}, b{}, m{}
 # function parses multicolumn alignment into vertical lines and alignment
-def parse_multicol_alignment(ts, first_col, last_col, content):
-    # reset vertical lines for multicolumn
-    ts.align.vline[first_col] = 0
-    ts.align.vline[last_col] = 0
+def parse_multicol_alignment(multi, content):
+    if not content:
+        return "Alignment in \\multicolumn command is empty!"
 
-    if len(ts.align.vline) <= last_col:
-        # add zeros to match the number of the last column
-        zero_num = (last_col + 1) - len(ts.align.vline)
-        ts.align.vline.extend([0] * zero_num)
+    # save the alignment and number of vertical lines
+    multi.vline_before = len(content) - len(content.lstrip('|'))
+    multi.vline_after = len(content) - len(content.rstrip('|'))
+    alignment = content.strip('|')
 
-    alignment = ""
-    for c in content:
-        if c != '|':
-            alignment.append(c)
+    # check format
+    if len(alignment) != 1:
+          return f"Invalid alignment format '{content}'! Expected: |...|<letter>|...|"
 
+    # check the alignment type
     if alignment not in table_alignments:
-        return f"Unsupported alignment '{alignment}' in \multicolumn command!"
+        return f"Unsupported alignment '{alignment}' in \\multicolumn command! Use one of: {', '.join(table_alignments)}"
 
-    row = ts.get_row_num()
-    multi_col = len(ts.obj_array[row]) - 1
-    ts.multi.cell_span[row, multi_col]['col_align'] = alignment
-
-    index = content.index(alignment)
-    vline_first = content[:index]
-    vline_last = content[index+1:]
-
+    multi.col_align = alignment
     return ""
 
 
@@ -1025,6 +1067,22 @@ def get_multi_span_number(multi, action, content):
         cmd_name = '\\multicolumn' if 'COL' in action else '\\multirow'
         err = f"Invalid integer value '{content}' in {cmd_name} specification!"
         return err
+
+
+# function saves info about multicolumn command and adds placeholder collections
+def save_multicol_info(ts):
+    row = ts.get_row_num()
+
+    if ts.multi.col_span > 1:
+        col = len(ts.obj_array[row]) - 1
+        ts.multi.save_cell_span((row, col))
+
+        # add placeholder collections for multicolumn
+        extra_col = ts.multi.col_span - 1
+        for _ in range(extra_col):
+            placeholder = gen_new_collection("TableCellPlaceholder", ts.table_coll)
+            ts.obj_array[row].append(placeholder)
+        ts.multi.reset_col_span()
 
 
 # function removes the last row if it only contains one empty collection
@@ -1056,6 +1114,12 @@ def gen_table_lines(context, scale, ts):
 
     # generate all vertical lines
     for vline in ts.align.vline_pos:
+        for (start_y, end_y) in vline.y_pos:
+            line_length_v = end_y - start_y
+            gen_line_object(context, ts.init_params, ts.table_coll, vline.x_pos, start_y, line_length_v, 'y')
+
+    # generate vertical lines for multicolumn
+    for vline in ts.multi.vline_pos:
         for (start_y, end_y) in vline.y_pos:
             line_length_v = end_y - start_y
             gen_line_object(context, ts.init_params, ts.table_coll, vline.x_pos, start_y, line_length_v, 'y')

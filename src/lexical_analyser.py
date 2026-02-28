@@ -117,7 +117,7 @@ class LexicalAnalyser:
         self.position = start_position
         return token
 
-    def get_token_until(self, token_type, end_symbol):
+    def get_token_until(self, token_types, end_symbol):
         content = []
         while not self.is_end():
             token = self.peek_token()
@@ -127,8 +127,8 @@ class LexicalAnalyser:
                 return ''.join(content), ""
 
             # validate token type match
-            if token.type != token_type:
-                return "", f"Unexpected token '{token.value}' of type {token.type}. Expected {token_type}."
+            if token.type not in token_types:
+                return "", f"Unexpected token '{token.value}' of type '{token.type}'. Expected one of: {token_types}."
 
             # save current token
             token = self.get_token()
