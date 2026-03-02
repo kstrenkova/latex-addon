@@ -502,8 +502,10 @@ class SyntaxAnalyser:
             ts = self.state_stack.pop()
             gen_cleanup_last_row(ts.obj_array)
 
-            # position table
-            gen_box_position_center(ts.obj_array, self.p, ts.align, ts.multi, ts.multi.cell_span)
+            # position table if not empty
+            if len(ts.obj_array):
+                gen_table_align_x(ts.obj_array, self.p, ts.align, ts.multi)
+                gen_table_align_y(ts.obj_array, self.p, ts.align, ts.multi)
 
             # link objects to table collection
             for row in ts.obj_array:

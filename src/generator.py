@@ -683,15 +683,16 @@ def gen_move_multicolumn_for_vline(collection, param, row, multi, span_info, x_p
     # save position and create space
     for _ in range(line_count):
         multi.add_vline_pos(x_pos, row)
-        x_pos += (SMALL_SPACE * direction)
+        x_pos += (SMALL_SPACE * direction) * param.scale
 
-    # calculate the space
-    vline_space = (SMALL_SPACE * (line_count - 1) + LINE_THICKNESS * line_count) * param.scale
-    move_by = vline_space * direction
+    # early return for vertical lines at the end of column
+    if version == 'after':
+        return
 
     # move the cell content to make space for vertical lines
+    vline_space = (SMALL_SPACE * (line_count - 1) + LINE_THICKNESS * line_count) * param.scale
     for obj in bpy.data.collections[collection].all_objects:
-        obj.location.x += move_by
+        obj.location.x += vline_space
 
 
 # function saves positions of vertical lines after the last column
@@ -729,11 +730,14 @@ def gen_matrix_align_x(obj_array, param):
 
 
 # function aligns cells horizontally by alignment type
-def gen_table_align_x(obj_array, param, align, multi, cell_span):
-    # calculate the max number of columns
-    max_col = max(len(row) for row in obj_array)
+def gen_table_align_x(obj_array, param, align, multi):
+    # initialize parameters
     prev_col_width = param.width
     padding = GRID_SPACE * param.scale
+    cell_span = getattr(multi, 'cell_span', {})
+
+    # calculate the max number of columns
+    max_col = max(len(row) for row in obj_array)
 
     # save the starting width for cline command
     align.column_width.append(param.width)
@@ -764,7 +768,7 @@ def gen_table_align_x(obj_array, param, align, multi, cell_span):
         max_col_width = get_max_column_width(obj_array, col, prev_col_width, multi)
 
         # increase padding for empty columns
-        prev_col_width = max_col_width + padding * (3 if prev_col_width == max_col_width else 1)
+        prev_col_width = max_col_width + padding + (2 * padding + vline_space if prev_col_width == max_col_width else 0)
 
         # save each column width for cline command
         align.column_width.append(prev_col_width)
@@ -784,8 +788,33 @@ def gen_table_align_x(obj_array, param, align, multi, cell_span):
     gen_multicolumn_cells_align_x(obj_array, param, align, cell_span)
 
 
+# function aligns cells vertically for multirow command
+def gen_multirow_cells_align_y(obj_array, align, cell_span):
+    max_col = max(len(row) for row in obj_array)
+
+    for i, row in enumerate(obj_array):
+        for col in range(max_col):
+            cell = cell_span.get((i, col), {})
+            row_span = cell.get('row_span', 1)
+
+            # process multirow only
+            if row_span == 1:
+                continue
+
+            collection = row[col]
+            last_row = i + row_span - 1
+
+            # get the y position of first and last row of multirow
+            _, y_first = align.row_y[i]
+            _, y_last = align.row_y[last_row]
+
+            # move objects lower
+            for obj in bpy.data.collections[collection].all_objects:
+                obj.location.y += (y_last - y_first) / 2
+
+
 # function centers cells in matrix/table vertically
-def gen_box_center_y(obj_array, param):
+def gen_matrix_align_y(obj_array, param):
     # calculate the max number of columns
     max_col = max(len(row) for row in obj_array)
     padding = GRID_SPACE * param.scale
@@ -808,8 +837,13 @@ def gen_box_center_y(obj_array, param):
         min_row_height = get_min_row_height(row, max_col)
 
 
+# TODO cleanup
 # function aligns cells for table vertically to center
-def gen_table_align_y(obj_array, param, align, multi, cell_span):
+def gen_table_align_y(obj_array, param, align, multi):
+    cell_span = getattr(multi, 'cell_span', {})
+
+    # align content of multirow
+    gen_multirow_cells_align_y(obj_array, align, cell_span)
 
     # save multicolumn ranges per row
     remove_ranges = {}
@@ -842,20 +876,6 @@ def gen_table_align_y(obj_array, param, align, multi, cell_span):
         for vline in multi.vline_pos:
             if vline.ID == i:
                 vline.y_pos.append(align.row_y[i])
-
-
-# function positions matrix or table figure
-def gen_box_position_center(obj_array, param, align=None, multi=None, cell_span=None):
-    # return if matrix has no objects
-    if not len(obj_array):
-        return
-
-    if align is None:
-        gen_matrix_align_x(obj_array, param)
-        gen_box_center_y(obj_array, param)
-    else:
-        gen_table_align_x(obj_array, param, align, multi, cell_span)
-        gen_table_align_y(obj_array, param, align, multi, cell_span)
 
 
 # TODO vmatrix and Vmatrix have tricky space after left bracket
@@ -1076,9 +1096,10 @@ def get_multi_span_number(multi, action, content):
 def save_multicol_info(ts):
     row = ts.get_row_num()
 
-    if ts.multi.col.span > 1:
+    if ts.multi.col.span > 1 or ts.multi.row.span > 1:
         col = len(ts.obj_array[row]) - 1
         ts.multi.save_cell_span((row, col))
+        ts.multi.row.reset_row_span()
 
         # add placeholder collections for multicolumn
         extra_col = ts.multi.col.span - 1

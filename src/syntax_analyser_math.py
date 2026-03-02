@@ -469,8 +469,10 @@ class MathSyntaxAnalyser:
             ms = self.state_stack[-1]
             gen_cleanup_last_row(ms.obj_array)
 
-            # position matrix
-            gen_box_position_center(ms.obj_array, self.p)
+            # position matrix if not empty
+            if len(ms.obj_array):
+                gen_matrix_align_x(ms.obj_array, self.p)
+                gen_matrix_align_y(ms.obj_array, self.p)
 
             # calculate matrix height
             ms.size.min_y = gen_bound(ms.parent_coll, 'y', 'min')
