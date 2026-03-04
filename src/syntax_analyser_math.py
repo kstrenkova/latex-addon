@@ -452,7 +452,7 @@ class MathSyntaxAnalyser:
 
             # set width to start and height lower
             self.p.width = ms.init_params.width
-            self.p.height -= LINE_SPACE * self.d.text_scale
+            self.p.height -= self.d.line_height * self.d.text_scale
             return True
 
         elif action == '#ACTION_MATRIX_NEW_CELL':

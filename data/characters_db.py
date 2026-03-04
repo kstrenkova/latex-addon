@@ -7,7 +7,6 @@ MIN_SPACE =  0.1
 SMALL_SPACE = 0.2
 BASE_SPACE = 0.3
 GRID_SPACE = 0.5
-LINE_SPACE = 1.0
 INDENTATION = 0.6
 PAR_SPACE = 2.0  # TODO change 2.0 for the correct value
 

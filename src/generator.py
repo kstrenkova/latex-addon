@@ -217,15 +217,15 @@ def gen_sqrt_sym(context):
     mesh.from_pydata(verts, edges, faces)
     object_data_add(context, mesh)
 
-    # location of 3D cursor
-    cursor_3D = context.scene.cursor.location
+    origin_offset = Vector((-0.5266461968421936, -0.8238898515701294, 0.0))
 
-    # set origin for sqrt
-    context.scene.cursor.location += Vector((-0.5266461968421936, -0.8238898515701294, 0.0))
-    bpy.ops.object.origin_set(type='ORIGIN_CURSOR')
+    # offset all mesh vertices
+    for vert in mesh.vertices:
+          vert.co -= origin_offset
 
-    # set 3D cursor back
-    context.scene.cursor.location = cursor_3D
+    # move the object to keep the object in the same position
+    sqrt_obj = context.active_object
+    sqrt_obj.location += origin_offset
 
     # recalculate normals in editmode
     bpy.ops.object.editmode_toggle()

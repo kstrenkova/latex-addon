@@ -241,7 +241,7 @@ class SyntaxAnalyser:
 
         # new line (\\)
         elif action == '#ACTION_NEW_LINE':
-            gen_adjust_new_line(self.p, self.d.base_coll, LINE_SPACE)
+            gen_adjust_new_line(self.p, self.d.base_coll, self.d.line_height)
             return True
 
         # paragraph (\par)
@@ -472,7 +472,7 @@ class SyntaxAnalyser:
 
             # set height lower and record the y positions
             start_y = self.p.line.min_y
-            gen_adjust_new_line(self.p, self.d.base_coll, LINE_SPACE, ts.init_params.width)
+            gen_adjust_new_line(self.p, self.d.base_coll, self.d.line_height, ts.init_params.width)
             end_y = self.p.line.min_y - (SMALL_SPACE * self.p.scale)
 
             # save row y positions

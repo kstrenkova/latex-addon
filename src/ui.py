@@ -14,7 +14,6 @@ TMP_TEXT_EDIT = "tmp_latex_text_edit"
 
 # TODO [bug] fix messy letters in generate_1_object when thickness is not zero
 # TODO [bug] fix different final position for 1 object vs multiple objects
-# TODO [optimalization] Add annotations to function headers
 
 
 # function gets all of the loaded fonts
@@ -30,7 +29,7 @@ def get_loaded_fonts(self, context):
 class LATEX_PG_Properties(bpy.types.PropertyGroup):
     latex_text: bpy.props.StringProperty(
         name="Text",
-        description="Input text in Latex formatting",
+        description="Input text in LaTeX formatting",
         default=""
     ) # type: ignore
 
@@ -68,24 +67,25 @@ class LATEX_PG_Properties(bpy.types.PropertyGroup):
 
     text_scale: bpy.props.FloatProperty(
         name="Scale:",
+        description="Scale of the output text",
         default=1.0,
         min=0.01
     ) # type: ignore
 
     text_thickness: bpy.props.FloatProperty(
         name="Thickness:",
+        description="Thickness of the output text",
         default=0.0,
         min=0.0
     ) # type: ignore
 
-    text_location: bpy.props.FloatVectorProperty(
-        name="Location",
-        subtype='XYZ'
-    ) # type: ignore
-
-    text_rotation: bpy.props.FloatVectorProperty(
-        name="Rotation",
-        subtype='EULER'
+    line_height: bpy.props.FloatProperty(
+        name="Line height:",
+        description="Vertical spacing between lines",
+        default=1.0,
+        soft_min=0.8,
+        soft_max=3.0,
+        step=5,
     ) # type: ignore
 
     one_object: bpy.props.BoolProperty(
@@ -129,14 +129,9 @@ class OBJECT_PT_ME(bpy.types.Panel):
 
         layout.prop(props, "text_scale")
         layout.prop(props, "text_thickness")
+        layout.prop(props, "line_height")
 
         row = layout.row(align=True)
-
-        col = row.column()
-        col.prop(props,'text_location')
-
-        col2 = row.column()
-        col2.prop(props,'text_rotation')
 
         layout.prop(props, "one_object")
 
@@ -277,10 +272,9 @@ class WM_OT_AddText(bpy.types.Operator):
                 # set empty object as parent
                 obj.parent = empty_obj
 
-            empty_obj.location = props.text_location                      # move empty object
-            empty_obj.rotation_euler = props.text_rotation                # rotate empty object
-            bpy.ops.object.transform_apply(location=True, rotation=True)  # apply transformation
-            bpy.ops.object.delete()                                       # delete empty object
+            empty_obj.location = bpy.context.scene.cursor.location.copy()  # move empty object
+            bpy.ops.object.transform_apply(location=True, rotation=True)   # apply transformation
+            bpy.ops.object.delete()                                        # delete empty object
 
         self.report({'INFO'}, "Latex text was generated successfully")
         return {'FINISHED'}
@@ -312,8 +306,7 @@ def generate_one_object(context, props):
 
     final_obj = context.active_object
     final_obj.name = "Latex Text"
-    final_obj.location = props.text_location        # move object
-    final_obj.rotation_euler = props.text_rotation  # rotate object
+    final_obj.location = bpy.context.scene.cursor.location.copy()
 
     # apply transformations
     bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
