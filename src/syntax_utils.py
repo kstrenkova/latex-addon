@@ -6,8 +6,6 @@
 import bpy
 import os.path
 
-# TODO remove unused fonts
-
 FONT_CACHE = {}
 
 
@@ -64,7 +62,7 @@ def preload_fonts(context, user_fonts):
     }
 
     src_dir = os.path.dirname(os.path.dirname(__file__))
-    fonts_dir = os.path.join(src_dir, "data", "fonts")
+    fonts_dir = os.path.join(src_dir, "fonts")
 
     for mode, (font_name, filename) in font_mode.items():
         if font_name in bpy.data.fonts:

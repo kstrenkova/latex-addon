@@ -30,8 +30,8 @@ else:
     from .src import properties
     from .src import operators
     from .src import panels
-    from .data import characters_db
-    from .data import ll_table
+    from .src.data import characters_db
+    from .src.data import ll_table
 
 import bpy
 

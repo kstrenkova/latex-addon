@@ -3,8 +3,7 @@
 # Created By  : Katarina Strenkova
 # ---------------------------------------------------------------------------
 
-# TODO remove ..data
-from ..data.characters_db import *
+from .data.characters_db import *
 
 
 # class for tokens

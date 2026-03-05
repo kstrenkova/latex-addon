@@ -8,9 +8,8 @@ import bpy
 from .generator import *
 from .syntax_utils import change_font
 
-# TODO get rid of ..data
-from ..data.ll_table import *
-from ..data.characters_db import *
+from .data.ll_table import *
+from .data.characters_db import *
 
 # TODO [optimalization] go from using collections to python arrays or dictionaries (?)
 # TODO [bug] when you start with \sum (display mode) and the sub/super overflows

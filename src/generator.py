@@ -6,10 +6,11 @@
 import bpy
 
 from bpy_extras.object_utils import object_data_add  # add sqrt symbol
-from ..data.characters_db import *
+from mathutils import Vector  # vertices
+
 from .syntax_utils import change_font
 
-from mathutils import Vector  # vertices
+from .data.characters_db import *
 
 
 # function generates text in given font

@@ -9,9 +9,8 @@ from .generator import *
 from .syntax_analyser_math import MathSyntaxAnalyser
 from .syntax_utils import Defaults, Parameters, preload_fonts
 
-# TODO get rid of ..data
-from ..data.ll_table import *
-from ..data.characters_db import *
+from .data.ll_table import *
+from .data.characters_db import *
 
 # TODO checkout mathfonts not used only on upper letters
 # TODO research what the default value should be for \par and for itemize
