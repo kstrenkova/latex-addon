@@ -528,7 +528,7 @@ class SyntaxAnalyser:
     # main function for parsing process
     def parse(self):
         # creating base collection
-        collection = bpy.data.collections.new("LatexCollection")
+        collection = bpy.data.collections.new("LaTeXCollection")
         self.d.context.scene.collection.children.link(collection)
         gen_activate_collection(collection.name)
 
@@ -547,7 +547,7 @@ class SyntaxAnalyser:
 
             # generate space and consume the whitespace token
             if token.type == "WHITESPACE":
-                self.p.width += BASE_SPACE * self.p.scale
+                self.p.width += self.d.word_space * self.p.scale
                 self.lex.get_token(True)
                 continue
 

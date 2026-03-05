@@ -25,6 +25,7 @@ class Defaults:
         self.line_height = custom_prop.line_height
         self.math_mode = 'inline'
         self.user_font = 'base'
+        self.word_space = custom_prop.word_space
         self.text_scale = custom_prop.text_scale
 
 
