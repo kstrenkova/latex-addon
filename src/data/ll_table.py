@@ -11,9 +11,11 @@ ll_table = {
     # --- TERM ---
     # <TERM> -> <CONST>
     ('TERM', '_TEXT'):            ['CONST'],
-    ('TERM', '_ENTER'):           ['CONST'],
     ('TERM', '_SPECIAL_CHAR'):    ['CONST'],
+    ('TERM', '_ENTER'):           ['CONST'],
     ('TERM', '_PIPE'):            ['CONST'],
+    ('TERM', '_OPEN_ANGLE'):      ['CONST'],
+    ('TERM', '_CLOSE_ANGLE'):     ['CONST'],
     ('TERM', '_OPEN_BRACKET'):    ['CONST'],
     ('TERM', '_CLOSE_BRACKET'):   ['CONST'],
 
@@ -36,9 +38,11 @@ ll_table = {
     # --- MORE_TERM ---
     # <MORE_TERM> -> <TERM> <MORE_TERM>
     ('MORE_TERM', '_TEXT'):            ['TERM', 'MORE_TERM'],
-    ('MORE_TERM', '_ENTER'):           ['TERM', 'MORE_TERM'],
     ('MORE_TERM', '_SPECIAL_CHAR'):    ['TERM', 'MORE_TERM'],
+    ('MORE_TERM', '_ENTER'):           ['TERM', 'MORE_TERM'],
     ('MORE_TERM', '_PIPE'):            ['TERM', 'MORE_TERM'],
+    ('MORE_TERM', '_OPEN_ANGLE'):      ['TERM', 'MORE_TERM'],
+    ('MORE_TERM', '_CLOSE_ANGLE'):     ['TERM', 'MORE_TERM'],
     ('MORE_TERM', '_OPEN_CURLY'):      ['TERM', 'MORE_TERM'],
     ('MORE_TERM', '_OPEN_BRACKET'):    ['TERM', 'MORE_TERM'],
     ('MORE_TERM', '_CLOSE_BRACKET'):   ['TERM', 'MORE_TERM'],
@@ -62,6 +66,8 @@ ll_table = {
     ('CONST', '_TEXT'):                ['#ACTION_GENERATE_TEXT'],
     ('CONST', '_SPECIAL_CHAR'):        ['#ACTION_GENERATE_TEXT'],
     ('CONST', '_PIPE'):                ['#ACTION_GENERATE_TEXT'],
+    ('CONST', '_OPEN_ANGLE'):          ['#ACTION_GENERATE_TEXT'],
+    ('CONST', '_CLOSE_ANGLE'):         ['#ACTION_GENERATE_TEXT'],
     ('CONST', '_OPEN_BRACKET'):        ['#ACTION_GENERATE_TEXT'],
     ('CONST', '_CLOSE_BRACKET'):       ['#ACTION_GENERATE_TEXT'],
 
@@ -111,7 +117,10 @@ ll_table = {
 
     # <ITEM> -> [ <MORE_TERM> ] <MORE_TERM> <ITEMIZE>
     # <ITEM> -> <MORE_TERM> <ITEMIZE>
-    ('ITEM', '_OPEN_ANGLE'):     ['[', '#ACTION_ITEM_SAVE', ']', '#ACTION_ITEM_ADD', 'MORE_TERM', 'ITEMIZE'],
+    ('ITEM', '_OPEN_ANGLE'):     [
+        '[', '#ACTION_ITEM_SAVE_INIT', 'MORE_TERM', ']',
+        '#ACTION_ITEM_SAVE_ADD', 'MORE_TERM', 'ITEMIZE'
+    ],
     # TODO other types
     ('ITEM', '_TEXT'):           ['#ACTION_ITEM_ADD', 'MORE_TERM', 'ITEMIZE'],
     ('ITEM', '_DOLLAR'):         ['#ACTION_ITEM_ADD', 'MORE_TERM', 'ITEMIZE'],
@@ -176,13 +185,13 @@ math_ll_table = {
     ('TERM', '_TEXT'):            ['CONST'],
     ('TERM', '_SPECIAL_CHAR'):    ['CONST'],
     ('TERM', '_ENTER'):           ['CONST'],
-    ('TERM', '_UNDERSCORE'):      ['CONST'],
-    ('TERM', '_CARET'):           ['CONST'],
+    ('TERM', '_PIPE'):            ['CONST'],
     ('TERM', '_OPEN_ANGLE'):      ['CONST'],
     ('TERM', '_CLOSE_ANGLE'):     ['CONST'],
-    ('TERM', '_PIPE'):            ['CONST'],
     ('TERM', '_OPEN_BRACKET'):    ['CONST'],
     ('TERM', '_CLOSE_BRACKET'):   ['CONST'],
+    ('TERM', '_UNDERSCORE'):      ['CONST'],
+    ('TERM', '_CARET'):           ['CONST'],
 
     # <TERM> -> <COMMAND>
     ('TERM', '_OPEN_CURLY'):      ['COMMAND'],
@@ -206,14 +215,14 @@ math_ll_table = {
     # <MORE_TERM> -> <TERM> <MORE_TERM>
     ('MORE_TERM', '_TEXT'):          ['TERM', 'MORE_TERM'],
     ('MORE_TERM', '_SPECIAL_CHAR'):  ['TERM', 'MORE_TERM'],
-    ('MORE_TERM', 'enter'):          ['TERM', 'MORE_TERM'],
-    ('MORE_TERM', '_UNDERSCORE'):    ['TERM', 'MORE_TERM'],
-    ('MORE_TERM', '_CARET'):         ['TERM', 'MORE_TERM'],
+    ('MORE_TERM', '_ENTER'):         ['TERM', 'MORE_TERM'],
+    ('MORE_TERM', '_PIPE'):          ['TERM', 'MORE_TERM'],
     ('MORE_TERM', '_OPEN_ANGLE'):    ['TERM', 'MORE_TERM'],
     ('MORE_TERM', '_CLOSE_ANGLE'):   ['TERM', 'MORE_TERM'],
-    ('MORE_TERM', '_PIPE'):          ['TERM', 'MORE_TERM'],
     ('MORE_TERM', '_OPEN_BRACKET'):  ['TERM', 'MORE_TERM'],
     ('MORE_TERM', '_CLOSE_BRACKET'): ['TERM', 'MORE_TERM'],
+    ('MORE_TERM', '_UNDERSCORE'):    ['TERM', 'MORE_TERM'],
+    ('MORE_TERM', '_CARET'):         ['TERM', 'MORE_TERM'],
     ('MORE_TERM', '_OPEN_CURLY'):    ['TERM', 'MORE_TERM'],
     ('MORE_TERM', 'sqrt'):           ['TERM', 'MORE_TERM'],
     ('MORE_TERM', 'frac'):           ['TERM', 'MORE_TERM'],
@@ -248,7 +257,8 @@ math_ll_table = {
     # <CONST> -> special_char
     ('CONST', '_SPECIAL_CHAR'):      ['#ACTION_GENERATE_TEXT'],
     # <CONST> -> enter
-    ('CONST', '_ENTER'):             ['enter'],
+    # TODO make enter work in math mode
+    ('CONST', '_ENTER'):             ['\\', '#ACTION_NEW_LINE'],
     # <CONST> -> index <EI_TERM> <EXP>
     ('CONST', '_UNDERSCORE'):        ['#ACTION_LEVEL_DOWN', '#ACTION_EI_INIT', 'EI_TERM', 'EXP'],
     # <CONST> -> exponent <EI_TERM> <IX>

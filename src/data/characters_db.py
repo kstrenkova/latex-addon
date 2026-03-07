@@ -7,7 +7,6 @@ MIN_SPACE =  0.1
 SMALL_SPACE = 0.2
 BASE_SPACE = 0.3
 GRID_SPACE = 0.5
-INDENTATION = 0.6
 
 LINE_THICKNESS = 0.025
 SQRT_WIDTH = 0.855927586555481
@@ -106,7 +105,7 @@ table_alignments =  ['c', 'l', 'r', 'p', 'm', 'b']
 
 # UNICODE DATABASE
 
-# TODO math accents
+# TODO [feature] math accents
 # 'hat': '\u0302',
 # 'tilde': '\u0303',
 # 'bar': '\u0304',
@@ -114,7 +113,7 @@ table_alignments =  ['c', 'l', 'r', 'p', 'm', 'b']
 # 'dot': '\u0307',
 # 'ddot': '\u0308',
 
-# TODO wide version maybe
+# TODO [feature] math accents wide version
 # \widehat{...}
 # \widetilde{...}
 # \overline{...}

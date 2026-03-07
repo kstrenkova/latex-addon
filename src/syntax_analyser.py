@@ -13,17 +13,20 @@ from .data.ll_table import *
 from .data.characters_db import *
 
 # TODO [bug] Whitespaces are making mess in the first cell of table
+# TODO [bug] Vertical lines for multicolumn are not generated for last column
 # TODO [fix] Make multicolumn content move if it's aligned right and has multiple
 # vlines at the end
 # TODO [feature] Add mathfonts not used only on upper letters
 # TODO [feature] Add material to different mesh types
 # TODO [feature] Make setting width work for tables
+# TODO [feature] Add loadbar next to mouse when generating objects
 
 
 class ItemizeState:
-    def __init__(self, nest_array):
+    def __init__(self, parent_coll, nest_array):
+        self.parent_coll = parent_coll
         self.bullet_number = 0
-        self.custom_bullet = ''
+        self.custom_bullet = False
         self.nest_array = nest_array
 
 
@@ -146,6 +149,14 @@ class SyntaxAnalyser:
         self.p = Parameters(custom_prop.text_scale, 0.0, 0.0, 0.0)
 
 
+    # function finds first state of specific type from top of stack
+    def get_context_state(self, state_type):
+      for state in reversed(self.state_stack):
+          if isinstance(state, state_type):
+              return state
+      return None
+
+
     # function returns the next rule
     def choose_rule(self, stack_top, token):
         key = token.value if token.type == 'COMMAND' else token.type
@@ -155,6 +166,12 @@ class SyntaxAnalyser:
 
         if stack_top == 'PROG':
             key = '_ANY'
+
+        # special rule for item custom bullet point context
+        its = self.get_context_state(ItemizeState)
+        if token.value == ']' and its and its.custom_bullet:
+            its.custom_bullet = False
+            return ['epsilon']
 
         print("KEY:", key)
         rule = ll_table.get((stack_top, key))
@@ -252,46 +269,56 @@ class SyntaxAnalyser:
 
         # <ITEMIZE> actions
         elif action == '#ACTION_ITEM_INIT':
-            # save current environment
             nest_array = []
-            for state in reversed(self.state_stack):
-                if isinstance(state, ItemizeState):
-                    nest_array = state.nest_array.copy()
-                    break
 
+            # get all previous itemize/enumerate environments
+            its = self.get_context_state(ItemizeState)
+            if its:
+                nest_array = its.nest_array.copy()
+
+            # save current environment
             nest_array.append(self.block[-1])
 
             # add a new itemize/enumerate block
-            self.state_stack.append(ItemizeState(nest_array))
+            self.state_stack.append(ItemizeState(self.d.current_coll, nest_array))
             return True
 
-        elif action == '#ACTION_ITEM_SAVE':
-            # overwrite default bullet point value
-            # TODO save all items, even commands
-            token = self.lex.get_token()
+        elif action == '#ACTION_ITEM_SAVE_INIT':
             its = self.state_stack[-1]
-            its.custom_bullet = token.value
+            its.custom_bullet = True
+
+            # create new collection for bullet point
+            bpcoll = gen_new_collection("BulletPointCollection", self.d.current_coll)
+            self.d.current_coll = bpcoll
+            return True
+
+        elif action == '#ACTION_ITEM_SAVE_ADD':
+            its = self.state_stack[-1]
+            nest_lvl = get_nest_level(its.nest_array, self.block[-1])
+
+            # get objects from bullet point collection
+            bpcoll = bpy.data.collections.get(self.d.current_coll)
+            gen_bullet_point(list(bpcoll.objects), self.p, self.d, len(its.nest_array))
+
+            # join bullet point collection into parent collection
+            gen_join_collections(self.d.current_coll, its.parent_coll)
+            self.d.current_coll = its.parent_coll
             return True
 
         elif action == '#ACTION_ITEM_ADD':
             its = self.state_stack[-1]
             nest_lvl = get_nest_level(its.nest_array, self.block[-1])
 
-            if len(its.custom_bullet) != 0:
-                # use custom bullet point
-                item = its.custom_bullet
-                its.custom_bullet = ''
-            else:
-                # use default bullet point
-                if self.block[-1] == 'itemize':
-                    item = get_bullet_default(nest_lvl)
-                elif self.block[-1] == 'enumerate':
-                    its.bullet_number += 1
-                    item = get_numbering_default(nest_lvl, its.bullet_number)
+            # use default bullet point
+            if self.block[-1] == 'itemize':
+                item = get_bullet_default(nest_lvl)
+            elif self.block[-1] == 'enumerate':
+                its.bullet_number += 1
+                item = get_numbering_default(nest_lvl, its.bullet_number)
 
             # generate bullet point
             gen_text_object(self.p, self.d, item, self.d.user_font)
-            gen_bullet_point(self.p, self.d, len(its.nest_array))
+            gen_bullet_point([bpy.context.active_object], self.p, self.d, len(its.nest_array))
             return True
 
         elif action == '#ACTION_ITEM_END':
@@ -505,7 +532,7 @@ class SyntaxAnalyser:
             # position table if not empty
             if len(ts.obj_array):
                 gen_table_align_x(ts.obj_array, self.p, ts.align, ts.multi)
-                gen_table_align_y(ts.obj_array, self.p, ts.align, ts.multi)
+                gen_table_align_y(ts.obj_array, ts.align, ts.multi)
 
             # link objects to table collection
             for row in ts.obj_array:

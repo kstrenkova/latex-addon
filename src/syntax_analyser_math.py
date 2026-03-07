@@ -109,7 +109,7 @@ class MathSyntaxAnalyser:
             key = '_ANY'
 
         # special rule for sqrt index context
-        if self.levels.sqrt and token.value == ']':
+        if token.value == ']' and self.levels.sqrt:
             self.levels.sqrt = False
             return ['epsilon']
 
