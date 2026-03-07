@@ -122,6 +122,7 @@ class WM_OT_ResetParameters(bpy.types.Operator):
         props.text_thickness = 0.1
         props.line_height = 1.0
         props.word_space = 0.3
+        props.block_space = 1.6
 
         self.report({'INFO'}, "Transform parameters reset")
         return {'FINISHED'}

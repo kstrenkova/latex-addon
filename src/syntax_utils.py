@@ -15,16 +15,19 @@ class Defaults:
         self.base_coll = ""
         self.current_coll = ""
         self.context = context
+        self.math_mode = 'inline'
+        self.user_font = 'base'
+
+        # parameters from custom properties
+        self.block_space = custom_prop.block_space
         self.fonts = [
             custom_prop.base_font,
             custom_prop.bold_font,
             custom_prop.italic_font
         ]
         self.line_height = custom_prop.line_height
-        self.math_mode = 'inline'
-        self.user_font = 'base'
-        self.word_space = custom_prop.word_space
         self.text_scale = custom_prop.text_scale
+        self.word_space = custom_prop.word_space
 
 
 # class for lines

@@ -53,6 +53,7 @@ class OBJECT_PT_ME(bpy.types.Panel):
             box.prop(props, "text_thickness")
             box.prop(props, "line_height")
             box.prop(props, "word_space")
+            box.prop(props, "block_space")
             box.operator("wm.reset_param", icon='FILE_REFRESH')
 
         layout.prop(props, "one_object")

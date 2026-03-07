@@ -96,6 +96,15 @@ class LATEX_PG_Properties(bpy.types.PropertyGroup):
         step=5
     ) # type: ignore
 
+    block_space: bpy.props.FloatProperty(
+        name="Block spacing:",
+        description="Spacing before paragraphs and list items",
+        default=1.6,
+        min=0.0,
+        soft_max=4.0,
+        step=5
+    ) # type: ignore
+
     one_object: bpy.props.BoolProperty(
         name="Generate as one object",
         default=False

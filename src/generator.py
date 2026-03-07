@@ -983,12 +983,12 @@ def get_numbering_default(level, index):
 
 
 # function calculates positions around bullet point
-def gen_bullet_point(param, nest_lvl):
+def gen_bullet_point(param, defaults, nest_lvl):
     obj = bpy.context.active_object  # save active object
 
     bbox = [obj.matrix_world @ Vector(corner) for corner in obj.bound_box]
     obj_dimension = bbox[4].x * param.scale
-    nested_space = nest_lvl * PAR_SPACE * param.scale
+    nested_space = nest_lvl * defaults.block_space * param.scale
     param.width = (nested_space - obj_dimension)  # space before bullet point
 
     gen_move_position(obj, param)

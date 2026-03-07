@@ -11,11 +11,10 @@ from .syntax_utils import change_font
 from .data.ll_table import *
 from .data.characters_db import *
 
-# TODO [optimalization] go from using collections to python arrays or dictionaries (?)
-# TODO [bug] when you start with \sum (display mode) and the sub/super overflows
-# the start vertical line moves left with them
-# TODO [feature] numbers for equation lines
-# TODO make matrices use adjust_new_line function
+# TODO [feature] Add numbers for equation lines
+# TODO [optimalization] Go from using collections to python arrays or dictionaries
+# TODO [fix] make matrices use adjust_new_line function
+# TODO [fix] Make \dfrac function work every time
 
 # class for levels
 class Levels:

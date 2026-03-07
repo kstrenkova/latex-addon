@@ -12,11 +12,12 @@ from .syntax_utils import Defaults, Parameters, preload_fonts
 from .data.ll_table import *
 from .data.characters_db import *
 
-# TODO checkout mathfonts not used only on upper letters
-# TODO research what the default value should be for \par and for itemize
 # TODO [bug] Whitespaces are making mess in the first cell of table
 # TODO [fix] Make multicolumn content move if it's aligned right and has multiple
 # vlines at the end
+# TODO [feature] Add mathfonts not used only on upper letters
+# TODO [feature] Add material to different mesh types
+# TODO [feature] Make setting width work for tables
 
 
 class ItemizeState:
@@ -246,7 +247,7 @@ class SyntaxAnalyser:
         # paragraph (\par)
         elif action == '#ACTION_PARAGRAPH':
             self.execute_action('#ACTION_NEW_LINE')
-            self.p.width = PAR_SPACE
+            self.p.width = self.d.block_space
             return True
 
         # <ITEMIZE> actions
@@ -290,7 +291,7 @@ class SyntaxAnalyser:
 
             # generate bullet point
             gen_text_object(self.p, self.d, item, self.d.user_font)
-            gen_bullet_point(self.p, len(its.nest_array))
+            gen_bullet_point(self.p, self.d, len(its.nest_array))
             return True
 
         elif action == '#ACTION_ITEM_END':
