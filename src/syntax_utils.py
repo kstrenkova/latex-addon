@@ -17,6 +17,7 @@ class Defaults:
         self.context = context
         self.math_mode = 'inline'
         self.user_font = 'base'
+        self.whitespace = False
 
         # parameters from custom properties
         self.block_space = custom_prop.block_space

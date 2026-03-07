@@ -13,7 +13,6 @@ from .data.ll_table import *
 from .data.characters_db import *
 
 # TODO [bug] Start creating objects on cursor point not at 0.0
-# TODO [bug] Whitespaces are making mess in the first cell of table
 # TODO [bug] Vertical lines for multicolumn are not generated for last column
 # TODO [fix] Make multicolumn content move if it's aligned right and has multiple
 # vlines at the end
@@ -149,7 +148,6 @@ class SyntaxAnalyser:
         self.d = Defaults(context, custom_prop)
         self.p = Parameters(custom_prop.text_scale, 0.0, 0.0, 0.0)
 
-
     # function finds first state of specific type from top of stack
     def get_context_state(self, state_type):
       for state in reversed(self.state_stack):
@@ -157,6 +155,12 @@ class SyntaxAnalyser:
               return state
       return None
 
+    # function consumes redundant whitespaces from string
+    def consume_whitespace(self):
+        self.d.whitespace = False
+        token = self.lex.peek_token(True)
+        if token.type == 'WHITESPACE':
+            token = self.lex.get_token(True)
 
     # function returns the next rule
     def choose_rule(self, stack_top, token):
@@ -183,8 +187,6 @@ class SyntaxAnalyser:
 
     # function calls the mathematical syntax analyser
     def enter_math_mode(self):
-        token = self.lex.peek_token()
-
         # change starting position for display mode
         if self.d.math_mode == 'display':
             self.execute_action('#ACTION_NEW_LINE')
@@ -213,9 +215,7 @@ class SyntaxAnalyser:
         print("Returned from math mode!")
 
         # consume redundant whitespace
-        token = self.lex.peek_token()
-        if token.type == 'WHITESPACE':
-            self.lex.get_token()
+        self.consume_whitespace()
 
         # change ending position for display mode
         if self.d.math_mode == 'display':
@@ -230,6 +230,10 @@ class SyntaxAnalyser:
 
     # function executes given action
     def execute_action(self, action):
+        # ignore whitespaces
+        if action not in whitespace_add_actions:
+            self.consume_whitespace()
+
         # <BLOCK> actions
         if action == '#ACTION_BLOCK_ENTER':
             action = block_actions.get(self.block[-1])
@@ -352,7 +356,7 @@ class SyntaxAnalyser:
             return True
 
         # verb command
-        elif action == '#ACTION_GENERATE_VERB':
+        elif action == '#ACTION_VERB_GENERATE':
             content, err = self.lex.get_verb_content()
             if len(err) > 0:
                 print("Syntax error:", err)
@@ -591,8 +595,8 @@ class SyntaxAnalyser:
 
             # generate space and consume the whitespace token
             if token.type == "WHITESPACE":
-                self.p.width += self.d.word_space * self.p.scale
                 self.lex.get_token(True)
+                self.d.whitespace = True
                 continue
 
             # successful parsing
@@ -628,8 +632,13 @@ class SyntaxAnalyser:
                     print(f"Syntax Error: No rule for ({stack_top}, {token.type}, {token.value})")
                     return False
 
+            # add whitespace if one is pending
+            if self.d.whitespace:
+                self.p.width += self.d.word_space * self.p.scale
+                self.d.whitespace = False
+
         # put a new line at the end of the document
-        _ = self.execute_action("#ACTION_NEW_LINE")
+        self.execute_action("#ACTION_NEW_LINE")
 
         # verify that all tokens have been read
         if self.stack:

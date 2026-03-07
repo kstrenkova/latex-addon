@@ -76,6 +76,11 @@ block_actions = {
     'tabular':      '#ACTION_TABLE_INIT'
 }
 
+# actions that should add whitespaces
+whitespace_add_actions = {
+    '#ACTION_TEXT_GENERATE', '#ACTION_VERB_GENERATE'
+}
+
 # context-dependent epsilon productions
 epsilon_rules = {
     # stack_top: token.type, token.value

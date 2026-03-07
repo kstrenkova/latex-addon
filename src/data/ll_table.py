@@ -88,7 +88,7 @@ ll_table = {
     ('COMMAND', 'texttt'):       ['texttt', '#ACTION_FONT_TELETYPE', '{', 'MORE_TERM', '}', '#ACTION_FONT_BASE'],
 
     # <COMMAND> -> verb | <MORE_TERM> |
-    ('COMMAND', 'verb'):         ['verb', '|', '#ACTION_GENERATE_VERB', '|'],
+    ('COMMAND', 'verb'):         ['verb', '|', '#ACTION_VERB_GENERATE', '|'],
 
     # --- MATH_MODE ---
     # <MATH_MODE> -> $ <MATH_INLINE_PROG> $
