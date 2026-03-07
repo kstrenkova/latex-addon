@@ -102,6 +102,7 @@ class MathSyntaxAnalyser:
     def choose_rule(self, stack_top, token):
         key = token.value if token.type == 'COMMAND' else token.type
 
+        # special epsilon rules
         if stack_top in epsilon_rules and (token.type, token.value) not in epsilon_rules[stack_top]:
             key = 'epsilon'
 
@@ -121,6 +122,11 @@ class MathSyntaxAnalyser:
         if action == '#ACTION_GENERATE_TEXT':
             token = self.lex.get_token()
             gen_text_object(self.p, self.d, token.value, self.d.user_font, self.levels)
+            return True
+
+        # new line (\\)
+        elif action == '#ACTION_NEW_LINE':
+            gen_adjust_new_line(self.p, self.d.base_coll, self.d.line_height)
             return True
 
         elif action == '#ACTION_LEVEL_DOWN':
@@ -143,7 +149,8 @@ class MathSyntaxAnalyser:
         elif action == '#ACTION_MATH_SYMBOL':
             token = self.lex.get_token()
             if not token.value in unicode_chars:
-                print("Symbol", token.value, "is not supported.")
+                err = f"Symbol '{token.value}' is not supported."
+                print("Syntax error:", err)
                 return False
 
             gen_text_object(self.p, self.d, unicode_chars[token.value], 'math', self.levels)
@@ -167,7 +174,8 @@ class MathSyntaxAnalyser:
             for letter in token.value:
                 # only supports uppercase letters
                 if not letter.isupper():
-                    print("Function", mfont, "doesn't support the letter", letter, "!")
+                    err = f"Function '{mfont}' doesn't support the letter '{letter}'!"
+                    print("Syntax error:", err)
                     return False
 
                 # generate math letter
@@ -410,7 +418,8 @@ class MathSyntaxAnalyser:
                 self.state_stack.append(ms)
                 return True
 
-            print("Matrix type", token.value, "is not correct!")
+            err = f"Matrix type '{token.value}' is incorrect!"
+            print("Syntax error:", err)
             return False
 
         elif action == '#ACTION_MATRIX_VERIFY_END':
@@ -420,7 +429,8 @@ class MathSyntaxAnalyser:
                 self.state_stack.pop()
                 return True
 
-            print("Matrix type in begin", ms.brackets, "doesn't match the value in end", token.value)
+            err = f"Matrix type in begin '{ms.brackets}' doesn't match the value in end '{token.value}'"
+            print("Syntax error:", err)
             return False
 
         elif action == '#ACTION_MATRIX_INIT':

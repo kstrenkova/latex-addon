@@ -12,6 +12,7 @@ from .syntax_utils import Defaults, Parameters, preload_fonts
 from .data.ll_table import *
 from .data.characters_db import *
 
+# TODO [bug] Start creating objects on cursor point not at 0.0
 # TODO [bug] Whitespaces are making mess in the first cell of table
 # TODO [bug] Vertical lines for multicolumn are not generated for last column
 # TODO [fix] Make multicolumn content move if it's aligned right and has multiple
@@ -161,6 +162,7 @@ class SyntaxAnalyser:
     def choose_rule(self, stack_top, token):
         key = token.value if token.type == 'COMMAND' else token.type
 
+        # special epsilon rules
         if stack_top in epsilon_rules and (token.type, token.value) not in epsilon_rules[stack_top]:
             key = 'epsilon'
 
@@ -173,6 +175,7 @@ class SyntaxAnalyser:
             its.custom_bullet = False
             return ['epsilon']
 
+        print("Stack top:", stack_top)
         print("KEY:", key)
         rule = ll_table.get((stack_top, key))
         return rule
@@ -230,6 +233,19 @@ class SyntaxAnalyser:
         # <BLOCK> actions
         if action == '#ACTION_BLOCK_ENTER':
             action = block_actions.get(self.block[-1])
+
+            # define starting rule for the environment
+            if self.block[-1] in ['itemize', 'enumerate']:
+                rule = ['ITEMIZE']
+            elif self.block[-1] == 'tabular':
+                rule = ['{', 'ALIGN', '}', 'TABLE']
+            else:
+                rule = ['MORE_TERM']
+
+            # add starting rule to the stack
+            for symbol in reversed(rule):
+                self.stack.append(symbol)
+
             return self.execute_action(action)
 
         elif action == '#ACTION_BLOCK_VERIFY_BEGIN':
@@ -238,7 +254,8 @@ class SyntaxAnalyser:
                 self.block.append(token.value)
                 return True
 
-            print("Block value '{token.value}' is not correct or supported!")
+            err = f"Block value '{token.value}' is not correct or supported!"
+            print("Syntax error:", err)
             return False
 
         elif action == '#ACTION_BLOCK_VERIFY_END':
@@ -247,7 +264,8 @@ class SyntaxAnalyser:
                 self.block.pop()
                 return True
 
-            print("Block value in begin '{self.block[-1]}' doesn't match the value in end '{token.value}!'")
+            err = f"Block value in begin '{self.block[-1]}' doesn't match the value in end '{token.value}!'"
+            print("Syntax error:", err)
             return False
 
         # <CONST> actions
@@ -269,9 +287,8 @@ class SyntaxAnalyser:
 
         # <ITEMIZE> actions
         elif action == '#ACTION_ITEM_INIT':
-            nest_array = []
-
             # get all previous itemize/enumerate environments
+            nest_array = []
             its = self.get_context_state(ItemizeState)
             if its:
                 nest_array = its.nest_array.copy()
@@ -580,7 +597,6 @@ class SyntaxAnalyser:
 
             # successful parsing
             if stack_top == '$$$' and token.type == 'END':
-                print("Success!")
                 self.stack.pop()
                 break
 
