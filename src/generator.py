@@ -98,7 +98,7 @@ def gen_adjust_new_line(param, base_coll, line_space, init_width=0.0):
 
     # get real and expected lowest point
     real_min_y = gen_bound_for_array(param.line.line_objs, 'y', 'min')
-    expected_min_y = lmin_y - (1.2 * line_space * param.scale)
+    expected_min_y = param.line.height - (SMALL_SPACE * line_space * param.scale)
 
     # save the lowest point
     param.line.min_y = min(real_min_y, expected_min_y)
@@ -112,19 +112,20 @@ def gen_adjust_new_line(param, base_coll, line_space, init_width=0.0):
 
 # function calculates and adjusts the height for new line in one table cell
 def gen_new_line_in_cell(param, cell_constraint, line_space):
-    # calculate overflow
-    max_y = gen_bound_for_array(cell_constraint.cell_objects, 'y', 'max')
-    lmin_y = cell_constraint.last_min_y  # lowest point of last row
-    overflow = max_y - lmin_y if (max_y > lmin_y) else 0
+    if cell_constraint.last_min_y is not None:
+        # calculate overflow
+        max_y = gen_bound_for_array(cell_constraint.cell_objects, 'y', 'max')
+        lmin_y = cell_constraint.last_min_y  # lowest point of last row
+        overflow = max_y - lmin_y if (max_y > lmin_y) else 0
 
-    # move objects down
-    if overflow > 0:
-        for obj in cell_constraint.cell_objects:
-            obj.location.y -= overflow
+        # move objects down
+        if overflow > 0:
+            for obj in cell_constraint.cell_objects:
+                obj.location.y -= overflow
 
     # get real and expected lowest point
     real_min_y = gen_bound_for_array(cell_constraint.cell_objects, 'y', 'min')
-    expected_min_y = lmin_y - (1.2 * line_space * param.scale)
+    expected_min_y = param.line.height - (SMALL_SPACE * line_space * param.scale)
 
     # save the lowest point
     cell_constraint.last_min_y = min(real_min_y, expected_min_y)
@@ -777,20 +778,28 @@ def gen_last_column_vline(col, align, x_pos):
 
 # function aligns cells horizontally for matrix
 def gen_matrix_align_x(obj_array, param):
+    prev_col_width = param.width
+    padding = GRID_SPACE * param.scale
+
     # calculate the max number of columns
     max_col = max(len(row) for row in obj_array)
-    padding = GRID_SPACE * param.scale
 
     for col in range(max_col):
         # find max width for the current column
-        # TODO make matrix handle empty columns
-        max_col_width = get_max_column_width(obj_array, col, 0)
+        max_col_width = get_max_column_width(obj_array, col, prev_col_width)
+
+        # add extra padding for empty column
+        is_empty_column = (prev_col_width == max_col_width)
+        extra_padding = (2 * padding) if is_empty_column else 0
+
+        # calculate spacing for the next column
+        prev_col_width = max_col_width + padding + extra_padding
 
         # move objects in next collumn
         if (col + 1) < max_col:
-            gen_move_column(obj_array, col + 1, max_col_width + padding)
+            gen_move_column(obj_array, col + 1, prev_col_width)
 
-        # always center for matrix
+        # center column content horizontally
         gen_column_cells_align_x(obj_array, col, max_col_width)
 
 
@@ -823,8 +832,12 @@ def gen_table_align_x(obj_array, param, align, multi):
         # find max width for the current column
         max_col_width = get_max_column_width(obj_array, col, prev_col_width, multi)
 
-        # increase padding for empty columns
-        prev_col_width = max_col_width + padding + (2 * padding + vline_space if prev_col_width == max_col_width else 0)
+        # add extra padding for empty column
+        is_empty_column = (prev_col_width == max_col_width)
+        extra_padding = (2 * padding + vline_space) if is_empty_column else 0
+
+        # calculate spacing for the next column
+        prev_col_width = max_col_width + padding + extra_padding
 
         # save each column width for cline command
         align.column_width.append(prev_col_width)
@@ -936,7 +949,7 @@ def gen_table_align_y(obj_array, align, multi):
                 vline.y_pos.append(align.row_y[i])
 
 
-# TODO vmatrix and Vmatrix have tricky space after left bracket
+# TODO [fix] vmatrix and Vmatrix have tricky space after left bracket
 # function generates matrix brackets
 def gen_brackets(context, bracket, param, collection, size):
     # determine left or right bracket
@@ -1116,7 +1129,7 @@ def parse_cline_range(range):
     return (start, end), ""
 
 
-# TODO make it work for p{}, b{}, m{}
+# TODO [feature] Make b{} and m{} alignment work
 # function parses multicolumn alignment into vertical lines and alignment
 def parse_multicol_alignment(multi, content):
     if not content:
@@ -1158,19 +1171,21 @@ def get_multi_span_number(multi, action, content):
 
 # function saves info about multicolumn command and adds placeholder collections
 def save_multicol_info(ts):
+    # skip if there is no multicolumn/multirow info
+    if ts.multi.col.span == 1 and ts.multi.row.span == 1:
+        return
+
     row = ts.get_row_num()
+    col = len(ts.obj_array[row]) - 1
+    ts.multi.save_cell_span((row, col))
+    ts.multi.row.reset_row_span()
 
-    if ts.multi.col.span > 1 or ts.multi.row.span > 1:
-        col = len(ts.obj_array[row]) - 1
-        ts.multi.save_cell_span((row, col))
-        ts.multi.row.reset_row_span()
-
-        # add placeholder collections for multicolumn
-        extra_col = ts.multi.col.span - 1
-        for _ in range(extra_col):
-            placeholder = gen_new_collection("TableCellPlaceholder", ts.table_coll)
-            ts.obj_array[row].append(placeholder)
-        ts.multi.col.reset_col_span()
+    # add placeholder collections for multicolumn
+    extra_col = ts.multi.col.span - 1
+    for _ in range(extra_col):
+        placeholder = gen_new_collection("TableCellPlaceholder", ts.table_coll)
+        ts.obj_array[row].append(placeholder)
+    ts.multi.col.reset_col_span()
 
 
 # function removes the last row if it only contains one empty collection

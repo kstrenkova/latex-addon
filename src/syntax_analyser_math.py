@@ -13,7 +13,7 @@ from .data.characters_db import *
 
 # TODO [feature] Add numbers for equation lines
 # TODO [optimalization] Go from using collections to python arrays or dictionaries
-# TODO [fix] make matrices use adjust_new_line function
+# TODO [fix] Make matrices use adjust_new_line function
 # TODO [fix] Make \dfrac function work every time
 
 # class for levels
@@ -157,6 +157,7 @@ class MathSyntaxAnalyser:
             return True
 
         # <MATH_FONT>
+        # TODO [feature] Add mathfonts not used only on upper letters
         elif action.startswith('#ACTION_MATH_FONT'):
             mfont = action.removeprefix('#ACTION_MATH_FONT_').lower()
             self.state_stack.append(mfont)
@@ -517,7 +518,7 @@ class MathSyntaxAnalyser:
             return True
 
         else:
-            print(f"Unknown action: '{action}'")
+            print(f"Internal error: Unknown action '{action}'")
             return False
 
     # main function for parsing process

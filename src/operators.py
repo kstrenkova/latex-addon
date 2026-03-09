@@ -141,8 +141,14 @@ class WM_OT_AddText(bpy.types.Operator):
         lex = LexicalAnalyser(props.latex_text, 0)
         syntax = SyntaxAnalyser(lex, context, props)
 
+        # set cursor icon to loading
+        bpy.context.window.cursor_modal_set('WAIT')
+
         # parse LaTeX text
         if not syntax.parse():
+            # set cursor icon back to default
+            bpy.context.window.cursor_modal_restore()
+
             warn_msg = 'LaTeX text was not fully generated: Check system console for more information'
             self.report({'WARNING'}, warn_msg)
             return {'CANCELLED'}
@@ -168,6 +174,9 @@ class WM_OT_AddText(bpy.types.Operator):
 
                 # move to cursor location
                 obj.location += cursor_pos
+
+        # set cursor icon back to default
+        bpy.context.window.cursor_modal_restore()
 
         self.report({'INFO'}, "LaTeX text was generated successfully")
         return {'FINISHED'}

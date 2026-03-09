@@ -15,10 +15,8 @@ from .data.characters_db import *
 # TODO [bug] Start creating objects on cursor point not at 0.0
 # TODO [fix] Make multicolumn content move if it's aligned right and has multiple vlines at the end
 # TODO [fix] Verb command should have spaces based on word spacing parameter
-# TODO [feature] Add mathfonts not used only on upper letters
 # TODO [feature] Add material to different mesh types
 # TODO [feature] Make setting width work for tables
-# TODO [feature] Add loadbar next to mouse when generating objects
 
 
 class ItemizeState:
@@ -122,34 +120,33 @@ class TableMultiCell:
         self.vline_pos.append(VLinePosition(x_pos, ID))
 
 
-# TODO set last_min_y properly
 class TableCellConstraint:
     def __init__(self):
         self.max_width = None
         self.init_cell_x = -1
         self.init_row_y = -1
-        self.last_min_y = 0.0
+        self.last_min_y = None
         self.cell_objects = []
 
     def set_init_pos(self, width, height):
         self.init_cell_x = width
         self.init_row_y = height
-        self.last_min_y = 0.0
+        self.last_min_y = None
 
-    def set_column_width(self, columns, col):
+    def set_column_width(self, scale, columns, col):
         if len(columns) <= col:
             return
 
         # save width constraint if it's positive
         p_width = columns[col].width
         if p_width > 0:
-            self.max_width = self.init_cell_x + p_width
+            self.max_width = self.init_cell_x + p_width * scale
 
     def reset_cell_constraint(self):
         self.max_width = None
         self.init_cell_x = -1
         self.init_row_y = -1
-        self.last_min_y = 0.0
+        self.last_min_y = None
         self.cell_objects.clear()
 
 
@@ -308,7 +305,7 @@ class SyntaxAnalyser:
             token = self.lex.get_token()
             gen_text_object(self.p, self.d, token.value, self.d.user_font)
 
-            # warp objects in cell that has width constraint
+            # wrap objects in cell that has width constraint
             if gen_wrap_obj_in_cell(self.p, self.d, self.cell_con):
                 self.consume_whitespace()
             return True
@@ -587,7 +584,7 @@ class SyntaxAnalyser:
             # save cell constraint
             if ts.multi.col.span == 1 and ts.multi.row.span == 1:
                 self.cell_con.set_init_pos(self.p.width, self.p.line.height)
-                self.cell_con.set_column_width(ts.align.columns, len(row) - 1)
+                self.cell_con.set_column_width(self.p.scale, ts.align.columns, len(row) - 1)
 
             return True
 
@@ -614,7 +611,7 @@ class SyntaxAnalyser:
             return True
 
         else:
-            print(f"Unknown action: '{action}'")
+            print(f"Internal error: Unknown action '{action}'")
             return False
 
 
@@ -687,7 +684,8 @@ class SyntaxAnalyser:
 
         # verify that all tokens have been read
         if self.stack:
-            print("Error, not all tokens have been read!")
+            err = "Not all tokens have been read!"
+            print("Syntax error:", err)
             return False
 
         # select all objects in base collection
