@@ -74,9 +74,9 @@ def gen_text_object(param, defaults, text, font_type, levels=None, symbol=None):
 
 
 # function calculates and adjusts the height for new line
-def gen_adjust_new_line(param, collection, line_space, init_width=0.0):
+def gen_adjust_new_line(param, base_coll, line_space, init_width=0.0):
     # no objects have been generated yet
-    if len(bpy.data.collections[collection].all_objects) == 0:
+    if len(bpy.data.collections[base_coll].all_objects) == 0:
         return
 
     # multiple new lines in the row
@@ -108,6 +108,52 @@ def gen_adjust_new_line(param, collection, line_space, init_width=0.0):
 
     param.line.height = param.line.min_y - line_space * param.scale
     param.width = init_width
+
+
+# function calculates and adjusts the height for new line in one table cell
+def gen_new_line_in_cell(param, cell_constraint, line_space):
+    # calculate overflow
+    max_y = gen_bound_for_array(cell_constraint.cell_objects, 'y', 'max')
+    lmin_y = cell_constraint.last_min_y  # lowest point of last row
+    overflow = max_y - lmin_y if (max_y > lmin_y) else 0
+
+    # move objects down
+    if overflow > 0:
+        for obj in cell_constraint.cell_objects:
+            obj.location.y -= overflow
+
+    # get real and expected lowest point
+    real_min_y = gen_bound_for_array(cell_constraint.cell_objects, 'y', 'min')
+    expected_min_y = lmin_y - (1.2 * line_space * param.scale)
+
+    # save the lowest point
+    cell_constraint.last_min_y = min(real_min_y, expected_min_y)
+
+    # reset cell constraint objects
+    cell_constraint.cell_objects.clear()
+
+    param.line.height = cell_constraint.last_min_y - line_space * param.scale
+    param.width = cell_constraint.init_cell_x
+
+
+# function wraps objects in cell that has width constraint
+# the return value signals whether whitespace should be consumed
+def gen_wrap_obj_in_cell(param, defaults, cell_constraint):
+    # return if there is no cell constraint
+    if cell_constraint.max_width is None:
+        return False
+
+    # save current object
+    cell_constraint.cell_objects.append(defaults.context.active_object)
+
+    # return if the object maximum is lower than the cell constraint
+    current_max_x = gen_bound_for_array([defaults.context.active_object], 'x', 'max')
+    if current_max_x < cell_constraint.max_width:
+        return False
+
+    # set new line for next objects in this table cell
+    gen_new_line_in_cell(param, cell_constraint, defaults.line_height)
+    return True
 
 
 # function generates line object
@@ -695,6 +741,25 @@ def gen_move_multicolumn_for_vline(collection, param, row, multi, span_info, x_p
         obj.location.x += vline_space
 
 
+# function moves multicolumn when it intersects with vertical lines
+def process_multicolumn_vlines(obj_array, param, multi, cell_span, col, total_space):
+    for (r, c), span_info in cell_span.items():
+        col_span = span_info.get('col_span', 1)
+
+        if col_span == 1:
+            continue
+
+        collection = obj_array[r][c]
+
+        # Check if multicolumn starts at the target column
+        if c == col:
+            gen_move_multicolumn_for_vline(collection, param, r, multi, span_info, total_space, 'before')
+
+        # Check if multicolumn ends right before the target column
+        elif (c + col_span) == col:
+            gen_move_multicolumn_for_vline(collection, param, r, multi, span_info, total_space, 'after')
+
+
 # function saves positions of vertical lines after the last column
 def gen_last_column_vline(col, align, x_pos):
     # number of vertical lines after current column
@@ -750,16 +815,7 @@ def gen_table_align_x(obj_array, param, align, multi):
 
         # process multicolumns
         total_space = prev_col_width + vline_space
-        for (r, c), span_info in cell_span.items():
-
-            if span_info['col_span'] > 1:
-                collection = obj_array[r][c]
-                # check if the multicolumn starts at this column
-                if c == col:
-                    gen_move_multicolumn_for_vline(collection, param, r, multi, span_info, total_space, 'before')
-                # check if the multicolumn ends right before this column
-                elif (c + span_info['col_span']) == col:
-                    gen_move_multicolumn_for_vline(collection, param, r, multi, span_info, total_space, 'after')
+        process_multicolumn_vlines(obj_array, param, multi, cell_span, col, total_space)
 
         # add padding before the column
         gen_move_column(obj_array, col, padding, 'const')
@@ -776,6 +832,9 @@ def gen_table_align_x(obj_array, param, align, multi):
         if len(align.vline) > (col + 1) and (col + 1) == max_col:
             # check for vertical line after the last column
             gen_last_column_vline(col, align, prev_col_width)
+
+            # check if multicolumn ends on the last column
+            process_multicolumn_vlines(obj_array, param, multi, cell_span, col + 1, prev_col_width)
 
         # move objects in next collumn
         if (col + 1) < max_col:
@@ -1119,8 +1178,8 @@ def gen_cleanup_last_row(obj_array):
     if not obj_array:
         return
 
+    # get last row object
     last_row = obj_array[-1]
-
     if len(last_row) != 1:
         return
 

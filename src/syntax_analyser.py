@@ -13,9 +13,8 @@ from .data.ll_table import *
 from .data.characters_db import *
 
 # TODO [bug] Start creating objects on cursor point not at 0.0
-# TODO [bug] Vertical lines for multicolumn are not generated for last column
-# TODO [fix] Make multicolumn content move if it's aligned right and has multiple
-# vlines at the end
+# TODO [fix] Make multicolumn content move if it's aligned right and has multiple vlines at the end
+# TODO [fix] Verb command should have spaces based on word spacing parameter
 # TODO [feature] Add mathfonts not used only on upper letters
 # TODO [feature] Add material to different mesh types
 # TODO [feature] Make setting width work for tables
@@ -123,6 +122,37 @@ class TableMultiCell:
         self.vline_pos.append(VLinePosition(x_pos, ID))
 
 
+# TODO set last_min_y properly
+class TableCellConstraint:
+    def __init__(self):
+        self.max_width = None
+        self.init_cell_x = -1
+        self.init_row_y = -1
+        self.last_min_y = 0.0
+        self.cell_objects = []
+
+    def set_init_pos(self, width, height):
+        self.init_cell_x = width
+        self.init_row_y = height
+        self.last_min_y = 0.0
+
+    def set_column_width(self, columns, col):
+        if len(columns) <= col:
+            return
+
+        # save width constraint if it's positive
+        p_width = columns[col].width
+        if p_width > 0:
+            self.max_width = self.init_cell_x + p_width
+
+    def reset_cell_constraint(self):
+        self.max_width = None
+        self.init_cell_x = -1
+        self.init_row_y = -1
+        self.last_min_y = 0.0
+        self.cell_objects.clear()
+
+
 class TableState:
     def __init__(self, parent_coll, init_params):
         self.parent_coll = parent_coll
@@ -147,6 +177,7 @@ class SyntaxAnalyser:
         self.lex = lex
         self.d = Defaults(context, custom_prop)
         self.p = Parameters(custom_prop.text_scale, 0.0, 0.0, 0.0)
+        self.cell_con = TableCellConstraint()
 
     # function finds first state of specific type from top of stack
     def get_context_state(self, state_type):
@@ -276,6 +307,10 @@ class SyntaxAnalyser:
         elif action == '#ACTION_GENERATE_TEXT':
             token = self.lex.get_token()
             gen_text_object(self.p, self.d, token.value, self.d.user_font)
+
+            # warp objects in cell that has width constraint
+            if gen_wrap_obj_in_cell(self.p, self.d, self.cell_con):
+                self.consume_whitespace()
             return True
 
         # new line (\\)
@@ -528,6 +563,11 @@ class SyntaxAnalyser:
             return True
 
         elif action == '#ACTION_TABLE_NEW_CELL':
+            # reset cell constraint and initial height
+            if self.cell_con.max_width is not None:
+                self.p.line.height = self.cell_con.init_row_y
+            self.cell_con.reset_cell_constraint()
+
             ts = self.state_stack[-1]
             ts.hline.reset_cline()  # mark end of consequent cline commands
 
@@ -543,6 +583,11 @@ class SyntaxAnalyser:
                 err = f"Table has more columns than defined in column specification!"
                 print("Syntax error:", err)
                 return False
+
+            # save cell constraint
+            if ts.multi.col.span == 1 and ts.multi.row.span == 1:
+                self.cell_con.set_init_pos(self.p.width, self.p.line.height)
+                self.cell_con.set_column_width(ts.align.columns, len(row) - 1)
 
             return True
 
