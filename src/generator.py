@@ -1152,29 +1152,6 @@ def parse_cline_range(range):
     return (start, end), ""
 
 
-# TODO [feature] Make b{} and m{} alignment work
-# function parses multicolumn alignment into vertical lines and alignment
-def parse_multicol_alignment(multi, content):
-    if not content:
-        return "Alignment in \\multicolumn command is empty!"
-
-    # save the alignment and number of vertical lines
-    multi.col.before = len(content) - len(content.lstrip('|'))
-    multi.col.after = len(content) - len(content.rstrip('|'))
-    alignment = content.strip('|')
-
-    # check format
-    if len(alignment) != 1:
-          return f"Invalid alignment format '{content}'! Expected: |...|<letter>|...|"
-
-    # check the alignment type
-    if alignment not in table_alignments:
-        return f"Unsupported alignment '{alignment}' in \\multicolumn command! Use one of: {', '.join(table_alignments)}"
-
-    multi.col.align = alignment
-    return ""
-
-
 # function saves the span number for multicolumn and multirow commands
 def get_multi_span_number(multi, action, content):
     try:
@@ -1192,8 +1169,8 @@ def get_multi_span_number(multi, action, content):
         return err
 
 
-# function saves info about multicolumn command and adds placeholder collections
-def save_multicol_info(ts):
+# function saves info about multicolumn/multirow and adds placeholder collections
+def save_multi_info(ts):
     # skip if there is no multicolumn/multirow info
     if ts.multi.col.span == 1 and ts.multi.row.span == 1:
         return

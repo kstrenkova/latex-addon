@@ -3,6 +3,14 @@
 # Created By  : Katarina Strenkova
 # ---------------------------------------------------------------------------
 
+# tokens multicolumn and multirow commands share
+# NOTE: Not supported = display math mode, enter, open curly
+MULTI_SHARED_TOKENS = [
+    '_TEXT', '_SPECIAL_CHAR', '_PIPE', '_OPEN_ANGLE', '_CLOSE_ANGLE',
+    '_OPEN_BRACKET', '_CLOSE_BRACKET', 'par', 'textbf', 'textit',
+    'texttt', 'verb', 'begin', '_DOLLAR', '\(', '\['
+]
+
 ll_table = {
     # --- PROG ---
     # <PROG> -> <TERM> <MORE_TERM>
@@ -156,6 +164,31 @@ ll_table = {
     ('COL_WIDTH', '_OPEN_CURLY'): ['{', '#ACTION_COL_WIDTH', '}', 'ALIGN'],
     ('COL_WIDTH', 'epsilon'):     ['ALIGN'],
 
+    # --- MULTICOL_ALIGN ---
+    # <MUTLCOL_ALIGN>  -> <PIPE_BEFORE> text <MULTICOL_WIDTH> <PIPE_AFTER>
+    ('MULTICOL_ALIGN', '_PIPE'):  [
+        'PIPE_BEFORE', '#ACTION_TABLE_MULTICOL_ALIGN', 'MULTICOL_WIDTH', 'PIPE_AFTER'
+    ],
+    # <MUTLCOL_ALIGN>  -> text <MULTICOL_WIDTH> <PIPE_AFTER>
+    ('MULTICOL_ALIGN', '_TEXT'):  [
+        '#ACTION_TABLE_MULTICOL_ALIGN', 'MULTICOL_WIDTH', 'PIPE_AFTER'
+    ],
+
+    # <PIPE_BEFORE> -> | <PIPE_BEFORE>
+    # <PIPE_BEFORE> -> epsilon
+    ('PIPE_BEFORE', '_PIPE'):     ['|', '#ACTION_TABLE_MULTICOL_PIPE_BEFORE', 'PIPE_BEFORE'],
+    ('PIPE_BEFORE', 'epsilon'):   ['epsilon'],
+
+    # <MULTICOL_WIDTH> -> { text }
+    # <MULTICOL_WIDTH> -> epsilon
+    ('MULTICOL_WIDTH', '_OPEN_CURLY'): ['{', '#ACTION_TABLE_MULTICOL_WIDTH', '}'],
+    ('MULTICOL_WIDTH', 'epsilon'):     ['epsilon'],
+
+    # <PIPE_AFTER> -> | <PIPE_AFTER>
+    # <PIPE_AFTER> -> epsilon
+    ('PIPE_AFTER', '_PIPE'):      ['|', '#ACTION_TABLE_MULTICOL_PIPE_AFTER', 'PIPE_AFTER'],
+    ('PIPE_AFTER', 'epsilon'):    ['epsilon'],
+
     # --- TABLE ---
     # <TABLE> -> <CONST>
     ('TABLE', '_TEXT'):           ['CONST', 'TABLE'],
@@ -197,8 +230,8 @@ ll_table = {
     # <TABLE> -> multicolumn { text } { text } { <MULTI> } <TABLE>
     ('TABLE', 'multicolumn'): [
         'multicolumn', '{', '#ACTION_TABLE_MULTICOL_NUMBER', '}',
-        '{', '#ACTION_TABLE_MULTICOL_ALIGN', '}',
-        '{', 'MULTI', '}', 'TABLE'
+        '{', 'MULTICOL_ALIGN', '}',
+        '{', 'MULTICOL', '}', 'TABLE'
     ],
 
     # <TABLE> -> multirow { text } { text } { <MULTI> } <TABLE>
@@ -211,13 +244,22 @@ ll_table = {
     # <TABLE> -> epsilon
     ('TABLE', 'end'):            ['#ACTION_TABLE_CREATE'],
 
-    # TODO [Fix] Add all multirow/multicolumn rules
-    # Note: multirow can be in multicolumn but not vise versa
-    # <MULTI> -> <CONST>
-    ('MULTI', '_TEXT'):          ['CONST', 'MULTI'],
+    # --- MULTI ---
+    # NOTE: multirow can be in multicolumn but not vise versa
+
+    # <MULTICOL> -> multirow { text } { text } { <MULTI> } <MULTICOL>
+    ('MULTICOL', 'multirow'): [
+        'multirow', '{', '#ACTION_TABLE_MULTIROW_NUMBER', '}',
+        '{', '#ACTION_TABLE_MULTIROW_WIDTH', '}',
+        '{', 'MULTI', '}', 'MULTICOL'
+    ],
+    ('MULTICOL', '_CLOSE_CURLY'): ['epsilon'],
 
     # <MULTI> -> epsilon
-    ('MULTI', '_CLOSE_CURLY'):   ['epsilon'],
+    ('MULTI', '_CLOSE_CURLY'):     ['epsilon'],
+
+    **{('MULTICOL', token): ['MORE_TERM', 'MULTICOL'] for token in MULTI_SHARED_TOKENS},
+    **{('MULTI', token):    ['MORE_TERM', 'MULTI']    for token in MULTI_SHARED_TOKENS},
 }
 
 math_ll_table = {

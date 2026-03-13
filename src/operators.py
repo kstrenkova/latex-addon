@@ -151,10 +151,10 @@ class WM_OT_AddText(bpy.types.Operator):
                 self.report({'WARNING'}, warn_msg)
                 return {'CANCELLED'}
 
-        except Exception as e:
-            self.report({'ERROR'}, f"Python Error: {e}")
-            print(f"Developer Traceback: {e}")
-            return {'CANCELLED'}
+        # except Exception as e:
+        #     self.report({'ERROR'}, f"Python Error: {e}")
+        #     print(f"Developer Traceback: {e}")
+        #     return {'CANCELLED'}
 
         finally:
             # set cursor icon back to default

@@ -84,8 +84,13 @@ whitespace_add_actions = {
 # context-dependent epsilon productions
 epsilon_rules = {
     # stack_top: token.type, token.value
-    'ITEMIZE':   [('COMMAND', 'item')],
-    'COL_WIDTH': [('_OPEN_CURLY', '{')],
+    'ITEMIZE':        [('COMMAND', 'item')],
+    'COL_WIDTH':      [('_OPEN_CURLY', '{')],
+    'MULTICOL_WIDTH': [('_OPEN_CURLY', '{')],
+    'PIPE_AFTER':     [('_PIPE', '|')],
+    'PIPE_BEFORE':    [('_PIPE', '|')],
+
+    # math LL-table
     'IX':        [('_UNDERSCORE', '_')],
     'EXP':       [('_CARET', '^')],
     'RANGE_OP':  [

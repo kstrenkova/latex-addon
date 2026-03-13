@@ -80,13 +80,13 @@ class MultiRow():
 class MultiCol():
     def __init__(self):
         self.span = 1
-        self.align = 'c'
+        self.align = ColumnAlignment('c')
         self.before = 0
         self.after = 0
 
     def reset_col_span(self):
         self.span = 1
-        self.align = 'c'
+        self.align = ColumnAlignment('c')
         self.before = 0
         self.after = 0
 
@@ -515,19 +515,44 @@ class SyntaxAnalyser:
 
             return True
 
+        # <MULTICOL> actions
         elif action == '#ACTION_TABLE_MULTICOL_ALIGN':
             ts = self.state_stack[-1]
-            content, err = self.lex.get_token_until(['_TEXT', '_PIPE'], '}')
+            token = self.lex.get_token()
+
+            if token.type != '_TEXT' or token.value not in table_alignments:
+                err = f"Tabular alignment '{token.value}' is not correct or supported!"
+                print("Syntax error:", err)
+                return False
+
+            ts.multi.col.align.type = token.value
+            return True
+
+        elif action.startswith('#ACTION_TABLE_MULTICOL_PIPE_'):
+            ts = self.state_stack[-1]
+
+            # increase number of vertical lines based on version
+            version = action.removeprefix('#ACTION_TABLE_MULTICOL_PIPE_').lower()
+            vline = getattr(ts.multi.col, version)
+            setattr(ts.multi.col, version, vline + 1)
+            return True
+
+        elif action == '#ACTION_TABLE_MULTICOL_WIDTH':
+            ts = self.state_stack[-1]
+            content, err = self.lex.get_token_until(['_TEXT'], '}')
             if len(err) > 0:
                 print("Syntax error:", err)
                 return False
 
-            # save alignment and overwrite vertical lines
-            err = parse_multicol_alignment(ts.multi, content)
+            err = parse_table_width(ts.multi.col.align, content, '\\multicolumn')
             if len(err) > 0:
                 print("Syntax error:", err)
                 return False
 
+            # add cell constraint
+            if ts.multi.col.align.width > 0:
+                self.cell_con.set_init_pos(self.p.width, self.p.line.height)
+                self.cell_con.max_width = self.cell_con.init_cell_x + ts.multi.col.align.width * self.p.scale
             return True
 
         elif action == '#ACTION_TABLE_MULTIROW_WIDTH':
@@ -542,13 +567,16 @@ class SyntaxAnalyser:
                 print("Syntax error:", err)
                 return False
 
+            # add cell constraint
+            self.cell_con.set_init_pos(self.p.width, self.p.line.height)
+            self.cell_con.max_width = self.cell_con.init_cell_x + ts.multi.row.width * self.p.scale
             return True
 
         elif action == '#ACTION_TABLE_NEW_ROW':
             ts = self.state_stack[-1]
 
-            # special info saving for multicolumn
-            save_multicol_info(ts)
+            # special info saving for multicolumn/multirow
+            save_multi_info(ts)
 
             # add new array that represents row
             ts.obj_array.append([])
@@ -564,16 +592,16 @@ class SyntaxAnalyser:
             return True
 
         elif action == '#ACTION_TABLE_NEW_CELL':
-            # reset cell constraint and initial height
-            if self.cell_con.max_width is not None:
-                self.p.line.height = self.cell_con.init_row_y
-            self.cell_con.reset_cell_constraint()
-
             ts = self.state_stack[-1]
             ts.hline.reset_cline()  # mark end of consequent cline commands
 
-            # special info saving for multicolumn
-            save_multicol_info(ts)
+            # reset cell constraint and initial height
+            if self.cell_con.max_width is not None:
+                self.p.line.height = self.cell_con.init_row_y
+                self.cell_con.reset_cell_constraint()
+
+            # special info saving for multicolumn/multirow
+            save_multi_info(ts)
 
             # add table cell collection to row
             self.d.current_coll = gen_new_collection("TableCellCollection", ts.table_coll)
@@ -585,8 +613,8 @@ class SyntaxAnalyser:
                 print("Syntax error:", err)
                 return False
 
-            # save cell constraint
-            if ts.multi.col.span == 1 and ts.multi.row.span == 1:
+            # save normal cell constraint
+            if self.cell_con.max_width is None:
                 self.cell_con.set_init_pos(self.p.width, self.p.line.height)
                 self.cell_con.set_column_width(self.p.scale, ts.align.columns, len(row) - 1)
 
