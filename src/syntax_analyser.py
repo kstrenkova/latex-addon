@@ -14,7 +14,6 @@ from .data.characters_db import *
 
 # TODO [bug] Start creating objects on cursor point not at 0.0
 # TODO [fix] Make multicolumn content move if it's aligned right and has multiple vlines at the end
-# TODO [fix] Verb command should have spaces based on word spacing parameter
 # TODO [feature] Add material to different mesh types
 # TODO [feature] Make setting width work for tables
 
