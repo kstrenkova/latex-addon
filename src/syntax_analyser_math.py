@@ -307,8 +307,7 @@ class MathSyntaxAnalyser:
                 sqrt_param['y_max'] = gen_bound(sqs.sqcoll, 'y', 'max')
 
             # generating sqrt symbol
-            sqrt_obj = gen_sqrt_sym(self.d.context)
-            gen_object_to_collection(sqrt_obj, sqs.parent_coll)
+            sqrt_obj = gen_sqrt_sym(self.d.context, sqs.parent_coll)
             self.p.line.line_objs.append(sqrt_obj)
 
             # move sqrt symbol

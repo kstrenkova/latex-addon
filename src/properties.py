@@ -18,7 +18,7 @@ def get_loaded_fonts(self, context):
 
 
 # custom properties
-# TODO [feature] add text alignment, math font
+# TODO [feature] Add text alignment and math font
 class LATEX_PG_Properties(bpy.types.PropertyGroup):
     latex_text: bpy.props.StringProperty(
         name="Text",

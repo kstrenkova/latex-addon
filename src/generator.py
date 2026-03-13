@@ -86,6 +86,16 @@ def gen_adjust_new_line(param, base_coll, line_space, init_width=0.0):
         param.width = init_width
         return
 
+    # save all minimum y
+    all_min_y = []
+
+    if param.line.table_min_y is not None:
+        all_min_y.append(param.line.table_min_y - BASE_SPACE * param.scale)
+
+        # center all objects according to the table
+        for obj in param.line.line_objs:
+            obj.location.y -= (param.line.height - param.line.table_min_y) / 2.0
+
     if param.line.min_y is not None:
         # calculate overflow
         max_y = gen_bound_for_array(param.line.line_objs, 'y', 'max')
@@ -102,7 +112,8 @@ def gen_adjust_new_line(param, base_coll, line_space, init_width=0.0):
     expected_min_y = param.line.height - (SMALL_SPACE * line_space * param.scale)
 
     # save the lowest point
-    param.line.min_y = min(real_min_y, expected_min_y)
+    all_min_y.extend([real_min_y, expected_min_y])
+    param.line.min_y = min(all_min_y)
 
     # reset line objects
     param.line.line_objs.clear()
@@ -244,7 +255,7 @@ def gen_object_to_collection(obj, collection):
 
 
 # function generates square root symbol
-def gen_sqrt_sym(context):
+def gen_sqrt_sym(context, collection):
     # symbol vertices
     verts = [
         Vector((-0.5266461968421936, -0.13621671915054321, 0.0)),
@@ -281,6 +292,10 @@ def gen_sqrt_sym(context):
     bpy.ops.object.editmode_toggle()
 
     sqrt_obj = context.active_object
+
+    # save sqrt symbol into the current collection
+    gen_object_to_collection(sqrt_obj, collection)
+
     return sqrt_obj
 
 
@@ -888,7 +903,7 @@ def gen_multirow_cells_align_y(obj_array, align, cell_span):
 
             # move objects lower
             for obj in bpy.data.collections[collection].all_objects:
-                obj.location.y += (y_last - y_first) / 2
+                obj.location.y += (y_last - y_first) / 2.0
 
 
 # function centers cells in matrix vertically
@@ -993,10 +1008,10 @@ def gen_brackets(context, bracket, param, collection, size):
 
 
 # function centers matrix
-def gen_matrix_center(collection, size, y_line):
+def gen_matrix_center(collection, size, base_line):
     # calculate center location
     center_loc = (size.max_y + size.min_y) / 2.0
-    offset = center_loc + abs(y_line)
+    offset = center_loc + abs(base_line)
 
     # center matrix into row
     for obj in bpy.data.collections[collection].all_objects:

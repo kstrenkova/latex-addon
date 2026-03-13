@@ -449,7 +449,11 @@ class SyntaxAnalyser:
 
         elif action == '#ACTION_TABLE_INIT':
             # add space before table
-            self.p.width += self.d.word_space * self.d.text_scale
+            if self.p.width != 0.0:
+                self.p.width += self.d.word_space * self.d.text_scale
+
+            # save line objects
+            self.p.line.table_objs = self.p.line.line_objs.copy()
 
             ts = TableState(self.d.current_coll, self.p.create_copy())
             self.state_stack.append(ts)
@@ -607,7 +611,7 @@ class SyntaxAnalyser:
 
             # set new width and old height
             self.p.width = gen_bound(ts.table_coll, 'x', 'max') + self.d.word_space * self.d.text_scale
-            self.p.line = Line(ts.init_params.height)
+            self.p.line = Line(ts.init_params.height, self.p.line.table_objs, self.p.line.min_y)
 
             # join table collection into parent collection
             gen_join_collections(ts.table_coll, ts.parent_coll)
