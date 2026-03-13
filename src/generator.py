@@ -86,15 +86,16 @@ def gen_adjust_new_line(param, base_coll, line_space, init_width=0.0):
         param.width = init_width
         return
 
-    # calculate overflow
-    max_y = gen_bound_for_array(param.line.line_objs, 'y', 'max')
-    lmin_y = param.line.min_y  # lowest point of last row
-    overflow = max_y - lmin_y if (max_y > lmin_y) else 0
+    if param.line.min_y is not None:
+        # calculate overflow
+        max_y = gen_bound_for_array(param.line.line_objs, 'y', 'max')
+        lmin_y = param.line.min_y  # lowest point of last row
+        overflow = max_y - lmin_y if (max_y > lmin_y) else 0
 
-    # move objects down
-    if overflow > 0:
-        for obj in param.line.line_objs:
-            obj.location.y -= overflow
+        # move objects down
+        if overflow > 0:
+            for obj in param.line.line_objs:
+                obj.location.y -= overflow
 
     # get real and expected lowest point
     real_min_y = gen_bound_for_array(param.line.line_objs, 'y', 'min')
@@ -357,11 +358,15 @@ def gen_frac_line(context, param, collection, line_length):
 def gen_frac_move(param, collection, mode):
     # get highest or lowest point in collection
     y = gen_bound(collection, 'y', 'max') if mode == "den" else gen_bound(collection, 'y', 'min')
-    move_by = param.height - y + (0.1 if mode == "den" else 0.6) * param.scale
+    extra_padding = (MIN_SPACE if mode == "den" else 0.6) * param.scale
+
+    # early return when no objects
+    if y is None:
+        return
 
     # select and move all objects in denominator
     for obj in bpy.data.collections[collection].all_objects:
-        obj.location.y += move_by
+        obj.location.y += param.height - y + extra_padding
 
 
 # helper function to get the fraction level scale
@@ -448,9 +453,9 @@ def gen_move_sum(param, collection, sum_name):
         # move object depending on index or exponent mode
         obj.location.x += bbox[0].x - min_x
         if "ExponentCollection" in collection:
-            obj.location.y += bbox[2].y - min_y + 0.25 * param.scale
+            obj.location.y += bbox[2].y - min_y + BASE_SPACE * param.scale
         else:
-            obj.location.y += bbox[0].y - max_y - 0.25 * param.scale
+            obj.location.y += bbox[0].y - max_y - BASE_SPACE * param.scale
 
     # center text above sum symbol
     gen_center_sum(collection, bbox[4].x)  # sum width
@@ -477,8 +482,8 @@ def gen_fin_sum(sum_name, up_collection, down_collection):
 
     # find biggest width
     fin_width = max(
-        gen_bound(up_collection, 'x', 'max'),
-        gen_bound(down_collection, 'x', 'max'),
+        gen_bound(up_collection, 'x', 'max') or 0.0,
+        gen_bound(down_collection, 'x', 'max') or 0.0,
         sum_width
     )
 
@@ -538,8 +543,8 @@ def gen_calculate_bound(objects, axis, ftype):
 
 # function returns the extreme for an array of objects
 def gen_bound_for_array(objects, axis, ftype):
-    if len(objects) <= 0:
-        return 0
+    if not objects:
+        return None
 
     # update object placement
     bpy.context.view_layer.update()
@@ -548,8 +553,11 @@ def gen_bound_for_array(objects, axis, ftype):
 
 
 # function returns the extreme for objects in a collection
-def gen_bound(collection, axis, ftype):
-    objects = bpy.data.collections[collection].all_objects
+def gen_bound(coll_name, axis, ftype):
+    coll = bpy.data.collections.get(coll_name)
+    objects = coll.all_objects
+
+    # early return if no objects
     if not objects:
         return None
 
@@ -586,8 +594,7 @@ def get_max_column_width(obj_array, col, max_width, multi=None):
 
 
 # function returns the max height of the given row
-def get_min_row_height(row, max_col):
-      min_height = float('inf')
+def get_min_row_height(row, max_col, min_height):
       for col in range(max_col):
           if col < len(row):
               collection = row[col]
@@ -599,8 +606,7 @@ def get_min_row_height(row, max_col):
 
 
 # function returns the max height of the given row
-def get_max_row_height(row, max_col):
-    max_height = float('-inf')
+def get_max_row_height(row, max_col, max_height):
     for col in range(max_col):
         if col < len(row):
             collection = row[col]
@@ -885,18 +891,20 @@ def gen_multirow_cells_align_y(obj_array, align, cell_span):
                 obj.location.y += (y_last - y_first) / 2
 
 
-# function centers cells in matrix/table vertically
+# function centers cells in matrix vertically
 def gen_matrix_align_y(obj_array, param):
     # calculate the max number of columns
     max_col = max(len(row) for row in obj_array)
-    padding = GRID_SPACE * param.scale
+    prev_max_height = param.height
+    padding = SMALL_SPACE * param.scale
 
     # initialize row minimum
     min_row_height = None
 
     for row in obj_array:
         # find max height for the current row
-        max_row_height = get_max_row_height(row, max_col)
+        max_row_height = get_max_row_height(row, max_col, prev_max_height)
+        prev_max_height = max_row_height
 
         # check for first iteration
         if min_row_height is not None:
@@ -906,7 +914,7 @@ def gen_matrix_align_y(obj_array, param):
                 gen_move_row(row, max_col, move_by)
 
         # find min height for the current row
-        min_row_height = get_min_row_height(row, max_col)
+        min_row_height = get_min_row_height(row, max_col, max_row_height)
 
 
 # function aligns cells for table vertically to center

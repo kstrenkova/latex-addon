@@ -13,8 +13,6 @@ from .data.characters_db import *
 
 # TODO [feature] Add numbers for equation lines
 # TODO [optimalization] Go from using collections to python arrays or dictionaries
-# TODO [fix] Make matrices use adjust_new_line function
-# TODO [fix] Make \dfrac function work every time
 
 # class for levels
 class Levels:
@@ -43,8 +41,8 @@ class FractionState:
         self.init_params = init_params
         self.ncoll = ''
         self.dcoll = ''
-        self.nwidth = 0
-        self.dwidth = 0
+        self.nwidth = 0.0
+        self.dwidth = 0.0
 
 
 # class for square root
@@ -188,7 +186,7 @@ class MathSyntaxAnalyser:
         elif action == '#ACTION_EI_INIT':
             token = self.lex.get_token()
             eis = ExpIxState(self.d.current_coll, self.p.create_copy(), self.levels.sym_name)
-            eis.width = gen_bound(self.d.current_coll, 'x', 'max')
+            eis.width = gen_bound(self.d.current_coll, 'x', 'max') or 0.0
             self.levels.sym_name = ''
 
             # exponent or index collection
@@ -239,7 +237,7 @@ class MathSyntaxAnalyser:
             eis = self.state_stack.pop()
 
             # calculate final width
-            fin_width = max(eis.width, gen_bound(eis.parent_coll, 'x', 'max'))
+            fin_width = max(eis.width, gen_bound(eis.parent_coll, 'x', 'max') or 0.0)
 
             self.p.width = fin_width + MIN_SPACE * self.p.scale
             self.levels.ei_array.pop()
@@ -302,7 +300,7 @@ class MathSyntaxAnalyser:
 
             # gets parameters of text under square root
             sq_coll_obj = bpy.data.collections.get(sqs.sqcoll)
-            if len(sq_coll_obj.all_objects):
+            if sq_coll_obj.all_objects:
                 use_param = True
                 sqrt_param['x_pos'] = gen_bound(sqs.sqcoll, 'x', 'max')
                 sqrt_param['y_min'] = gen_bound(sqs.sqcoll, 'y', 'min')
@@ -327,6 +325,7 @@ class MathSyntaxAnalyser:
             self.levels.frac_array.append(item)
             return True
 
+        # TODO [fix] Improve visual quality of \dfrac command in every scenario
         elif action == '#ACTION_FRAC_INIT':
             self.p.width += MIN_SPACE * self.p.scale  # space before fraction
             fs = FractionState(self.d.current_coll, self.p.create_copy())
@@ -342,8 +341,7 @@ class MathSyntaxAnalyser:
             fs = self.state_stack[-1]
 
             # gets the furthest x position
-            if len(bpy.data.collections[self.d.current_coll].all_objects):
-                fs.nwidth = gen_bound(self.d.current_coll, 'x', 'max')
+            fs.nwidth = gen_bound(self.d.current_coll, 'x', 'max') or 0.0
 
             # move numerator objects
             gen_calculate(self.p, self.d.text_scale, self.levels)
@@ -361,8 +359,7 @@ class MathSyntaxAnalyser:
             fs = self.state_stack.pop()
 
             # gets the furthest x position
-            if len(bpy.data.collections[self.d.current_coll].all_objects):
-                fs.dwidth = gen_bound(self.d.current_coll, 'x', 'max')
+            fs.dwidth = gen_bound(self.d.current_coll, 'x', 'max') or 0.0
 
             # move denominator objects
             gen_calculate(self.p, self.d.text_scale, self.levels)
@@ -452,12 +449,9 @@ class MathSyntaxAnalyser:
         elif action == '#ACTION_MATRIX_NEW_ROW':
             ms = self.state_stack[-1]
 
-            # matrix cell collection
-            self.d.current_coll = gen_new_collection("MatrixCellCollection", ms.mx_coll)
-
             # add new array that represents row
             ms.obj_array.append([])
-            ms.obj_array[ms.get_row_num()].append(self.d.current_coll)
+            self.execute_action('#ACTION_MATRIX_NEW_CELL')
 
             # set width to start and height lower
             self.p.width = ms.init_params.width
@@ -479,38 +473,38 @@ class MathSyntaxAnalyser:
             gen_cleanup_last_row(ms.obj_array)
 
             # position matrix if not empty
-            if len(ms.obj_array):
+            if ms.obj_array:
                 gen_matrix_align_x(ms.obj_array, self.p)
                 gen_matrix_align_y(ms.obj_array, self.p)
 
-            # calculate matrix height
-            ms.size.min_y = gen_bound(ms.parent_coll, 'y', 'min')
-            ms.size.max_y = gen_bound(ms.parent_coll, 'y', 'max')
-            bracket_type = matrix_brackets[ms.brackets]
+                # calculate matrix height
+                ms.size.min_y = gen_bound(ms.parent_coll, 'y', 'min')
+                ms.size.max_y = gen_bound(ms.parent_coll, 'y', 'max')
+                bracket_type = matrix_brackets[ms.brackets]
 
-            if not ms.brackets == 'matrix':
-                # generate left bracket of matrix
-                bracket_obj = gen_text(bracket_type[0], change_font('math'), ms.mx_coll, self.p.line)
-                gen_brackets(self.d.context, bracket_obj, self.p, ms.mx_coll, ms.size)
+                if not ms.brackets == 'matrix':
+                    # generate left bracket of matrix
+                    bracket_obj = gen_text(bracket_type[0], change_font('math'), ms.mx_coll, self.p.line)
+                    gen_brackets(self.d.context, bracket_obj, self.p, ms.mx_coll, ms.size)
 
-                # calculate furthest x position
-                ms.size.max_x = gen_bound(ms.parent_coll, 'x', 'max') + ms.size.bracket_width / 2.0
+                    # calculate furthest x position
+                    ms.size.max_x = gen_bound(ms.parent_coll, 'x', 'max') + ms.size.bracket_width / 2.0
 
-                # generate right bracket of matrix
-                bracket_obj = gen_text(bracket_type[1], change_font('math'), ms.mx_coll, self.p.line)
-                gen_brackets(self.d.context, bracket_obj, self.p, ms.mx_coll, ms.size)
+                    # generate right bracket of matrix
+                    bracket_obj = gen_text(bracket_type[1], change_font('math'), ms.mx_coll, self.p.line)
+                    gen_brackets(self.d.context, bracket_obj, self.p, ms.mx_coll, ms.size)
 
-            # center matrix into row
-            gen_matrix_center(ms.mx_coll, ms.size, ms.init_params.height)
+                # center matrix into row
+                gen_matrix_center(ms.mx_coll, ms.size, ms.init_params.height)
 
-            # set new width and old height
-            self.p.width = gen_bound(ms.mx_coll, 'x', 'max') + 0.25 * self.d.text_scale
-            self.p.height = ms.init_params.height
+                # set new width and old height
+                self.p.width = gen_bound(ms.mx_coll, 'x', 'max') + BASE_SPACE * self.d.text_scale
+                self.p.height = ms.init_params.height
 
-            # link objects to matrix collection
-            for row in ms.obj_array:
-                for coll_name in row:
-                    gen_join_collections(coll_name, ms.mx_coll)
+                # link objects to matrix collection
+                for row in ms.obj_array:
+                    for coll_name in row:
+                        gen_join_collections(coll_name, ms.mx_coll)
 
             # join matrix collection into parent collection
             gen_join_collections(ms.mx_coll, ms.parent_coll)

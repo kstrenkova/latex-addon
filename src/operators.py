@@ -144,14 +144,21 @@ class WM_OT_AddText(bpy.types.Operator):
         # set cursor icon to loading
         bpy.context.window.cursor_modal_set('WAIT')
 
-        # parse LaTeX text
-        if not syntax.parse():
+        try:
+            # parse LaTeX text
+            if not syntax.parse():
+                warn_msg = 'LaTeX text was not fully generated: Check system console for more information'
+                self.report({'WARNING'}, warn_msg)
+                return {'CANCELLED'}
+
+        except Exception as e:
+            self.report({'ERROR'}, f"Python Error: {e}")
+            print(f"Developer Traceback: {e}")
+            return {'CANCELLED'}
+
+        finally:
             # set cursor icon back to default
             bpy.context.window.cursor_modal_restore()
-
-            warn_msg = 'LaTeX text was not fully generated: Check system console for more information'
-            self.report({'WARNING'}, warn_msg)
-            return {'CANCELLED'}
 
         # all objects in LaTeX text
         all_obj = context.selected_objects
@@ -174,9 +181,6 @@ class WM_OT_AddText(bpy.types.Operator):
 
                 # move to cursor location
                 obj.location += cursor_pos
-
-        # set cursor icon back to default
-        bpy.context.window.cursor_modal_restore()
 
         self.report({'INFO'}, "LaTeX text was generated successfully")
         return {'FINISHED'}

@@ -7,7 +7,7 @@ import bpy
 
 from .generator import *
 from .syntax_analyser_math import MathSyntaxAnalyser
-from .syntax_utils import Defaults, Parameters, preload_fonts
+from .syntax_utils import Defaults, Parameters, Line, preload_fonts
 
 from .data.ll_table import *
 from .data.characters_db import *
@@ -173,7 +173,7 @@ class SyntaxAnalyser:
 
         self.lex = lex
         self.d = Defaults(context, custom_prop)
-        self.p = Parameters(custom_prop.text_scale, 0.0, 0.0, 0.0)
+        self.p = Parameters(custom_prop.text_scale, 0.0, 0.0)
         self.cell_con = TableCellConstraint()
 
     # function finds first state of specific type from top of stack
@@ -448,6 +448,9 @@ class SyntaxAnalyser:
             return True
 
         elif action == '#ACTION_TABLE_INIT':
+            # add space before table
+            self.p.width += self.d.word_space * self.d.text_scale
+
             ts = TableState(self.d.current_coll, self.p.create_copy())
             self.state_stack.append(ts)
 
@@ -547,9 +550,6 @@ class SyntaxAnalyser:
             ts.obj_array.append([])
             self.execute_action('#ACTION_TABLE_NEW_CELL')  # initial cell
 
-            # set width to start
-            self.p.width = ts.init_params.width
-
             # set height lower and record the y positions
             start_y = self.p.line.min_y
             gen_adjust_new_line(self.p, self.d.base_coll, self.d.line_height, ts.init_params.width)
@@ -604,6 +604,10 @@ class SyntaxAnalyser:
 
             # generate all table lines
             gen_table_lines(self.d.context, ts)
+
+            # set new width and old height
+            self.p.width = gen_bound(ts.table_coll, 'x', 'max') + self.d.word_space * self.d.text_scale
+            self.p.line = Line(ts.init_params.height)
 
             # join table collection into parent collection
             gen_join_collections(ts.table_coll, ts.parent_coll)

@@ -36,19 +36,19 @@ class Line:
     def __init__(self, height):
         self.height = height
         self.line_objs = []
-        self.min_y = height
+        self.min_y = None
 
 
 # class for parameters
 class Parameters:
-    def __init__(self, scale, height, width, line):
+    def __init__(self, scale, height, width):
         self.scale = scale
         self.height = height
         self.width = width
-        self.line = Line(line)
+        self.line = Line(height)
 
     def create_copy(self):
-        copy = Parameters(self.scale, self.height, self.width, self.line)
+        copy = Parameters(self.scale, self.height, self.width)
         return copy
 
 
