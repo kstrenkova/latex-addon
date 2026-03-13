@@ -457,20 +457,19 @@ def gen_move_sum(param, collection, sum_name):
 
     # parameters of objects in collection
     min_x = gen_bound(collection, 'x', 'min')
-    min_y = gen_bound(collection, 'y', 'min')
-    max_y = gen_bound(collection, 'y', 'max')
+    min_y, max_y = gen_bound_both(collection, 'y')
+
+    # calculate offset based on index or exponent mode
+    move_x = bbox[0].x - min_x
+    if "ExponentCollection" in collection:
+        move_y = bbox[2].y - min_y + (BASE_SPACE * param.scale)
+    else:
+        move_y = bbox[0].y - max_y - (BASE_SPACE * param.scale)
 
     # iterate through objects
-    op_array = []
     for obj in bpy.data.collections[collection].all_objects:
-        # add object to array
-        op_array.append(obj.name)
-        # move object depending on index or exponent mode
-        obj.location.x += bbox[0].x - min_x
-        if "ExponentCollection" in collection:
-            obj.location.y += bbox[2].y - min_y + BASE_SPACE * param.scale
-        else:
-            obj.location.y += bbox[0].y - max_y - BASE_SPACE * param.scale
+        obj.location.x += move_x
+        obj.location.y += move_y
 
     # center text above sum symbol
     gen_center_sum(collection, bbox[4].x)  # sum width
@@ -535,8 +534,6 @@ def gen_center(obj1, obj2, collection):
 
 # calculate the extreme for set axis and type (min/max)
 def gen_calculate_bound(objects, axis, ftype):
-    bpy.ops.object.select_all(action='DESELECT')  # deselect all objects
-
     # determine which corner index to check
     if axis == 'x' and ftype == 'max':
         corner_index = 4
@@ -545,11 +542,14 @@ def gen_calculate_bound(objects, axis, ftype):
     else:
         corner_index = 0
 
+    # using dependency graph to get real corners
+    depsgraph = bpy.context.evaluated_depsgraph_get()
+
     # save position of all objects
     positions = []
     for obj in objects:
-        obj.select_set(True)
-        bbox = [obj.matrix_world @ Vector(corner) for corner in obj.bound_box]
+        obj_eval = obj.evaluated_get(depsgraph)
+        bbox = [obj_eval.matrix_world @ Vector(corner) for corner in obj_eval.bound_box]
         positions.append(getattr(bbox[corner_index], axis))
 
     func = max if ftype == 'max' else min
@@ -560,9 +560,6 @@ def gen_calculate_bound(objects, axis, ftype):
 def gen_bound_for_array(objects, axis, ftype):
     if not objects:
         return None
-
-    # update object placement
-    bpy.context.view_layer.update()
 
     return gen_calculate_bound(objects, axis, ftype)
 
@@ -577,6 +574,24 @@ def gen_bound(coll_name, axis, ftype):
         return None
 
     return gen_calculate_bound(objects, axis, ftype)
+
+# function returns both minimum and maximum for objects in a collection
+def gen_bound_both(coll_name, axis):
+    coll = bpy.data.collections.get(coll_name)
+    objects = coll.all_objects
+
+    # early return if no objects
+    if not objects:
+        return None, None
+
+    # get all 8 corners of every object and extract just specified axis
+    coords = [
+        getattr(obj.matrix_world @ Vector(corner), axis)
+        for obj in objects
+        for corner in obj.bound_box
+    ]
+
+    return min(coords), max(coords)
 
 
 # function returns the max width of the given column
@@ -895,15 +910,27 @@ def gen_multirow_cells_align_y(obj_array, align, cell_span):
                 continue
 
             collection = row[col]
-            last_row = i + row_span - 1
+
+            # skip empty multirows
+            if not bpy.data.collections[collection].all_objects:
+                continue
+
+            current_row = i - 1
+            last_row = current_row + row_span
 
             # get the y position of first and last row of multirow
-            _, y_first = align.row_y[i]
+            _, y_first = align.row_y[current_row]
             _, y_last = align.row_y[last_row]
+
+            # get the height of the content
+            min_y_content, max_y_content = gen_bound_both(collection, 'y')
+            y_content = (max_y_content + min_y_content)
+
+            move_by = ((y_first + y_last) - y_content) / 2.0
 
             # move objects lower
             for obj in bpy.data.collections[collection].all_objects:
-                obj.location.y += (y_last - y_first) / 2.0
+                obj.location.y += move_by
 
 
 # function centers cells in matrix vertically
@@ -974,10 +1001,13 @@ def gen_table_align_y(obj_array, align, multi):
 
 # TODO [fix] vmatrix and Vmatrix have tricky space after left bracket
 # function generates matrix brackets
-def gen_brackets(context, bracket, param, collection, size):
+def gen_brackets(bracket, param, collection, size):
     # determine left or right bracket
     is_left = (size.max_x == -1)
     x = size.min_x if is_left else size.max_x
+
+    # get unscaled width
+    base_width = bracket.dimensions.x / bracket.scale.x
 
     # scale bracket object
     matrix_height = size.max_y - size.min_y
@@ -985,13 +1015,9 @@ def gen_brackets(context, bracket, param, collection, size):
     bracket.scale.x = scale / 3.0
     bracket.scale.y = scale
 
-    # force update after scaling
-    context.view_layer.update()
-
-    # calculate the offset of bracket origin
-    bbox = [bracket.matrix_world @ Vector(corner) for corner in bracket.bound_box]
-    bracket_min_y = abs(bbox[0].y) - 0.15
-    offset = size.min_y + bracket_min_y
+    # calculate where the bracket should be vertically
+    min_y = min(Vector(corner).y for corner in bracket.bound_box) * bracket.scale.y
+    offset = size.min_y - (SMALL_SPACE * param.scale) - min_y
 
     # move bracket object
     bracket.location = (x, offset, 0)
@@ -1001,10 +1027,10 @@ def gen_brackets(context, bracket, param, collection, size):
         for obj in bpy.data.collections[collection].all_objects:
             # move all objects besides bracket
             if obj.name != bracket.name:
-                obj.location.x += 1.5 * bracket.dimensions.x
+                obj.location.x += 1.5 * base_width * bracket.scale.x
 
-        # save bracket_width
-        size.bracket_width = bracket.dimensions.x
+        # save bracket width
+        size.bracket_width = base_width * bracket.scale.x
 
 
 # function centers matrix
