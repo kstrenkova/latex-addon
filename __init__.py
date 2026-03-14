@@ -2,7 +2,7 @@ bl_info = {
     "name": "LaTeX Text Generator",
     "author": "Katarina Strenkova",
     "version": (1, 0, 1),
-    "blender": (3, 3, 0),
+    "blender": (3, 6, 0),
     "location": "3D Viewport",
     "description": "Add-on generates editable 3D text from LaTeX notation.",
     "warning": "",
