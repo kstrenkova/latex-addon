@@ -60,7 +60,7 @@ class TEXT_OT_SaveAndReturn(bpy.types.Operator):
 # load font
 class WM_OT_LoadFont(bpy.types.Operator):
     """Load a font file for LaTeX text generation"""
-    bl_label = "Load font"
+    bl_label = "Load Font"
     bl_idname = "wm.load_font"
 
     def execute(self, context):

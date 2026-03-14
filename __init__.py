@@ -4,7 +4,7 @@ bl_info = {
     "version": (1, 0, 1),
     "blender": (3, 3, 0),
     "location": "3D Viewport",
-    "description": "Addon generates editable 3D text from LaTeX notation.",
+    "description": "Add-on generates editable 3D text from LaTeX notation.",
     "warning": "",
     "doc_url": "",
     "category": "Object",
