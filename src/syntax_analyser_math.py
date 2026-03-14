@@ -6,76 +6,19 @@
 import bpy
 
 from .generator import *
-from .syntax_utils import change_font
+from .syntax_utils import (
+    Levels,
+    ExpIxState,
+    FractionState,
+    SqrtState,
+    MatrixState
+)
 
 from .data.ll_table import *
 from .data.characters_db import *
 
 # TODO [feature] Add numbers for equation lines
 # TODO [optimalization] Go from using collections to python arrays or dictionaries
-
-# class for levels
-class Levels:
-    def __init__(self, frac_array):
-        self.ei_array = []
-        self.frac_array = frac_array
-        self.sqrt = False
-        self.sym_name = ''
-
-
-# class for index and exponent
-class ExpIxState:
-    def __init__(self, parent_coll, init_params, sym_name):
-        self.parent_coll = parent_coll
-        self.init_params = init_params
-        self.eicoll = ''
-        self.eicoll2 = ''
-        self.sym_name = sym_name
-        self.width = 0
-
-
-# class for fraction
-class FractionState:
-    def __init__(self, parent_coll, init_params):
-        self.parent_coll = parent_coll
-        self.init_params = init_params
-        self.ncoll = ''
-        self.dcoll = ''
-        self.nwidth = 0.0
-        self.dwidth = 0.0
-
-
-# class for square root
-class SqrtState:
-    def __init__(self, parent_coll, init_params):
-        self.parent_coll = parent_coll
-        self.init_params = init_params
-        self.sqcoll = ''
-
-
-# class for matrix
-class MatrixState:
-    def __init__(self, parent_coll, init_params):
-        self.parent_coll = parent_coll
-        self.init_params = init_params
-        self.size = MatrixSize()
-        self.mx_coll = ''
-        self.obj_array = [[]]
-        self.brackets = 'matrix'
-
-    # returns the index of the current row
-    def get_row_num(self) -> int:
-        return len(self.obj_array) - 1
-
-
-# class for matrix dimensions
-class MatrixSize:
-    def __init__(self):
-        self.min_x = -1
-        self.min_y = -1
-        self.max_x = -1
-        self.max_y = -1
-        self.bracket_width = -1
 
 
 class MathSyntaxAnalyser:
@@ -290,28 +233,26 @@ class MathSyntaxAnalyser:
 
         elif action == '#ACTION_SQRT_CREATE':
             sqs = self.state_stack.pop()
-
-            use_param = False
-            sqrt_param = {
-                'x_pos': 0,
-                'y_min': 0,
-                'y_max': 0
-            }
+            sqrt_param = None
 
             # gets parameters of text under square root
             sq_coll_obj = bpy.data.collections.get(sqs.sqcoll)
             if sq_coll_obj.all_objects:
-                use_param = True
-                sqrt_param['x_pos'] = gen_bound(sqs.sqcoll, 'x', 'max')
-                sqrt_param['y_min'] = gen_bound(sqs.sqcoll, 'y', 'min')
-                sqrt_param['y_max'] = gen_bound(sqs.sqcoll, 'y', 'max')
+                x_pos = gen_bound(sqs.sqcoll, 'x', 'max')
+                min_y, max_y = gen_bound_both(sqs.sqcoll, 'y')
+
+                sqrt_param = {
+                    'x_pos': x_pos,
+                    'y_min': min_y,
+                    'y_max': max_y
+                }
 
             # generating sqrt symbol
             sqrt_obj = gen_sqrt_sym(self.d.context, sqs.parent_coll)
             self.p.line.line_objs.append(sqrt_obj)
 
             # move sqrt symbol
-            gen_sqrt_move(sqrt_obj, sqs.init_params, sqrt_param, use_param)
+            gen_sqrt_move(sqrt_obj, sqs.init_params, sqrt_param)
 
             # join collection into parent collection
             gen_join_collections(sqs.sqcoll, sqs.parent_coll)
@@ -512,7 +453,7 @@ class MathSyntaxAnalyser:
             return True
 
         else:
-            print(f"Internal error: Unknown action '{action}'")
+            print(f"Unknown action '{action}'")
             return False
 
     # main function for parsing process
@@ -521,9 +462,6 @@ class MathSyntaxAnalyser:
         while self.stack:
             stack_top = self.stack[-1]
             token = self.lex.peek_token()
-            print(f"[M] STACK: {self.stack}")
-            print(f"[M] Token type: '{token.type}'")
-            print(f"[M] Token value: '{token.value}'")
 
             if self.math_mode_end(stack_top, token):
                 # recalculate position before changing modes
@@ -543,7 +481,7 @@ class MathSyntaxAnalyser:
                     self.stack.pop()
                     self.lex.get_token()
                 else:
-                    print(f"Syntax Error: Expected '{stack_top}' but got '{token.value}'")
+                    print(f"Syntax error: Expected '{stack_top}' but got '{token.value}'")
                     return False
 
             # non-terminal
@@ -555,9 +493,10 @@ class MathSyntaxAnalyser:
                         for symbol in reversed(rule):
                             self.stack.append(symbol)
                 else:
-                    print(f"Syntax Error: No rule for ({stack_top}, {token.type}, {token.value})")
+                    print(f"Syntax error: No rule for ({stack_top}, {token.type}, {token.value})")
                     return False
 
         if self.stack:
-            print("Error, not all tokens have been read!")
+            err = "Not all tokens have been read!"
+            print("Syntax error:", err)
             return False

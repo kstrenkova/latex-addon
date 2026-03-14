@@ -7,161 +7,23 @@ import bpy
 
 from .generator import *
 from .syntax_analyser_math import MathSyntaxAnalyser
-from .syntax_utils import Defaults, Parameters, Line, preload_fonts
+from .syntax_utils import (
+    Defaults,
+    Parameters,
+    Line,
+    ItemizeState,
+    ColumnAlignment,
+    TableState,
+    TableCellConstraint,
+    preload_fonts
+)
 
 from .data.ll_table import *
 from .data.characters_db import *
 
-# TODO [bug] Start creating objects on cursor point not at 0.0
+# TODO [fix] Start creating objects on cursor point not at 0.0
 # TODO [fix] Make multicolumn content move if it's aligned right and has multiple vlines at the end
 # TODO [feature] Add material to different mesh types
-# TODO [feature] Make setting width work for tables
-
-
-class ItemizeState:
-    def __init__(self, parent_coll, nest_array):
-        self.parent_coll = parent_coll
-        self.bullet_number = 0
-        self.custom_bullet = False
-        self.nest_array = nest_array
-
-
-# single column alignment
-class ColumnAlignment:
-    def __init__(self, type):
-        self.type = type
-        self.width = -1
-        self.unit = ''
-
-
-class VLinePosition:
-    def __init__(self, x_pos, ID):
-        self.ID = ID  # it can be defined either by row or column number
-        self.x_pos = x_pos
-        self.y_pos = []
-
-
-class TableAlignment:
-    def __init__(self):
-        self.columns = []
-        self.vline = []
-        self.vline_pos = []
-        self.column_width = []
-        self.row_y = []
-
-    def add_vline_pos(self, x_pos, ID):
-        self.vline_pos.append(VLinePosition(x_pos, ID))
-
-
-class TableHorizontalLines:
-    def __init__(self):
-        self.hline_pos = []
-        self.cline_pos = []
-        self.cline_range = []
-        self.cline_new = True
-
-    def reset_cline(self):
-        self.cline_new = True
-
-
-class MultiRow():
-    def __init__(self):
-        self.span = 1
-        self.width = -1
-        self.unit = ''
-
-    def reset_row_span(self):
-        self.span = 1
-        self.width = -1
-        self.unit = ''
-
-
-class MultiCol():
-    def __init__(self):
-        self.span = 1
-        self.align = ColumnAlignment('c')
-        self.before = 0
-        self.after = 0
-
-    def reset_col_span(self):
-        self.span = 1
-        self.align = ColumnAlignment('c')
-        self.before = 0
-        self.after = 0
-
-
-class TableMultiCell:
-    def __init__(self):
-        self.row = MultiRow()
-        self.col = MultiCol()
-        self.vline_pos = []
-        self.cell_span = {}
-
-    # saves the multi-span state
-    def save_cell_span(self, cell):
-        self.cell_span[cell] = {
-            'row_span': self.row.span,
-            'row_width': self.row.width,
-            'row_unit': self.row.unit,
-            'col_span': self.col.span,
-            'col_align': self.col.align,
-            'vline_before': self.col.before,
-            'vline_after': self.col.after,
-        }
-
-    # save multicolumn width in case it's the longest row
-    def add_span_width(self, cell, span_wdith):
-        if cell not in self.cell_span:
-            self.save_cell_span(cell)
-        self.cell_span[cell]['span_width'] = span_wdith
-
-    def add_vline_pos(self, x_pos, ID):
-        self.vline_pos.append(VLinePosition(x_pos, ID))
-
-
-class TableCellConstraint:
-    def __init__(self):
-        self.max_width = None
-        self.init_cell_x = -1
-        self.init_row_y = -1
-        self.last_min_y = None
-        self.cell_objects = []
-
-    def set_init_pos(self, width, height):
-        self.init_cell_x = width
-        self.init_row_y = height
-        self.last_min_y = None
-
-    def set_column_width(self, scale, columns, col):
-        if len(columns) <= col:
-            return
-
-        # save width constraint if it's positive
-        p_width = columns[col].width
-        if p_width > 0:
-            self.max_width = self.init_cell_x + p_width * scale
-
-    def reset_cell_constraint(self):
-        self.max_width = None
-        self.init_cell_x = -1
-        self.init_row_y = -1
-        self.last_min_y = None
-        self.cell_objects.clear()
-
-
-class TableState:
-    def __init__(self, parent_coll, init_params):
-        self.parent_coll = parent_coll
-        self.init_params = init_params
-        self.table_coll = ''
-        self.obj_array = [[]]
-        self.align = TableAlignment()
-        self.hline = TableHorizontalLines()
-        self.multi = TableMultiCell()
-
-    # returns the index of the current row
-    def get_row_num(self) -> int:
-        return len(self.obj_array) - 1
 
 
 class SyntaxAnalyser:
@@ -206,8 +68,6 @@ class SyntaxAnalyser:
             its.custom_bullet = False
             return ['epsilon']
 
-        print("Stack top:", stack_top)
-        print("KEY:", key)
         rule = ll_table.get((stack_top, key))
         return rule
 
@@ -229,17 +89,14 @@ class SyntaxAnalyser:
         # activate the collection for mathematical equations
         gen_set_active_collection(latex_base_coll, self.d.current_coll)
 
-        print("Entering math mode!")
-
         # call math syntax analyser
         math_syntax = MathSyntaxAnalyser(self.lex, self.d, self.p)
         if not math_syntax.parse():
-            warn_msg = 'Mathematical equation was not fully generated.'
-            print(warn_msg)
+            err = 'Mathematical equation was not fully generated.'
+            print("Syntax error:", err)
             return False
 
         self.d.base_coll = latex_base_coll
-        print("Returned from math mode!")
 
         # consume redundant whitespace
         self.consume_whitespace()
@@ -460,8 +317,11 @@ class SyntaxAnalyser:
             # table body collection
             ts.table_coll = gen_new_collection("TableBodyCollection", ts.parent_coll)
 
-            # first table cell collection
-            self.execute_action('#ACTION_TABLE_NEW_CELL')
+            # initial table cell collection
+            self.d.current_coll = gen_new_collection("TableCellCollection", ts.table_coll)
+            row = ts.obj_array[ts.get_row_num()]
+            row.append(self.d.current_coll)
+
             return True
 
         elif action == '#ACTION_TABLE_HLINE':
@@ -577,9 +437,9 @@ class SyntaxAnalyser:
             # special info saving for multicolumn/multirow
             save_multi_info(ts)
 
-            # add new array that represents row
+            # add new array that represents row and the initial cell
             ts.obj_array.append([])
-            self.execute_action('#ACTION_TABLE_NEW_CELL')  # initial cell
+            action_result = self.execute_action('#ACTION_TABLE_NEW_CELL')
 
             # set height lower and record the y positions
             start_y = self.p.line.min_y
@@ -588,7 +448,7 @@ class SyntaxAnalyser:
 
             # save row y positions
             ts.align.row_y.append((start_y, end_y))
-            return True
+            return action_result
 
         elif action == '#ACTION_TABLE_NEW_CELL':
             ts = self.state_stack[-1]
@@ -613,10 +473,8 @@ class SyntaxAnalyser:
                 return False
 
             # save normal cell constraint
-            if self.cell_con.max_width is None:
-                self.cell_con.set_init_pos(self.p.width, self.p.line.height)
-                self.cell_con.set_column_width(self.p.scale, ts.align.columns, len(row) - 1)
-
+            self.cell_con.set_init_pos(self.p.width, self.p.line.height)
+            self.cell_con.set_column_width(self.p.scale, ts.align.columns, len(row) - 1)
             return True
 
         elif action == '#ACTION_TABLE_CREATE':
@@ -646,7 +504,7 @@ class SyntaxAnalyser:
             return True
 
         else:
-            print(f"Internal error: Unknown action '{action}'")
+            print(f"Unknown action '{action}'")
             return False
 
 
@@ -666,9 +524,6 @@ class SyntaxAnalyser:
         while self.stack:
             stack_top = self.stack[-1]
             token = self.lex.peek_token(True)  # also return whitespaces
-            print(f"STACK: {self.stack}")
-            print(f"Token type: '{token.type}'")
-            print(f"Token value: '{token.value}'")
 
             # generate space and consume the whitespace token
             if token.type == "WHITESPACE":
@@ -678,6 +533,7 @@ class SyntaxAnalyser:
 
             # successful parsing
             if stack_top == '$$$' and token.type == 'END':
+                print("LaTeX text was generated successfully")
                 self.stack.pop()
                 break
 
@@ -694,7 +550,7 @@ class SyntaxAnalyser:
                     self.stack.pop()
                     self.lex.get_token()
                 else:
-                    print(f"Syntax Error: Expected '{stack_top}' but got '{token.value}'")
+                    print(f"Syntax error: Expected '{stack_top}' but got '{token.value}'")
                     return False
 
             # non-terminal
@@ -706,7 +562,7 @@ class SyntaxAnalyser:
                         for symbol in reversed(rule):
                             self.stack.append(symbol)
                 else:
-                    print(f"Syntax Error: No rule for ({stack_top}, {token.type}, {token.value})")
+                    print(f"Syntax error: No rule for ({stack_top}, {token.type}, {token.value})")
                     return False
 
             # add whitespace if one is pending

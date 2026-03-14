@@ -6,10 +6,10 @@
 import bpy
 import os.path
 
-FONT_CACHE = {}
+# ---------------
+# COMMON CLASSES
+# ---------------
 
-
-# class for defaults
 class Defaults:
     def __init__(self, context, custom_prop):
         self.base_coll = ""
@@ -31,7 +31,6 @@ class Defaults:
         self.word_space = custom_prop.word_space
 
 
-# class for lines
 class Line:
     def __init__(self, height, table_objs=[], table_min_y=None):
         self.height = height
@@ -43,7 +42,6 @@ class Line:
         self.table_min_y = table_min_y
 
 
-# class for parameters
 class Parameters:
     def __init__(self, scale, height, width):
         self.scale = scale
@@ -55,6 +53,223 @@ class Parameters:
         copy = Parameters(self.scale, self.height, self.width)
         return copy
 
+# ------------------
+# TEXT MODE CLASSES
+# ------------------
+
+class ItemizeState:
+    def __init__(self, parent_coll, nest_array):
+        self.parent_coll = parent_coll
+        self.bullet_number = 0
+        self.custom_bullet = False
+        self.nest_array = nest_array
+
+
+# single column alignment
+class ColumnAlignment:
+    def __init__(self, type):
+        self.type = type
+        self.width = -1
+        self.unit = ''
+
+
+class VLinePosition:
+    def __init__(self, x_pos, ID):
+        self.ID = ID  # it can be defined either by row or column number
+        self.x_pos = x_pos
+        self.y_pos = []
+
+
+class TableAlignment:
+    def __init__(self):
+        self.columns = []
+        self.vline = []
+        self.vline_pos = []
+        self.column_width = []
+        self.row_y = []
+
+    def add_vline_pos(self, x_pos, ID):
+        self.vline_pos.append(VLinePosition(x_pos, ID))
+
+
+class TableHorizontalLines:
+    def __init__(self):
+        self.hline_pos = []
+        self.cline_pos = []
+        self.cline_range = []
+        self.cline_new = True
+
+    def reset_cline(self):
+        self.cline_new = True
+
+
+class MultiRow():
+    def __init__(self):
+        self.span = 1
+        self.width = -1
+        self.unit = ''
+
+    def reset_row_span(self):
+        self.span = 1
+        self.width = -1
+        self.unit = ''
+
+
+class MultiCol():
+    def __init__(self):
+        self.span = 1
+        self.align = ColumnAlignment('c')
+        self.before = 0
+        self.after = 0
+
+    def reset_col_span(self):
+        self.span = 1
+        self.align = ColumnAlignment('c')
+        self.before = 0
+        self.after = 0
+
+
+class TableMultiCell:
+    def __init__(self):
+        self.row = MultiRow()
+        self.col = MultiCol()
+        self.vline_pos = []
+        self.cell_span = {}
+
+    # saves the multi-span state
+    def save_cell_span(self, cell):
+        self.cell_span[cell] = {
+            'row_span': self.row.span,
+            'row_width': self.row.width,
+            'row_unit': self.row.unit,
+            'col_span': self.col.span,
+            'col_align': self.col.align,
+            'vline_before': self.col.before,
+            'vline_after': self.col.after,
+        }
+
+    # save multicolumn width in case it's the longest row
+    def add_span_width(self, cell, span_wdith):
+        if cell not in self.cell_span:
+            self.save_cell_span(cell)
+        self.cell_span[cell]['span_width'] = span_wdith
+
+    def add_vline_pos(self, x_pos, ID):
+        self.vline_pos.append(VLinePosition(x_pos, ID))
+
+
+class TableCellConstraint:
+    def __init__(self):
+        self.max_width = None
+        self.init_cell_x = -1
+        self.init_row_y = -1
+        self.last_min_y = None
+        self.cell_objects = []
+
+    def set_init_pos(self, width, height):
+        self.init_cell_x = width
+        self.init_row_y = height
+        self.last_min_y = None
+
+    def set_column_width(self, scale, columns, col):
+        if len(columns) <= col:
+            return
+
+        # save width constraint if it's positive
+        p_width = columns[col].width
+        if p_width > 0:
+            self.max_width = self.init_cell_x + p_width * scale
+
+    def reset_cell_constraint(self):
+        self.max_width = None
+        self.init_cell_x = -1
+        self.init_row_y = -1
+        self.last_min_y = None
+        self.cell_objects.clear()
+
+
+class TableState:
+    def __init__(self, parent_coll, init_params):
+        self.parent_coll = parent_coll
+        self.init_params = init_params
+        self.table_coll = ''
+        self.obj_array = [[]]
+        self.align = TableAlignment()
+        self.hline = TableHorizontalLines()
+        self.multi = TableMultiCell()
+
+    # returns the index of the current row
+    def get_row_num(self) -> int:
+        return len(self.obj_array) - 1
+
+# ------------------
+# MATH MODE CLASSES
+# ------------------
+
+class Levels:
+    def __init__(self, frac_array):
+        self.ei_array = []
+        self.frac_array = frac_array
+        self.sqrt = False
+        self.sym_name = ''
+
+
+# class for index and exponent
+class ExpIxState:
+    def __init__(self, parent_coll, init_params, sym_name):
+        self.parent_coll = parent_coll
+        self.init_params = init_params
+        self.eicoll = ''
+        self.eicoll2 = ''
+        self.sym_name = sym_name
+        self.width = 0
+
+
+class FractionState:
+    def __init__(self, parent_coll, init_params):
+        self.parent_coll = parent_coll
+        self.init_params = init_params
+        self.ncoll = ''
+        self.dcoll = ''
+        self.nwidth = 0.0
+        self.dwidth = 0.0
+
+
+class SqrtState:
+    def __init__(self, parent_coll, init_params):
+        self.parent_coll = parent_coll
+        self.init_params = init_params
+        self.sqcoll = ''
+
+
+class MatrixState:
+    def __init__(self, parent_coll, init_params):
+        self.parent_coll = parent_coll
+        self.init_params = init_params
+        self.size = MatrixSize()
+        self.mx_coll = ''
+        self.obj_array = [[]]
+        self.brackets = 'matrix'
+
+    # returns the index of the current row
+    def get_row_num(self) -> int:
+        return len(self.obj_array) - 1
+
+
+# class for matrix dimensions
+class MatrixSize:
+    def __init__(self):
+        self.min_x = -1
+        self.min_y = -1
+        self.max_x = -1
+        self.max_y = -1
+        self.bracket_width = -1
+
+# ---------------
+# FONT FUNCTIONS
+# ---------------
+
+FONT_CACHE = {}
 
 # function returns font info
 def change_font(mode):

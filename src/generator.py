@@ -109,7 +109,7 @@ def gen_adjust_new_line(param, base_coll, line_space, init_width=0.0):
         # move objects down
         if overflow > 0:
             for obj in param.line.line_objs:
-                obj.location.y -= overflow
+                obj.location.y -= overflow + BASE_SPACE * param.scale
 
     # get real and expected lowest point
     real_min_y = gen_bound_for_array(param.line.line_objs, 'y', 'min')
@@ -304,7 +304,7 @@ def gen_sqrt_sym(context, collection):
 
 
 # function moves sqrt symbol according to given parameters
-def gen_sqrt_move(obj, param, sqrt_param, move):
+def gen_sqrt_move(obj, param, sqrt_param):
     # position sqrt
     param.height -= 0.25 * param.scale
     gen_set_position(obj, param)
@@ -314,7 +314,7 @@ def gen_sqrt_move(obj, param, sqrt_param, move):
     bpy.ops.object.transform_apply(scale=True, location=False, rotation=False)
 
     # don't modify square root symbol
-    if not move:
+    if sqrt_param is None:
         return
 
     # data of created sqrt symbol

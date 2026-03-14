@@ -107,5 +107,6 @@ class LATEX_PG_Properties(bpy.types.PropertyGroup):
 
     one_object: bpy.props.BoolProperty(
         name="Generate as one object",
+        description="Generate output text as one object",
         default=False
     ) # type: ignore
