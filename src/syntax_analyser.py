@@ -533,7 +533,6 @@ class SyntaxAnalyser:
 
             # successful parsing
             if stack_top == '$$$' and token.type == 'END':
-                print("LaTeX text was generated successfully")
                 self.stack.pop()
                 break
 

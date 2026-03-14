@@ -162,69 +162,58 @@ class WM_OT_AddText(bpy.types.Operator):
 
         # all objects in LaTeX text
         all_obj = context.selected_objects
+        cursor_pos = bpy.context.scene.cursor.location.copy()
 
         if len(all_obj) >= 1 and props.one_object:
-            generate_one_object(context, props)
+            generate_one_object(context, props, all_obj)
         else:
-            cursor_pos = bpy.context.scene.cursor.location.copy()
-
             for obj in all_obj:
-                # set thickness
-                if obj.type == 'FONT':
-                    # for text change extrude parameter
-                    obj.data.extrude = props.text_thickness / 2.0
-                else:
-                    # for other objects apply solidify modifier
-                    solidify_mod = obj.modifiers.new(name="Solidify", type='SOLIDIFY')
-                    solidify_mod.thickness = props.text_thickness
-                    solidify_mod.offset = 0.0
-
-                # move to cursor location
+                # set thickness and location
+                apply_thickness(obj, props.text_thickness)
                 obj.location += cursor_pos
 
         self.report({'INFO'}, "LaTeX text was generated successfully")
         return {'FINISHED'}
 
 
-# function generates the final LaTeX text as one object
-# TODO [bug] fix messy letters when thickness is not zero
-def generate_one_object(context, props):
-    all_obj = context.selected_objects
-    all_converted_obj = []
+# function applies thickness based on object type
+def apply_thickness(obj, thickness):
+    if obj.type == 'FONT':
+        # for text change extrude parameter
+        obj.data.extrude = thickness / 2.0
+    else:
+        # for other objects add solidify modifier
+        mod = obj.modifiers.new(name="Solidify", type='SOLIDIFY')
+        mod.thickness = thickness
+        mod.offset = 0.0
 
+
+# function generates the final LaTeX text as one object
+def generate_one_object(context, props, all_obj):
     # deselect all objects
     bpy.ops.object.select_all(action='DESELECT')
 
     for obj in all_obj:
+        # set thickeness
+        apply_thickness(obj, props.text_thickness)
+
         obj.select_set(True)
         context.view_layer.objects.active = obj
 
-        # convert text objects to meshes
+        # convert text object to mesh
         if obj.type == 'FONT':
             bpy.ops.object.convert(target='MESH')
-
-        # save and deselect object
-        converted = context.active_object
-        all_converted_obj.append(converted)
-        converted.select_set(False)
-
-    # select all LaTeX text objects
-    for obj in all_converted_obj:
-        obj.select_set(True)
+        else:
+            bpy.ops.object.modifier_apply(modifier="Solidify")
 
     # join all objects into one
-    context.view_layer.objects.active = all_converted_obj[0]
+    context.view_layer.objects.active = context.selected_objects[0]
     bpy.ops.object.join()
 
     # set object location to 3D cursor location
     final_obj = context.active_object
     final_obj.name = "LaTeX Text"
     final_obj.location += bpy.context.scene.cursor.location.copy()
-
-    # apply solidify modifier
-    solidify_mod = final_obj.modifiers.new(name="Solidify", type='SOLIDIFY')
-    solidify_mod.thickness = props.text_thickness
-    solidify_mod.offset = 0.0
 
     # delete base LaTeX collection
     for collection in list(final_obj.users_collection):
