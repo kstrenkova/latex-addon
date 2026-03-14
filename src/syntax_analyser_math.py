@@ -249,7 +249,7 @@ class MathSyntaxAnalyser:
 
             # generating sqrt symbol
             sqrt_obj = gen_sqrt_sym(self.d.context, sqs.parent_coll)
-            self.p.line.line_objs.append(sqrt_obj)
+            self.p.line.line_objs.append(sqrt_obj.name)
 
             # move sqrt symbol
             gen_sqrt_move(sqrt_obj, sqs.init_params, sqrt_param)
@@ -318,7 +318,7 @@ class MathSyntaxAnalyser:
 
             # generate fraction line
             gen_frac_line(self.d.context, fs.init_params, self.d.current_coll, line_length)
-            self.p.line.line_objs.append(self.d.context.active_object)
+            self.p.line.line_objs.append(self.d.context.active_object.name)
 
             # join numerator and denominator collections
             gen_join_collections(fs.dcoll, fs.ncoll)
@@ -415,12 +415,12 @@ class MathSyntaxAnalyser:
 
             # position matrix if not empty
             if ms.obj_array:
-                gen_matrix_align_x(ms.obj_array, self.p)
-                gen_matrix_align_y(ms.obj_array, self.p)
+                gen_matrix_align_x(ms.obj_array, ms.init_params)
+                gen_matrix_align_y(ms.obj_array, ms.init_params)
 
                 # calculate matrix height
-                ms.size.min_y = gen_bound(ms.parent_coll, 'y', 'min')
-                ms.size.max_y = gen_bound(ms.parent_coll, 'y', 'max')
+                ms.size.min_y = gen_bound(ms.mx_coll, 'y', 'min')
+                ms.size.max_y = gen_bound(ms.mx_coll, 'y', 'max')
                 bracket_type = matrix_brackets[ms.brackets]
 
                 if not ms.brackets == 'matrix':
@@ -429,7 +429,7 @@ class MathSyntaxAnalyser:
                     gen_brackets(self.d.context.active_object, self.p, ms.mx_coll, ms.size)
 
                     # calculate furthest x position
-                    ms.size.max_x = gen_bound(ms.parent_coll, 'x', 'max') + ms.size.bracket_width / 2.0
+                    ms.size.max_x = gen_bound(ms.mx_coll, 'x', 'max') + SMALL_SPACE * self.p.scale
 
                     # generate right bracket of matrix
                     gen_text_object(self.p, self.d, bracket_type[1], 'math')

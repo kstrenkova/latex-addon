@@ -31,7 +31,7 @@ def gen_text(text, font_info, collection, spacing, line, math_mode=None):
     bpy.context.view_layer.objects.active = text_obj
 
     # add object to current line
-    line.line_objs.append(text_obj)
+    line.line_objs.append(text_obj.name)
 
     return text_obj
 
@@ -84,7 +84,7 @@ def gen_adjust_new_line(param, base_coll, line_space, init_width=0.0):
         return
 
     # multiple new lines in the row
-    if len(param.line.line_objs) == 0:
+    if len(param.line.line_objs) == 0 and param.line.table_min_y is None:
         param.line.min_y -= line_space * param.scale
         param.line.height = param.line.min_y - line_space * param.scale
         param.width = init_width
@@ -97,22 +97,24 @@ def gen_adjust_new_line(param, base_coll, line_space, init_width=0.0):
         all_min_y.append(param.line.table_min_y - BASE_SPACE * param.scale)
 
         # center all objects according to the table
-        for obj in param.line.line_objs:
+        for obj_name in param.line.line_objs:
+            obj = bpy.data.objects.get(obj_name)
             obj.location.y -= (param.line.height - param.line.table_min_y) / 2.0
 
     if param.line.min_y is not None:
         # calculate overflow
-        max_y = gen_bound_for_array(param.line.line_objs, 'y', 'max')
+        max_y = gen_bound_for_array(param.line.line_objs, 'y', 'max') or 0.0
         lmin_y = param.line.min_y  # lowest point of last row
         overflow = max_y - lmin_y if (max_y > lmin_y) else 0
 
         # move objects down
         if overflow > 0:
-            for obj in param.line.line_objs:
+            for obj_name in param.line.line_objs:
+                obj = bpy.data.objects.get(obj_name)
                 obj.location.y -= overflow + BASE_SPACE * param.scale
 
     # get real and expected lowest point
-    real_min_y = gen_bound_for_array(param.line.line_objs, 'y', 'min')
+    real_min_y = gen_bound_for_array(param.line.line_objs, 'y', 'min') or 0.0
     expected_min_y = param.line.height - (SMALL_SPACE * line_space * param.scale)
 
     # save the lowest point
@@ -136,7 +138,8 @@ def gen_new_line_in_cell(param, cell_constraint, line_space):
 
         # move objects down
         if overflow > 0:
-            for obj in cell_constraint.cell_objects:
+            for obj_name in cell_constraint.cell_objects:
+                obj = bpy.data.objects.get(obj_name)
                 obj.location.y -= overflow
 
     # get real and expected lowest point
@@ -161,10 +164,10 @@ def gen_wrap_obj_in_cell(param, defaults, cell_constraint):
         return False
 
     # save current object
-    cell_constraint.cell_objects.append(defaults.context.active_object)
+    cell_constraint.cell_objects.append(defaults.context.active_object.name)
 
     # return if the object maximum is lower than the cell constraint
-    current_max_x = gen_bound_for_array([defaults.context.active_object], 'x', 'max')
+    current_max_x = gen_bound_for_array([defaults.context.active_object.name], 'x', 'max')
     if current_max_x < cell_constraint.max_width:
         return False
 
@@ -561,10 +564,11 @@ def gen_calculate_bound(objects, axis, ftype):
 
 
 # function returns the extreme for an array of objects
-def gen_bound_for_array(objects, axis, ftype):
-    if not objects:
+def gen_bound_for_array(obj_names, axis, ftype):
+    if not obj_names:
         return None
 
+    objects = [bpy.data.objects.get(name) for name in obj_names]
     return gen_calculate_bound(objects, axis, ftype)
 
 
@@ -741,7 +745,7 @@ def gen_move_column_for_vline(obj_array, param, col, align, x_pos):
 
     # skip if no lines
     if line_count == 0:
-        return
+        return 0
 
     # save position and create space
     for _ in range(line_count):
@@ -830,7 +834,7 @@ def gen_matrix_align_x(obj_array, param):
 
         # add extra padding for empty column
         is_empty_column = (prev_col_width == max_col_width)
-        extra_padding = (2 * padding) if is_empty_column else 0
+        extra_padding = padding if is_empty_column else 0
 
         # calculate spacing for the next column
         prev_col_width = max_col_width + padding + extra_padding
@@ -955,9 +959,8 @@ def gen_matrix_align_y(obj_array, param):
         # check for first iteration
         if min_row_height is not None:
             # move row if its highest point cuts into the upper row
-            if max_row_height > min_row_height:
-                move_by = max_row_height - min_row_height + padding
-                gen_move_row(row, max_col, move_by)
+            move_by = max_row_height - min_row_height + 2 * padding
+            gen_move_row(row, max_col, move_by)
 
         # find min height for the current row
         min_row_height = get_min_row_height(row, max_col, max_row_height)
@@ -1010,9 +1013,6 @@ def gen_brackets(bracket, param, collection, size):
     is_left = (size.max_x == -1)
     x = size.min_x if is_left else size.max_x
 
-    # get unscaled width
-    base_width = bracket.dimensions.x / bracket.scale.x
-
     # scale bracket object
     matrix_height = size.max_y - size.min_y
     scale = (matrix_height + 0.5 * param.scale) / bracket.dimensions.y
@@ -1031,10 +1031,7 @@ def gen_brackets(bracket, param, collection, size):
         for obj in bpy.data.collections[collection].all_objects:
             # move all objects besides bracket
             if obj.name != bracket.name:
-                obj.location.x += 1.5 * base_width * bracket.scale.x
-
-        # save bracket width
-        size.bracket_width = base_width * bracket.scale.x
+                obj.location.x += GRID_SPACE * param.scale
 
 
 # function centers matrix

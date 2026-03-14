@@ -263,7 +263,6 @@ class MatrixSize:
         self.min_y = -1
         self.max_x = -1
         self.max_y = -1
-        self.bracket_width = -1
 
 # ---------------
 # FONT FUNCTIONS

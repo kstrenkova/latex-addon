@@ -311,6 +311,9 @@ class SyntaxAnalyser:
             # save line objects
             self.p.line.table_objs = self.p.line.line_objs.copy()
 
+            if self.p.line.min_y is None:
+                self.p.line.min_y = self.p.line.height
+
             ts = TableState(self.d.current_coll, self.p.create_copy())
             self.state_stack.append(ts)
 

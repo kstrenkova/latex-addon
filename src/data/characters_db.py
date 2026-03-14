@@ -47,6 +47,7 @@ char_type = {
     '^': '_CARET',
     '_': '_UNDERSCORE',
     '&': '_AMPERSAND',
+    '%': '_PERCENTAGE',
     '$': '_DOLLAR',
 }
 
@@ -58,6 +59,7 @@ special_chars = [
     '_CARET',
     '_UNDERSCORE',
     '_AMPERSAND',
+    '_PERCENTAGE',
     '_DOLLAR',
 ]
 
