@@ -7,13 +7,22 @@ tagline = "Generate customizable 3D text from LaTeX notation"
 maintainer = "Katarina Strenkova"
 type = "add-on"
 
-website = "https://github.com/kstrenkova/latex-addon"
+website = "https://github.com/kstrenkova/latex-addon/"
 
 tags = ["3D View", "Object", "Add Mesh", "Modeling", "Animation"]
 
-blender_version_min = "3.6.0"
+blender_version_min = "4.2.0"
 
 license = ["SPDX:GPL-3.0-or-later"]
 
 [permissions]
 files = "Import custom font files from disk"
+
+[build]
+paths_exclude_pattern = [
+  "__pycache__/",
+  ".git/",
+  "*.zip",
+  "img/",
+  ".vscode/"
+]

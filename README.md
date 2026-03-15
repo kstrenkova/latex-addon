@@ -22,7 +22,7 @@ A Blender add-on that converts LaTeX notation into 3D text objects, including ma
 ## Installation
 
 1. **Download** the latest release as a ZIP file from this repository
-2. **Open Blender** (version 3.6 or newer)
+2. **Open Blender** (version 4.2 or newer)
 3. Navigate to **Edit → Preferences → Add-ons**
 4. Click the **Install** button in the top-right corner
 5. Browse to the downloaded `latex-addon-main.zip` file and select it
