@@ -2,8 +2,6 @@
 
 A Blender add-on that converts LaTeX notation into 3D text objects, including mathematical equations, formatted text, and tables. Perfect for creating technical visualizations, educational content, and mathematical animations.
 
-![Add-on Interface](https://github.com/xstren00/latex-addon/blob/main/img/interface.png)
-
 **[Watch Demo Video](https://youtube.com/@Katterkie)**
 
 ---
@@ -39,7 +37,7 @@ Once installed, access the add-on from the 3D Viewport:
 2. Look for the **LaTeX Text** tab on the right side
 3. **Important**: Ensure you're in **Object Mode** when generating text
 
-![Accessing Add-on](https://github.com/xstren00/latex-addon/blob/main/img/accessing_addon.png)
+![Accessing Add-on](https://github.com/kstrenkova/latex-addon/blob/main/img/accessing_addon.png)
 
 ---
 
@@ -54,7 +52,7 @@ The add-on panel is organized into several sections that give you full control o
 - In the text editor, you can write multi-line LaTeX with better formatting
 - Click **Save & Return** to apply your changes back to the main panel
 
-![Text Editor](https://github.com/xstren00/latex-addon/blob/main/img/text_editor.png)
+![Text Editor](https://github.com/kstrenkova/latex-addon/blob/main/img/text_editor.png)
 
 ### Custom Fonts
 
