@@ -3,14 +3,6 @@
 # Created By  : Katarina Strenkova
 # ---------------------------------------------------------------------------
 
-# tokens multicolumn and multirow commands share
-# NOTE: Not supported = display math mode, enter, open curly
-MULTI_SHARED_TOKENS = [
-    '_TEXT', '_SPECIAL_CHAR', '_PIPE', '_OPEN_ANGLE', '_CLOSE_ANGLE',
-    '_OPEN_BRACKET', '_CLOSE_BRACKET', 'par', 'textbf', 'textit',
-    'texttt', 'verb', 'begin', '_DOLLAR', '\(', '\['
-]
-
 ll_table = {
     # --- PROG ---
     # <PROG> -> <TERM> <MORE_TERM>
@@ -20,7 +12,6 @@ ll_table = {
     # <TERM> -> <CONST>
     ('TERM', '_TEXT'):            ['CONST'],
     ('TERM', '_SPECIAL_CHAR'):    ['CONST'],
-    ('TERM', '_ENTER'):           ['CONST'],
     ('TERM', '_PIPE'):            ['CONST'],
     ('TERM', '_OPEN_ANGLE'):      ['CONST'],
     ('TERM', '_CLOSE_ANGLE'):     ['CONST'],
@@ -42,6 +33,9 @@ ll_table = {
 
     # <TERM> -> <BLOCK>
     ('TERM', 'begin'):            ['BLOCK'],
+
+    # <TERM> -> enter
+    ('TERM', '_ENTER'):           ['\\', '#ACTION_NEW_LINE'],
 
     # --- MORE_TERM ---
     # <MORE_TERM> -> <TERM> <MORE_TERM>
@@ -73,15 +67,14 @@ ll_table = {
     # --- CONST ---
     # <CONST> -> text
     ('CONST', '_TEXT'):          ['#ACTION_GENERATE_TEXT'],
-    ('CONST', '_SPECIAL_CHAR'):  ['#ACTION_GENERATE_TEXT'],
     ('CONST', '_PIPE'):          ['#ACTION_GENERATE_TEXT'],
     ('CONST', '_OPEN_ANGLE'):    ['#ACTION_GENERATE_TEXT'],
     ('CONST', '_CLOSE_ANGLE'):   ['#ACTION_GENERATE_TEXT'],
     ('CONST', '_OPEN_BRACKET'):  ['#ACTION_GENERATE_TEXT'],
     ('CONST', '_CLOSE_BRACKET'): ['#ACTION_GENERATE_TEXT'],
 
-    # <CONST> -> enter
-    ('CONST', '_ENTER'):         ['\\', '#ACTION_NEW_LINE'],
+    # <CONST> -> special_char
+    ('CONST', '_SPECIAL_CHAR'):  ['#ACTION_GENERATE_TEXT'],
 
     # --- COMMAND ---
     # <COMMAND> -> { MORE_TERM }
@@ -90,7 +83,7 @@ ll_table = {
     # <COMMAND> -> par
     ('COMMAND', 'par'):          ['par', '#ACTION_PARAGRAPH'],
 
-    # <COMMAND> -> change_font { MORE_TERM }
+    # <COMMAND> -> font { MORE_TERM }
     ('COMMAND', 'textbf'):       ['textbf', '#ACTION_FONT_BOLD',     '{', 'MORE_TERM', '}', '#ACTION_FONT_BASE'],
     ('COMMAND', 'textit'):       ['textit', '#ACTION_FONT_ITALIC',   '{', 'MORE_TERM', '}', '#ACTION_FONT_BASE'],
     ('COMMAND', 'texttt'):       ['texttt', '#ACTION_FONT_TELETYPE', '{', 'MORE_TERM', '}', '#ACTION_FONT_BASE'],
@@ -99,14 +92,21 @@ ll_table = {
     ('COMMAND', 'verb'):         ['verb', '|', '#ACTION_VERB_GENERATE', '|'],
 
     # --- MATH_MODE ---
-    # <MATH_MODE> -> $ <MATH_INLINE_PROG> $
-    ('MATH_MODE', '_DOLLAR'):    ['$',  '#ACTION_MATH_MODE_INLINE',  '$'],
+    # <MATH_MODE> -> <INLINE_MATH>
+    # <MATH_MODE> -> <DISPLAY_MATH>
+    ('MATH_MODE', '_DOLLAR'):    ['INLINE_MATH'],
+    ('MATH_MODE', '\('):         ['INLINE_MATH'],
+    ('MATH_MODE', '\['):         ['DISPLAY_MATH'],
 
-    # <MATH_MODE> -> \( <MATH_INLINE_PROG> \)
-    ('MATH_MODE', '\('):         ['\(', '#ACTION_MATH_MODE_INLINE',  '\)'],
+    # --- INLINE_MATH ---
+    # <INLINE_MATH> -> $ <MATH_INLINE_PROG> $
+    # <INLINE_MATH> -> \( <MATH_INLINE_PROG> \)
+    ('INLINE_MATH', '_DOLLAR'):    ['$',  '#ACTION_MATH_MODE_INLINE',  '$'],
+    ('INLINE_MATH', '\('):         ['\(', '#ACTION_MATH_MODE_INLINE',  '\)'],
 
-    # <MATH_MODE> -> \[ <MATH_DISPLAY_PROG> \[
-    ('MATH_MODE', '\['):         ['\[', '#ACTION_MATH_MODE_DISPLAY', '\]'],
+    # --- DISPLAY_MATH ---
+    # <DISPLAY_MATH> -> \[ <MATH_DISPLAY_PROG> \[
+    ('DISPLAY_MATH', '\['):         ['\[', '#ACTION_MATH_MODE_DISPLAY', '\]'],
 
     # --- BLOCK ---
     # <BLOCK> -> begin { text } <BLOCK_CONTENT> end { text }
@@ -123,12 +123,12 @@ ll_table = {
     ('ITEMIZE', 'epsilon'):      ['#ACTION_ITEM_END'],
 
     # --- ITEM ---
-    # <ITEM> -> [ <MORE_TERM> ] <ITEM>
-    ('ITEM', '_OPEN_ANGLE'):     [
+    # <ITEM> -> [ <MORE_TERM> ] <MORE_TERM> <ITEMIZE>
+    ('ITEM', '_OPEN_ANGLE'): [
         '[', '#ACTION_ITEM_SAVE_INIT', 'MORE_TERM', ']',
         '#ACTION_ITEM_SAVE_ADD', 'MORE_TERM', 'ITEMIZE'
     ],
-    # <ITEM> -> <CONST>
+
     # <ITEM> -> <MORE_TERM> <ITEMIZE>
     ('ITEM', '_TEXT'):           ['#ACTION_ITEM_ADD', 'MORE_TERM', 'ITEMIZE'],
     ('ITEM', '_SPECIAL_CHAR'):   ['#ACTION_ITEM_ADD', 'MORE_TERM', 'ITEMIZE'],
@@ -148,9 +148,11 @@ ll_table = {
     ('ITEM', '\('):              ['#ACTION_ITEM_ADD', 'MORE_TERM', 'ITEMIZE'],
     ('ITEM', '\['):              ['#ACTION_ITEM_ADD', 'MORE_TERM', 'ITEMIZE'],
 
+    ('ITEM', 'begin'):           ['#ACTION_ITEM_ADD', 'MORE_TERM', 'ITEMIZE'],
+
     # --- ALIGN ---
-    # <ALIGN> -> text <ALIGN>
-    ('ALIGN', '_TEXT'):          ['#ACTION_ALIGN_SAVE', 'COL_WIDTH'],
+    # <ALIGN> -> text <COL_WIDTH> <ALIGN>
+    ('ALIGN', '_TEXT'):          ['#ACTION_ALIGN_SAVE', 'COL_WIDTH', 'ALIGN'],
 
     # <ALIGN> -> | <ALIGN>
     ('ALIGN', '_PIPE'):          ['|', '#ACTION_ALIGN_LINE', 'ALIGN'],
@@ -159,38 +161,13 @@ ll_table = {
     ('ALIGN', '_CLOSE_CURLY'):   ['epsilon'],
 
     # --- COL_WIDTH ---
-    # <COL_WIDTH> -> { text } <ALIGN>
+    # <COL_WIDTH> -> { text }
     # <COL_WIDTH> -> epsilon
-    ('COL_WIDTH', '_OPEN_CURLY'): ['{', '#ACTION_COL_WIDTH', '}', 'ALIGN'],
-    ('COL_WIDTH', 'epsilon'):     ['ALIGN'],
-
-    # --- MULTICOL_ALIGN ---
-    # <MUTLCOL_ALIGN>  -> <PIPE_BEFORE> text <MULTICOL_WIDTH> <PIPE_AFTER>
-    ('MULTICOL_ALIGN', '_PIPE'):  [
-        'PIPE_BEFORE', '#ACTION_TABLE_MULTICOL_ALIGN', 'MULTICOL_WIDTH', 'PIPE_AFTER'
-    ],
-    # <MUTLCOL_ALIGN>  -> text <MULTICOL_WIDTH> <PIPE_AFTER>
-    ('MULTICOL_ALIGN', '_TEXT'):  [
-        '#ACTION_TABLE_MULTICOL_ALIGN', 'MULTICOL_WIDTH', 'PIPE_AFTER'
-    ],
-
-    # <PIPE_BEFORE> -> | <PIPE_BEFORE>
-    # <PIPE_BEFORE> -> epsilon
-    ('PIPE_BEFORE', '_PIPE'):     ['|', '#ACTION_TABLE_MULTICOL_PIPE_BEFORE', 'PIPE_BEFORE'],
-    ('PIPE_BEFORE', 'epsilon'):   ['epsilon'],
-
-    # <MULTICOL_WIDTH> -> { text }
-    # <MULTICOL_WIDTH> -> epsilon
-    ('MULTICOL_WIDTH', '_OPEN_CURLY'): ['{', '#ACTION_TABLE_MULTICOL_WIDTH', '}'],
-    ('MULTICOL_WIDTH', 'epsilon'):     ['epsilon'],
-
-    # <PIPE_AFTER> -> | <PIPE_AFTER>
-    # <PIPE_AFTER> -> epsilon
-    ('PIPE_AFTER', '_PIPE'):      ['|', '#ACTION_TABLE_MULTICOL_PIPE_AFTER', 'PIPE_AFTER'],
-    ('PIPE_AFTER', 'epsilon'):    ['epsilon'],
+    ('COL_WIDTH', '_OPEN_CURLY'): ['{', '#ACTION_COL_WIDTH', '}'],
+    ('COL_WIDTH', 'epsilon'):     ['epsilon'],
 
     # --- TABLE ---
-    # <TABLE> -> <CONST>
+    # <TABLE> -> <CONST> <TABLE>
     ('TABLE', '_TEXT'):           ['CONST', 'TABLE'],
     ('TABLE', '_SPECIAL_CHAR'):   ['CONST', 'TABLE'],
     ('TABLE', '_PIPE'):           ['CONST', 'TABLE'],
@@ -199,7 +176,7 @@ ll_table = {
     ('TABLE', '_OPEN_BRACKET'):   ['CONST', 'TABLE'],
     ('TABLE', '_CLOSE_BRACKET'):  ['CONST', 'TABLE'],
 
-    # <TABLE> -> <COMMAND>
+    # <TABLE> -> <COMMAND> <TABLE>
     ('TABLE', '_OPEN_CURLY'):     ['COMMAND', 'TABLE'],
     ('TABLE', 'par'):             ['COMMAND', 'TABLE'],
     ('TABLE', 'textbf'):          ['COMMAND', 'TABLE'],
@@ -207,13 +184,12 @@ ll_table = {
     ('TABLE', 'texttt'):          ['COMMAND', 'TABLE'],
     ('TABLE', 'verb'):            ['COMMAND', 'TABLE'],
 
-    # <TABLE> -> <BLOCK>
-    ('TABLE', 'begin'):           ['BLOCK', 'TABLE'],
+    # <TABLE> -> <INLINE_MATH> <TABLE>
+    ('TABLE', '_DOLLAR'):         ['INLINE_MATH', 'TABLE'],
+    ('TABLE', '\('):              ['INLINE_MATH', 'TABLE'],
 
-    # <TABLE> -> <MATH_MODE>
-    ('TABLE', '_DOLLAR'):         ['MATH_MODE', 'TABLE'],
-    ('TABLE', '\('):              ['MATH_MODE', 'TABLE'],
-    ('TABLE', '\['):              ['MATH_MODE', 'TABLE'],
+    # <TABLE> -> <BLOCK> <TABLE>
+    ('TABLE', 'begin'):           ['BLOCK', 'TABLE'],
 
     # <TABLE> -> hline <TABLE>
     ('TABLE', 'hline'):           ['hline', '#ACTION_TABLE_HLINE', 'TABLE'],
@@ -227,39 +203,122 @@ ll_table = {
     # <TABLE> -> & <TABLE>
     ('TABLE', '_AMPERSAND'):      ['&',  '#ACTION_TABLE_NEW_CELL', 'TABLE'],
 
-    # <TABLE> -> multicolumn { text } { text } { <MULTI> } <TABLE>
+    # <TABLE> -> multirow { text } { text } { <CELL_CONTENT> } <TABLE>
+    ('TABLE', 'multirow'): [
+        'multirow', '{', '#ACTION_TABLE_MULTIROW_NUMBER', '}',
+        '{', '#ACTION_TABLE_MULTIROW_WIDTH', '}',
+        '{', 'CELL_CONTENT', '}', 'TABLE'
+    ],
+
+    # <TABLE> -> multicolumn { text } { text } { <MULTICOL> } <TABLE>
     ('TABLE', 'multicolumn'): [
         'multicolumn', '{', '#ACTION_TABLE_MULTICOL_NUMBER', '}',
         '{', 'MULTICOL_ALIGN', '}',
         '{', 'MULTICOL', '}', 'TABLE'
     ],
 
-    # <TABLE> -> multirow { text } { text } { <MULTI> } <TABLE>
-    ('TABLE', 'multirow'): [
-        'multirow', '{', '#ACTION_TABLE_MULTIROW_NUMBER', '}',
-        '{', '#ACTION_TABLE_MULTIROW_WIDTH', '}',
-        '{', 'MULTI', '}', 'TABLE'
-    ],
-
     # <TABLE> -> epsilon
     ('TABLE', 'end'):            ['#ACTION_TABLE_CREATE'],
 
-    # --- MULTI ---
+    # --- CELL_TERM ---
+    # <CELL_TERM> -> <CONST>
+    ('CELL_TERM', '_TEXT'):            ['CONST'],
+    ('CELL_TERM', '_SPECIAL_CHAR'):    ['CONST'],
+    ('CELL_TERM', '_PIPE'):            ['CONST'],
+    ('CELL_TERM', '_OPEN_ANGLE'):      ['CONST'],
+    ('CELL_TERM', '_CLOSE_ANGLE'):     ['CONST'],
+    ('CELL_TERM', '_OPEN_BRACKET'):    ['CONST'],
+    ('CELL_TERM', '_CLOSE_BRACKET'):   ['CONST'],
+
+    # <CELL_TERM> -> <COMMAND>
+    ('CELL_TERM', '_OPEN_CURLY'):      ['COMMAND'],
+    ('CELL_TERM', 'par'):              ['COMMAND'],
+    ('CELL_TERM', 'textbf'):           ['COMMAND'],
+    ('CELL_TERM', 'textit'):           ['COMMAND'],
+    ('CELL_TERM', 'texttt'):           ['COMMAND'],
+    ('CELL_TERM', 'verb'):             ['COMMAND'],
+
+    # <CELL_TERM> -> <INLINE_MATH>
+    ('CELL_TERM', '_DOLLAR'):          ['INLINE_MATH'],
+    ('CELL_TERM', '\('):               ['INLINE_MATH'],
+
+    # --- CELL_CONTENT ---
+    # <CELL_CONTENT> -> <CELL_TERM> <CELL_CONTENT>
+    ('CELL_CONTENT', '_TEXT'):          ['CELL_TERM', 'CELL_CONTENT'],
+    ('CELL_CONTENT', '_SPECIAL_CHAR'):  ['CELL_TERM', 'CELL_CONTENT'],
+    ('CELL_CONTENT', '_PIPE'):          ['CELL_TERM', 'CELL_CONTENT'],
+    ('CELL_CONTENT', '_OPEN_ANGLE'):    ['CELL_TERM', 'CELL_CONTENT'],
+    ('CELL_CONTENT', '_CLOSE_ANGLE'):   ['CELL_TERM', 'CELL_CONTENT'],
+    ('CELL_CONTENT', '_OPEN_BRACKET'):  ['CELL_TERM', 'CELL_CONTENT'],
+    ('CELL_CONTENT', '_CLOSE_BRACKET'): ['CELL_TERM', 'CELL_CONTENT'],
+    ('CELL_CONTENT', '_OPEN_CURLY'):    ['CELL_TERM', 'CELL_CONTENT'],
+    ('CELL_CONTENT', 'par'):            ['CELL_TERM', 'CELL_CONTENT'],
+    ('CELL_CONTENT', 'textbf'):         ['CELL_TERM', 'CELL_CONTENT'],
+    ('CELL_CONTENT', 'textit'):         ['CELL_TERM', 'CELL_CONTENT'],
+    ('CELL_CONTENT', 'texttt'):         ['CELL_TERM', 'CELL_CONTENT'],
+    ('CELL_CONTENT', 'verb'):           ['CELL_TERM', 'CELL_CONTENT'],
+    ('CELL_CONTENT', '_DOLLAR'):        ['CELL_TERM', 'CELL_CONTENT'],
+    ('CELL_CONTENT', '\('):             ['CELL_TERM', 'CELL_CONTENT'],
+
+    # <CELL_CONTENT> -> epsilon
+    ('CELL_CONTENT', '_CLOSE_CURLY'):   ['epsilon'],
+    ('CELL_CONTENT', 'END'):            ['epsilon'],
+
+    # --- MULTICOL_ALIGN ---
+    # <MUTLCOL_ALIGN>  -> <PIPE_BEFORE> text <MULTICOL_WIDTH> <PIPE_AFTER>
+    ('MULTICOL_ALIGN', '_PIPE'):  [
+        'PIPE_BEFORE', '#ACTION_TABLE_MULTICOL_ALIGN', 'MULTICOL_WIDTH', 'PIPE_AFTER'
+    ],
+    # <MUTLCOL_ALIGN>  -> text <MULTICOL_WIDTH> <PIPE_AFTER>
+    ('MULTICOL_ALIGN', '_TEXT'):  [
+        '#ACTION_TABLE_MULTICOL_ALIGN', 'MULTICOL_WIDTH', 'PIPE_AFTER'
+    ],
+
+    # <PIPE_BEFORE> -> | <PIPE_BEFORE>
+    # <PIPE_BEFORE> -> epsilon
+    ('PIPE_BEFORE', '_PIPE'):          ['|', '#ACTION_TABLE_MULTICOL_PIPE_BEFORE', 'PIPE_BEFORE'],
+    ('PIPE_BEFORE', 'epsilon'):        ['epsilon'],
+
+    # <MULTICOL_WIDTH> -> { text }
+    # <MULTICOL_WIDTH> -> epsilon
+    ('MULTICOL_WIDTH', '_OPEN_CURLY'): ['{', '#ACTION_TABLE_MULTICOL_WIDTH', '}'],
+    ('MULTICOL_WIDTH', 'epsilon'):     ['epsilon'],
+
+    # <PIPE_AFTER> -> | <PIPE_AFTER>
+    # <PIPE_AFTER> -> epsilon
+    ('PIPE_AFTER', '_PIPE'):           ['|', '#ACTION_TABLE_MULTICOL_PIPE_AFTER', 'PIPE_AFTER'],
+    ('PIPE_AFTER', 'epsilon'):         ['epsilon'],
+
+    # --- MULTICOL ---
     # NOTE: multirow can be in multicolumn but not vise versa
 
-    # <MULTICOL> -> multirow { text } { text } { <MULTI> } <MULTICOL>
+    # <MULTICOL> -> multirow { text } { text } { <CELL_CONTENT> } <MULTICOL>
     ('MULTICOL', 'multirow'): [
         'multirow', '{', '#ACTION_TABLE_MULTIROW_NUMBER', '}',
         '{', '#ACTION_TABLE_MULTIROW_WIDTH', '}',
-        '{', 'MULTI', '}', 'MULTICOL'
+        '{', 'CELL_CONTENT', '}', 'MULTICOL'
     ],
-    ('MULTICOL', '_CLOSE_CURLY'): ['epsilon'],
 
-    # <MULTI> -> epsilon
-    ('MULTI', '_CLOSE_CURLY'):     ['epsilon'],
+    # <MULTICOL> -> <CELL_TERM> <MULTICOL>
+    ('MULTICOL', '_TEXT'):          ['CELL_TERM', 'MULTICOL'],
+    ('MULTICOL', '_SPECIAL_CHAR'):  ['CELL_TERM', 'MULTICOL'],
+    ('MULTICOL', '_PIPE'):          ['CELL_TERM', 'MULTICOL'],
+    ('MULTICOL', '_OPEN_ANGLE'):    ['CELL_TERM', 'MULTICOL'],
+    ('MULTICOL', '_CLOSE_ANGLE'):   ['CELL_TERM', 'MULTICOL'],
+    ('MULTICOL', '_OPEN_BRACKET'):  ['CELL_TERM', 'MULTICOL'],
+    ('MULTICOL', '_CLOSE_BRACKET'): ['CELL_TERM', 'MULTICOL'],
+    ('MULTICOL', '_OPEN_CURLY'):    ['CELL_TERM', 'MULTICOL'],
+    ('MULTICOL', 'par'):            ['CELL_TERM', 'MULTICOL'],
+    ('MULTICOL', 'textbf'):         ['CELL_TERM', 'MULTICOL'],
+    ('MULTICOL', 'textit'):         ['CELL_TERM', 'MULTICOL'],
+    ('MULTICOL', 'texttt'):         ['CELL_TERM', 'MULTICOL'],
+    ('MULTICOL', 'verb'):           ['CELL_TERM', 'MULTICOL'],
+    ('MULTICOL', '_DOLLAR'):        ['CELL_TERM', 'MULTICOL'],
+    ('MULTICOL', '\('):             ['CELL_TERM', 'MULTICOL'],
 
-    **{('MULTICOL', token): ['MORE_TERM', 'MULTICOL'] for token in MULTI_SHARED_TOKENS},
-    **{('MULTI', token):    ['MORE_TERM', 'MULTI']    for token in MULTI_SHARED_TOKENS},
+    # <MULTICOL> -> epsilon
+    ('MULTICOL', '_CLOSE_CURLY'):   ['epsilon'],
+    ('MULTICOL', 'END'):            ['epsilon'],
 }
 
 math_ll_table = {
@@ -271,7 +330,6 @@ math_ll_table = {
     # <TERM> -> <CONST>
     ('TERM', '_TEXT'):               ['CONST'],
     ('TERM', '_SPECIAL_CHAR'):       ['CONST'],
-    ('TERM', '_ENTER'):              ['CONST'],
     ('TERM', '_PIPE'):               ['CONST'],
     ('TERM', '_OPEN_ANGLE'):         ['CONST'],
     ('TERM', '_CLOSE_ANGLE'):        ['CONST'],
@@ -295,8 +353,11 @@ math_ll_table = {
     ('TERM', '_SPACE_COMMAND'):      ['COMMAND'],
     ('TERM', '_MATH_SYMBOL'):        ['COMMAND'],
 
-    # <TERM -> <BLOCK>
+    # <TERM> -> <BLOCK>
     ('TERM', 'begin'):               ['BLOCK'],
+
+    # <TERM> -> enter
+    ('TERM', '_ENTER'):              ['\\', '#ACTION_NEW_LINE'],
 
     # --- MORE_TERM ---
     # <MORE_TERM> -> <TERM> <MORE_TERM>
@@ -345,9 +406,6 @@ math_ll_table = {
     # <CONST> -> special_char
     ('CONST', '_SPECIAL_CHAR'):      ['#ACTION_GENERATE_TEXT'],
 
-    # <CONST> -> enter
-    ('CONST', '_ENTER'):             ['\\', '#ACTION_NEW_LINE'],
-
     # <CONST> -> index <EI_TERM> <EXP>
     ('CONST', '_UNDERSCORE'):        ['#ACTION_LEVEL_DOWN', '#ACTION_EI_INIT', 'EI_TERM', 'EXP'],
 
@@ -363,7 +421,7 @@ math_ll_table = {
     ('EI_TERM', '_OPEN_BRACKET'):    ['#ACTION_GENERATE_TEXT'],
     ('EI_TERM', '_CLOSE_BRACKET'):   ['#ACTION_GENERATE_TEXT'],
 
-    # <EI_TERM> -> special_symbols
+    # <EI_TERM> -> special_char
     ('EI_TERM', '_SPECIAL_CHAR'):    ['#ACTION_GENERATE_TEXT'],
 
     # <EI_TERM> -> <COMMAND>
@@ -395,15 +453,13 @@ math_ll_table = {
     # <COMMAND> -> { <MORE_TERM> }
     ('COMMAND', '_OPEN_CURLY'):      ['{', 'MORE_TERM', '}'],
 
-    # <COMMAND> -> sqrt <SQRT>
-    ('COMMAND', 'sqrt'):             ['sqrt', 'SQRT'],
+     # <COMMAND> -> math_symbol
+    ('COMMAND', '_MATH_SYMBOL'):     ['#ACTION_MATH_SYMBOL'],
 
-    # <COMMAND> -> frac <FRAC>
-    # <COMMAND> -> dfrac <FRAC>
-    ('COMMAND', 'frac'):             ['frac',  '#ACTION_FRAC_SAVE_FRAC',  'FRAC'],
-    ('COMMAND', 'dfrac'):            ['dfrac', '#ACTION_FRAC_SAVE_DFRAC', 'FRAC'],
+    # <COMMAND> -> space_command
+    ('COMMAND', '_SPACE_COMMAND'):   ['#ACTION_SPACE'],
 
-    # <COMMAND> -> range_operators
+    # <COMMAND> -> range_operator <RANGE_OP>
     ('COMMAND', 'sum'):              ['#ACTION_RANGE_OP_INIT', 'RANGE_OP'],
     ('COMMAND', 'prod'):             ['#ACTION_RANGE_OP_INIT', 'RANGE_OP'],
     ('COMMAND', 'lim'):              ['#ACTION_RANGE_OP_INIT', 'RANGE_OP'],
@@ -413,19 +469,24 @@ math_ll_table = {
     ('RANGE_OP', '_CARET'):          ['#ACTION_SAVE_RANGE_OP'],
     ('RANGE_OP', 'epsilon'):         ['epsilon'],
 
-    # <COMMAND> -> command <MATH_FONT>
+    # <COMMAND> -> math_font <MATH_FONT>
     ('COMMAND', 'mathbb'):           ['mathbb',   '{', '#ACTION_MATH_FONT_MATHBB',   'MATH_FONT', '}'],
     ('COMMAND', 'mathcal'):          ['mathcal',  '{', '#ACTION_MATH_FONT_MATHCAL',  'MATH_FONT', '}'],
     ('COMMAND', 'mathfrak'):         ['mathfrak', '{', '#ACTION_MATH_FONT_MATHFRAK', 'MATH_FONT', '}'],
 
+    # <COMMAND> -> sqrt <SQRT>
+    ('COMMAND', 'sqrt'):             ['sqrt', 'SQRT'],
+
+    # <COMMAND> -> frac <FRAC>
+    # <COMMAND> -> dfrac <FRAC>
+    ('COMMAND', 'frac'):             ['frac',  '#ACTION_FRAC_SAVE_FRAC',  'FRAC'],
+    ('COMMAND', 'dfrac'):            ['dfrac', '#ACTION_FRAC_SAVE_DFRAC', 'FRAC'],
+
+    # --- MATH_FONT ---
     # <MATH_FONT> -> text <MATH_FONT>
     # <MATH_FONT> -> epsilon
     ('MATH_FONT', '_TEXT'):          ['#ACTION_GENERATE_MATH_LETTER', 'MATH_FONT'],
     ('MATH_FONT', '_CLOSE_CURLY'):   ['#ACTION_REMOVE_MATH_FONT'],
-
-    # <COMMAND> -> space_commands
-    ('COMMAND', '_SPACE_COMMAND'):   ['#ACTION_SPACE'],
-    ('COMMAND', '_MATH_SYMBOL'):     ['#ACTION_MATH_SYMBOL'],
 
     # --- SQRT ---
     # <SQRT> -> [ <MORE_TERM> ] { <MORE_TERM> }
