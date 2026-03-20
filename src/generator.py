@@ -3,10 +3,11 @@
 # Created By  : Katarina Strenkova
 # ---------------------------------------------------------------------------
 
+import bmesh
 import bpy
 
 from bpy_extras.object_utils import object_data_add  # add sqrt symbol
-from mathutils import Vector  # vertices
+from mathutils import Vector, Matrix  # vertices
 
 from .syntax_utils import change_font
 from .data.characters_db import *
@@ -281,7 +282,7 @@ def gen_sqrt_sym(context, collection):
 
     mesh = bpy.data.meshes.new(name="Sqrt")
     mesh.from_pydata(verts, edges, faces)
-    object_data_add(context, mesh)
+    sqrt_obj = object_data_add(context, mesh)
 
     origin_offset = Vector((-0.5266461968421936, -0.8238898515701294, 0.0))
 
@@ -289,16 +290,17 @@ def gen_sqrt_sym(context, collection):
     for vert in mesh.vertices:
           vert.co -= origin_offset
 
+    # recalculate normals for all faces
+    bm = bmesh.new()
+    bm.from_mesh(mesh)
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+    bm.to_mesh(mesh)
+
+    bm.free()
+    mesh.update()  # update the mesh
+
     # move the object to keep the object in the same position
-    sqrt_obj = context.active_object
     sqrt_obj.location += origin_offset
-
-    # recalculate normals in editmode
-    bpy.ops.object.editmode_toggle()
-    bpy.ops.mesh.normals_make_consistent(inside=False)
-    bpy.ops.object.editmode_toggle()
-
-    sqrt_obj = context.active_object
 
     # save sqrt symbol into the current collection
     gen_object_to_collection(sqrt_obj, collection)
@@ -313,8 +315,10 @@ def gen_sqrt_move(obj, param, sqrt_param):
     gen_set_position(obj, param)
     param.height += 0.25 * param.scale
 
-    # apply scale
-    bpy.ops.object.transform_apply(scale=True, location=False, rotation=False)
+    # apply scale to the sqrt object
+    scale_matrix = Matrix.Diagonal(obj.scale).to_4x4()
+    obj.data.transform(scale_matrix)
+    obj.scale = (1.0, 1.0, 1.0)
 
     # don't modify square root symbol
     if sqrt_param is None:

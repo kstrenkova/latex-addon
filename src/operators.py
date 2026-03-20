@@ -190,30 +190,40 @@ def apply_thickness(obj, thickness):
 
 # function generates the final LaTeX text as one object
 def generate_one_object(context, props, all_obj):
-    # deselect all objects
-    bpy.ops.object.select_all(action='DESELECT')
-
+    # apply thickness to all objects
     for obj in all_obj:
-        # set thickeness
         apply_thickness(obj, props.text_thickness)
 
-        obj.select_set(True)
-        context.view_layer.objects.active = obj
+    # update the scene with the new thickness information
+    context.view_layer.update()
+    depsgraph = context.evaluated_depsgraph_get()
 
-        # convert text object to mesh
-        if obj.type == 'FONT':
-            bpy.ops.object.convert(target='MESH')
-        else:
-            bpy.ops.object.modifier_apply(modifier="Solidify")
+    converted_obj = []
+
+    for obj in all_obj:
+        obj_eval = obj.evaluated_get(depsgraph)
+        new_mesh_data = bpy.data.meshes.new_from_object(obj_eval)
+
+        # create a new object from the mesh data
+        new_obj = bpy.data.objects.new(name=obj.name + "_Mesh", object_data=new_mesh_data)
+        new_obj.matrix_world = obj.matrix_world.copy()
+
+        context.collection.objects.link(new_obj)
+        converted_obj.append(new_obj)
+
+        # delete the original object
+        bpy.data.objects.remove(obj, do_unlink=True)
 
     # join all objects into one
-    context.view_layer.objects.active = context.selected_objects[0]
-    bpy.ops.object.join()
+    final_obj = converted_obj[0]
+    with context.temp_override(active_object=final_obj, selected_editable_objects=converted_obj):
+        bpy.ops.object.join()
 
-    # set object location to 3D cursor location
-    final_obj = context.active_object
+    # object selection, name change and location
+    final_obj.select_set(True)
+    context.view_layer.objects.active = final_obj
     final_obj.name = "LaTeX Text"
-    final_obj.location += bpy.context.scene.cursor.location.copy()
+    final_obj.location += context.scene.cursor.location.copy()
 
     # delete base LaTeX collection
     for collection in list(final_obj.users_collection):

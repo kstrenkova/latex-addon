@@ -309,15 +309,21 @@ def preload_fonts(context, user_fonts):
 # function that gets font scale that is needed
 # to make all fonts the same height
 def get_font_scale(context, font):
-    bpy.ops.object.text_add()
-    h_obj = context.active_object
+    text_data = bpy.data.curves.new(name="H_tmp", type='FONT')
+    text_data.font = font
+    text_data.body = 'H'
 
-    h_obj.data.font = font
-    h_obj.data.body = 'H'
-    context.view_layer.update()
+    # create temporary H object
+    h_obj = bpy.data.objects.new("H_tmp", text_data)
+    context.collection.objects.link(h_obj)
+
+    depsgraph = context.evaluated_depsgraph_get()
+    h_obj_eval = h_obj.evaluated_get(depsgraph)
 
     # base blender font size is 0.6820 (for H)
-    size = 0.6820 / h_obj.dimensions.y
-    bpy.ops.object.delete(use_global=False)
+    size = 0.6820 / h_obj_eval.dimensions.y
+
+    bpy.data.objects.remove(h_obj, do_unlink=True)
+    bpy.data.curves.remove(text_data)
 
     return round(size, 4)
