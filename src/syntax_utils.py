@@ -24,7 +24,8 @@ class Defaults:
         self.fonts = [
             custom_prop.base_font,
             custom_prop.bold_font,
-            custom_prop.italic_font
+            custom_prop.italic_font,
+            custom_prop.math_font
         ]
         self.line_height = custom_prop.line_height
         self.text_scale = custom_prop.text_scale
@@ -297,7 +298,7 @@ def preload_fonts(context, user_fonts):
         font_size = get_font_scale(context, font)
         FONT_CACHE[mode] = {'font': font, 'size': font_size}
 
-    user_mode = ['base', 'bold', 'italic']
+    user_mode = ['base', 'bold', 'italic', 'math']
 
     # load fonts specified by user
     for mode, font in zip(user_mode, user_fonts):

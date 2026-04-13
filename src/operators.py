@@ -68,6 +68,7 @@ class WM_OT_LoadFont(bpy.types.Operator):
         base_font = props.base_font
         bold_font = props.bold_font
         italic_font = props.italic_font
+        math_font = props.math_font
 
         # check if user specified a font path
         if not props.font_path or not props.font_path.strip():
@@ -101,6 +102,7 @@ class WM_OT_LoadFont(bpy.types.Operator):
             props.base_font = base_font
             props.bold_font = bold_font
             props.italic_font = italic_font
+            props.math_font = math_font
 
             return {'FINISHED'}
         except RuntimeError as e:

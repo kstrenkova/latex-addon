@@ -40,6 +40,7 @@ class OBJECT_PT_ME(bpy.types.Panel):
             box2.prop(props, "base_font")
             box2.prop(props, "bold_font")
             box2.prop(props, "italic_font")
+            box2.prop(props, "math_font")
 
         row = layout.row()
         row.label(text="Transform Text")

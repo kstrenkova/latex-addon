@@ -8,17 +8,17 @@ import bpy
 
 # callback gets all of the loaded fonts
 def get_loaded_fonts(self, context):
-    fonts = [('Bfont Regular', 'Bfont Regular', '<builtin>')]
+    fonts = [('STIX Two Math Regular', 'STIX Two Math Regular', 'default')]
 
     # add all loaded fonts
     for font in bpy.data.fonts:
-        if font.name != 'Bfont Regular':
+        if font.name != 'STIX Two Math Regular':
             fonts.append((font.name, font.name, font.filepath))
     return fonts
 
 
 # custom properties
-# TODO [feature] Add text alignment and math font
+# TODO [feature] Add text alignment
 class LATEX_PG_Properties(bpy.types.PropertyGroup):
     latex_text: bpy.props.StringProperty(
         name="Text",
@@ -55,6 +55,12 @@ class LATEX_PG_Properties(bpy.types.PropertyGroup):
     italic_font: bpy.props.EnumProperty(
         name = "Italic",
         description="Choose a font for italic text",
+        items=get_loaded_fonts
+    ) # type: ignore
+
+    math_font: bpy.props.EnumProperty(
+        name = "Math",
+        description="Choose a font for mathematical text",
         items=get_loaded_fonts
     ) # type: ignore
 
