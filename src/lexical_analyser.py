@@ -5,6 +5,9 @@
 
 from .data.characters_db import *
 
+# TODO add support for % = ignoring comments
+# TODO make a MATH_DELIMITER token type for $, \(, \[
+
 
 # class for tokens
 class Token:

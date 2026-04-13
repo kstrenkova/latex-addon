@@ -3,7 +3,7 @@
 # Created By  : Katarina Strenkova
 # ---------------------------------------------------------------------------
 
-import bmesh
+import bmesh  # recalculate normals
 import bpy
 
 from bpy_extras.object_utils import object_data_add  # add sqrt symbol

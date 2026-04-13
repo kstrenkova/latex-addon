@@ -13,10 +13,10 @@ ll_table = {
     ('TERM', '_TEXT'):            ['CONST'],
     ('TERM', '_SPECIAL_CHAR'):    ['CONST'],
     ('TERM', '_PIPE'):            ['CONST'],
-    ('TERM', '_OPEN_ANGLE'):      ['CONST'],
-    ('TERM', '_CLOSE_ANGLE'):     ['CONST'],
-    ('TERM', '_OPEN_BRACKET'):    ['CONST'],
-    ('TERM', '_CLOSE_BRACKET'):   ['CONST'],
+    ('TERM', '_OPEN_SQUARE'):     ['CONST'],
+    ('TERM', '_CLOSE_SQUARE'):    ['CONST'],
+    ('TERM', '_OPEN_ROUND'):      ['CONST'],
+    ('TERM', '_CLOSE_ROUND'):     ['CONST'],
 
     # <TERM> -> <COMMAND>
     ('TERM', '_OPEN_CURLY'):      ['COMMAND'],
@@ -43,10 +43,10 @@ ll_table = {
     ('MORE_TERM', '_SPECIAL_CHAR'):  ['TERM', 'MORE_TERM'],
     ('MORE_TERM', '_ENTER'):         ['TERM', 'MORE_TERM'],
     ('MORE_TERM', '_PIPE'):          ['TERM', 'MORE_TERM'],
-    ('MORE_TERM', '_OPEN_ANGLE'):    ['TERM', 'MORE_TERM'],
-    ('MORE_TERM', '_CLOSE_ANGLE'):   ['TERM', 'MORE_TERM'],
-    ('MORE_TERM', '_OPEN_BRACKET'):  ['TERM', 'MORE_TERM'],
-    ('MORE_TERM', '_CLOSE_BRACKET'): ['TERM', 'MORE_TERM'],
+    ('MORE_TERM', '_OPEN_SQUARE'):   ['TERM', 'MORE_TERM'],
+    ('MORE_TERM', '_CLOSE_SQUARE'):  ['TERM', 'MORE_TERM'],
+    ('MORE_TERM', '_OPEN_ROUND'):    ['TERM', 'MORE_TERM'],
+    ('MORE_TERM', '_CLOSE_ROUND'):   ['TERM', 'MORE_TERM'],
     ('MORE_TERM', '_OPEN_CURLY'):    ['TERM', 'MORE_TERM'],
     ('MORE_TERM', 'par'):            ['TERM', 'MORE_TERM'],
     ('MORE_TERM', 'textbf'):         ['TERM', 'MORE_TERM'],
@@ -68,10 +68,10 @@ ll_table = {
     # <CONST> -> text
     ('CONST', '_TEXT'):          ['#ACTION_GENERATE_TEXT'],
     ('CONST', '_PIPE'):          ['#ACTION_GENERATE_TEXT'],
-    ('CONST', '_OPEN_ANGLE'):    ['#ACTION_GENERATE_TEXT'],
-    ('CONST', '_CLOSE_ANGLE'):   ['#ACTION_GENERATE_TEXT'],
-    ('CONST', '_OPEN_BRACKET'):  ['#ACTION_GENERATE_TEXT'],
-    ('CONST', '_CLOSE_BRACKET'): ['#ACTION_GENERATE_TEXT'],
+    ('CONST', '_OPEN_SQUARE'):   ['#ACTION_GENERATE_TEXT'],
+    ('CONST', '_CLOSE_SQUARE'):  ['#ACTION_GENERATE_TEXT'],
+    ('CONST', '_OPEN_ROUND'):    ['#ACTION_GENERATE_TEXT'],
+    ('CONST', '_CLOSE_ROUND'):   ['#ACTION_GENERATE_TEXT'],
 
     # <CONST> -> special_char
     ('CONST', '_SPECIAL_CHAR'):  ['#ACTION_GENERATE_TEXT'],
@@ -124,7 +124,7 @@ ll_table = {
 
     # --- ITEM ---
     # <ITEM> -> [ <MORE_TERM> ] <MORE_TERM> <ITEMIZE>
-    ('ITEM', '_OPEN_ANGLE'): [
+    ('ITEM', '_OPEN_SQUARE'): [
         '[', '#ACTION_ITEM_SAVE_INIT', 'MORE_TERM', ']',
         '#ACTION_ITEM_SAVE_ADD', 'MORE_TERM', 'ITEMIZE'
     ],
@@ -133,9 +133,9 @@ ll_table = {
     ('ITEM', '_TEXT'):           ['#ACTION_ITEM_ADD', 'MORE_TERM', 'ITEMIZE'],
     ('ITEM', '_SPECIAL_CHAR'):   ['#ACTION_ITEM_ADD', 'MORE_TERM', 'ITEMIZE'],
     ('ITEM', '_PIPE'):           ['#ACTION_ITEM_ADD', 'MORE_TERM', 'ITEMIZE'],
-    ('ITEM', '_CLOSE_ANGLE'):    ['#ACTION_ITEM_ADD', 'MORE_TERM', 'ITEMIZE'],
-    ('ITEM', '_OPEN_BRACKET'):   ['#ACTION_ITEM_ADD', 'MORE_TERM', 'ITEMIZE'],
-    ('ITEM', '_CLOSE_BRACKET'):  ['#ACTION_ITEM_ADD', 'MORE_TERM', 'ITEMIZE'],
+    ('ITEM', '_CLOSE_SQUARE'):   ['#ACTION_ITEM_ADD', 'MORE_TERM', 'ITEMIZE'],
+    ('ITEM', '_OPEN_ROUND'):     ['#ACTION_ITEM_ADD', 'MORE_TERM', 'ITEMIZE'],
+    ('ITEM', '_CLOSE_ROUND'):    ['#ACTION_ITEM_ADD', 'MORE_TERM', 'ITEMIZE'],
     ('ITEM', '_ENTER'):          ['#ACTION_ITEM_ADD', 'MORE_TERM', 'ITEMIZE'],
 
     ('ITEM', '_OPEN_CURLY'):     ['#ACTION_ITEM_ADD', 'MORE_TERM', 'ITEMIZE'],
@@ -171,10 +171,10 @@ ll_table = {
     ('TABLE', '_TEXT'):           ['CONST', 'TABLE'],
     ('TABLE', '_SPECIAL_CHAR'):   ['CONST', 'TABLE'],
     ('TABLE', '_PIPE'):           ['CONST', 'TABLE'],
-    ('TABLE', '_OPEN_ANGLE'):     ['CONST', 'TABLE'],
-    ('TABLE', '_CLOSE_ANGLE'):    ['CONST', 'TABLE'],
-    ('TABLE', '_OPEN_BRACKET'):   ['CONST', 'TABLE'],
-    ('TABLE', '_CLOSE_BRACKET'):  ['CONST', 'TABLE'],
+    ('TABLE', '_OPEN_SQUARE'):    ['CONST', 'TABLE'],
+    ('TABLE', '_CLOSE_SQUARE'):   ['CONST', 'TABLE'],
+    ('TABLE', '_OPEN_ROUND'):     ['CONST', 'TABLE'],
+    ('TABLE', '_CLOSE_ROUND'):    ['CONST', 'TABLE'],
 
     # <TABLE> -> <COMMAND> <TABLE>
     ('TABLE', '_OPEN_CURLY'):     ['COMMAND', 'TABLE'],
@@ -225,10 +225,10 @@ ll_table = {
     ('CELL_TERM', '_TEXT'):            ['CONST'],
     ('CELL_TERM', '_SPECIAL_CHAR'):    ['CONST'],
     ('CELL_TERM', '_PIPE'):            ['CONST'],
-    ('CELL_TERM', '_OPEN_ANGLE'):      ['CONST'],
-    ('CELL_TERM', '_CLOSE_ANGLE'):     ['CONST'],
-    ('CELL_TERM', '_OPEN_BRACKET'):    ['CONST'],
-    ('CELL_TERM', '_CLOSE_BRACKET'):   ['CONST'],
+    ('CELL_TERM', '_OPEN_SQUARE'):     ['CONST'],
+    ('CELL_TERM', '_CLOSE_SQUARE'):    ['CONST'],
+    ('CELL_TERM', '_OPEN_ROUND'):      ['CONST'],
+    ('CELL_TERM', '_CLOSE_ROUND'):     ['CONST'],
 
     # <CELL_TERM> -> <COMMAND>
     ('CELL_TERM', '_OPEN_CURLY'):      ['COMMAND'],
@@ -247,10 +247,10 @@ ll_table = {
     ('CELL_CONTENT', '_TEXT'):          ['CELL_TERM', 'CELL_CONTENT'],
     ('CELL_CONTENT', '_SPECIAL_CHAR'):  ['CELL_TERM', 'CELL_CONTENT'],
     ('CELL_CONTENT', '_PIPE'):          ['CELL_TERM', 'CELL_CONTENT'],
-    ('CELL_CONTENT', '_OPEN_ANGLE'):    ['CELL_TERM', 'CELL_CONTENT'],
-    ('CELL_CONTENT', '_CLOSE_ANGLE'):   ['CELL_TERM', 'CELL_CONTENT'],
-    ('CELL_CONTENT', '_OPEN_BRACKET'):  ['CELL_TERM', 'CELL_CONTENT'],
-    ('CELL_CONTENT', '_CLOSE_BRACKET'): ['CELL_TERM', 'CELL_CONTENT'],
+    ('CELL_CONTENT', '_OPEN_SQUARE'):   ['CELL_TERM', 'CELL_CONTENT'],
+    ('CELL_CONTENT', '_CLOSE_SQUARE'):  ['CELL_TERM', 'CELL_CONTENT'],
+    ('CELL_CONTENT', '_OPEN_ROUND'):    ['CELL_TERM', 'CELL_CONTENT'],
+    ('CELL_CONTENT', '_CLOSE_ROUND'):   ['CELL_TERM', 'CELL_CONTENT'],
     ('CELL_CONTENT', '_OPEN_CURLY'):    ['CELL_TERM', 'CELL_CONTENT'],
     ('CELL_CONTENT', 'par'):            ['CELL_TERM', 'CELL_CONTENT'],
     ('CELL_CONTENT', 'textbf'):         ['CELL_TERM', 'CELL_CONTENT'],
@@ -303,10 +303,10 @@ ll_table = {
     ('MULTICOL', '_TEXT'):          ['CELL_TERM', 'MULTICOL'],
     ('MULTICOL', '_SPECIAL_CHAR'):  ['CELL_TERM', 'MULTICOL'],
     ('MULTICOL', '_PIPE'):          ['CELL_TERM', 'MULTICOL'],
-    ('MULTICOL', '_OPEN_ANGLE'):    ['CELL_TERM', 'MULTICOL'],
-    ('MULTICOL', '_CLOSE_ANGLE'):   ['CELL_TERM', 'MULTICOL'],
-    ('MULTICOL', '_OPEN_BRACKET'):  ['CELL_TERM', 'MULTICOL'],
-    ('MULTICOL', '_CLOSE_BRACKET'): ['CELL_TERM', 'MULTICOL'],
+    ('MULTICOL', '_OPEN_SQUARE'):   ['CELL_TERM', 'MULTICOL'],
+    ('MULTICOL', '_CLOSE_SQUARE'):  ['CELL_TERM', 'MULTICOL'],
+    ('MULTICOL', '_OPEN_ROUND'):    ['CELL_TERM', 'MULTICOL'],
+    ('MULTICOL', '_CLOSE_ROUND'):   ['CELL_TERM', 'MULTICOL'],
     ('MULTICOL', '_OPEN_CURLY'):    ['CELL_TERM', 'MULTICOL'],
     ('MULTICOL', 'par'):            ['CELL_TERM', 'MULTICOL'],
     ('MULTICOL', 'textbf'):         ['CELL_TERM', 'MULTICOL'],
@@ -331,10 +331,10 @@ math_ll_table = {
     ('TERM', '_TEXT'):               ['CONST'],
     ('TERM', '_SPECIAL_CHAR'):       ['CONST'],
     ('TERM', '_PIPE'):               ['CONST'],
-    ('TERM', '_OPEN_ANGLE'):         ['CONST'],
-    ('TERM', '_CLOSE_ANGLE'):        ['CONST'],
-    ('TERM', '_OPEN_BRACKET'):       ['CONST'],
-    ('TERM', '_CLOSE_BRACKET'):      ['CONST'],
+    ('TERM', '_OPEN_SQUARE'):        ['CONST'],
+    ('TERM', '_CLOSE_SQUARE'):       ['CONST'],
+    ('TERM', '_OPEN_ROUND'):         ['CONST'],
+    ('TERM', '_CLOSE_ROUND'):        ['CONST'],
     ('TERM', '_UNDERSCORE'):         ['CONST'],
     ('TERM', '_CARET'):              ['CONST'],
 
@@ -365,10 +365,10 @@ math_ll_table = {
     ('MORE_TERM', '_SPECIAL_CHAR'):  ['TERM', 'MORE_TERM'],
     ('MORE_TERM', '_ENTER'):         ['TERM', 'MORE_TERM'],
     ('MORE_TERM', '_PIPE'):          ['TERM', 'MORE_TERM'],
-    ('MORE_TERM', '_OPEN_ANGLE'):    ['TERM', 'MORE_TERM'],
-    ('MORE_TERM', '_CLOSE_ANGLE'):   ['TERM', 'MORE_TERM'],
-    ('MORE_TERM', '_OPEN_BRACKET'):  ['TERM', 'MORE_TERM'],
-    ('MORE_TERM', '_CLOSE_BRACKET'): ['TERM', 'MORE_TERM'],
+    ('MORE_TERM', '_OPEN_SQUARE'):   ['TERM', 'MORE_TERM'],
+    ('MORE_TERM', '_CLOSE_SQUARE'):  ['TERM', 'MORE_TERM'],
+    ('MORE_TERM', '_OPEN_ROUND'):    ['TERM', 'MORE_TERM'],
+    ('MORE_TERM', '_CLOSE_ROUND'):   ['TERM', 'MORE_TERM'],
     ('MORE_TERM', '_UNDERSCORE'):    ['TERM', 'MORE_TERM'],
     ('MORE_TERM', '_CARET'):         ['TERM', 'MORE_TERM'],
     ('MORE_TERM', '_OPEN_CURLY'):    ['TERM', 'MORE_TERM'],
@@ -398,10 +398,10 @@ math_ll_table = {
     # <CONST> -> text
     ('CONST', '_TEXT'):              ['#ACTION_GENERATE_TEXT'],
     ('CONST', '_PIPE'):              ['#ACTION_GENERATE_TEXT'],
-    ('CONST', '_OPEN_ANGLE'):        ['#ACTION_GENERATE_TEXT'],
-    ('CONST', '_CLOSE_ANGLE'):       ['#ACTION_GENERATE_TEXT'],
-    ('CONST', '_OPEN_BRACKET'):      ['#ACTION_GENERATE_TEXT'],
-    ('CONST', '_CLOSE_BRACKET'):     ['#ACTION_GENERATE_TEXT'],
+    ('CONST', '_OPEN_SQUARE'):       ['#ACTION_GENERATE_TEXT'],
+    ('CONST', '_CLOSE_SQUARE'):      ['#ACTION_GENERATE_TEXT'],
+    ('CONST', '_OPEN_ROUND'):        ['#ACTION_GENERATE_TEXT'],
+    ('CONST', '_CLOSE_ROUND'):       ['#ACTION_GENERATE_TEXT'],
 
     # <CONST> -> special_char
     ('CONST', '_SPECIAL_CHAR'):      ['#ACTION_GENERATE_TEXT'],
@@ -416,10 +416,10 @@ math_ll_table = {
     # <EI_TERM> -> text
     ('EI_TERM', '_TEXT'):            ['#ACTION_GENERATE_TEXT'],
     ('EI_TERM', '_PIPE'):            ['#ACTION_GENERATE_TEXT'],
-    ('EI_TERM', '_OPEN_ANGLE'):      ['#ACTION_GENERATE_TEXT'],
-    ('EI_TERM', '_CLOSE_ANGLE'):     ['#ACTION_GENERATE_TEXT'],
-    ('EI_TERM', '_OPEN_BRACKET'):    ['#ACTION_GENERATE_TEXT'],
-    ('EI_TERM', '_CLOSE_BRACKET'):   ['#ACTION_GENERATE_TEXT'],
+    ('EI_TERM', '_OPEN_SQUARE'):     ['#ACTION_GENERATE_TEXT'],
+    ('EI_TERM', '_CLOSE_SQUARE'):    ['#ACTION_GENERATE_TEXT'],
+    ('EI_TERM', '_OPEN_ROUND'):      ['#ACTION_GENERATE_TEXT'],
+    ('EI_TERM', '_CLOSE_ROUND'):     ['#ACTION_GENERATE_TEXT'],
 
     # <EI_TERM> -> special_char
     ('EI_TERM', '_SPECIAL_CHAR'):    ['#ACTION_GENERATE_TEXT'],
@@ -490,7 +490,7 @@ math_ll_table = {
 
     # --- SQRT ---
     # <SQRT> -> [ <MORE_TERM> ] { <MORE_TERM> }
-    ('SQRT', '_OPEN_ANGLE'): [
+    ('SQRT', '_OPEN_SQUARE'): [
         '[', '#ACTION_SQRT_INDEX_BEGIN',     'MORE_TERM', ']',
         '{', '#ACTION_SQRT_INIT_WITH_INDEX', 'MORE_TERM', '}',
         '#ACTION_SQRT_CREATE'
@@ -523,10 +523,10 @@ math_ll_table = {
     ('MATRIX', '_TEXT'):             ['CONST', 'MATRIX'],
     ('MATRIX', '_SPECIAL_CHAR'):     ['CONST', 'MATRIX'],
     ('MATRIX', '_PIPE'):             ['CONST', 'MATRIX'],
-    ('MATRIX', '_OPEN_ANGLE'):       ['CONST', 'MATRIX'],
-    ('MATRIX', '_CLOSE_ANGLE'):      ['CONST', 'MATRIX'],
-    ('MATRIX', '_OPEN_BRACKET'):     ['CONST', 'MATRIX'],
-    ('MATRIX', '_CLOSE_BRACKET'):    ['CONST', 'MATRIX'],
+    ('MATRIX', '_OPEN_SQUARE'):      ['CONST', 'MATRIX'],
+    ('MATRIX', '_CLOSE_SQUARE'):     ['CONST', 'MATRIX'],
+    ('MATRIX', '_OPEN_ROUND'):       ['CONST', 'MATRIX'],
+    ('MATRIX', '_CLOSE_ROUND'):      ['CONST', 'MATRIX'],
     ('MATRIX', '_UNDERSCORE'):       ['CONST', 'MATRIX'],
     ('MATRIX', '_CARET'):            ['CONST', 'MATRIX'],
 
