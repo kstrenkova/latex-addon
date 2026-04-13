@@ -53,7 +53,7 @@ class SyntaxAnalyser:
 
     # function returns the next rule
     def choose_rule(self, stack_top, token):
-        key = token.value if token.type == 'COMMAND' else token.type
+        key = token.value if token.type in {'COMMAND', '_MATH_DELIMITER'} else token.type
 
         # special epsilon rules
         if stack_top in epsilon_rules and (token.type, token.value) not in epsilon_rules[stack_top]:

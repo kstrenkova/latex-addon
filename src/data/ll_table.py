@@ -27,7 +27,7 @@ ll_table = {
     ('TERM', 'verb'):             ['COMMAND'],
 
     # <TERM> -> <MATH_MODE>
-    ('TERM', '_DOLLAR'):          ['MATH_MODE'],
+    ('TERM', '$'):                ['MATH_MODE'],
     ('TERM', '\('):               ['MATH_MODE'],
     ('TERM', '\['):               ['MATH_MODE'],
 
@@ -54,7 +54,7 @@ ll_table = {
     ('MORE_TERM', 'texttt'):         ['TERM', 'MORE_TERM'],
     ('MORE_TERM', 'verb'):           ['TERM', 'MORE_TERM'],
     ('MORE_TERM', 'begin'):          ['TERM', 'MORE_TERM'],
-    ('MORE_TERM', '_DOLLAR'):        ['TERM', 'MORE_TERM'],
+    ('MORE_TERM', '$'):              ['TERM', 'MORE_TERM'],
     ('MORE_TERM', '\('):             ['TERM', 'MORE_TERM'],
     ('MORE_TERM', '\['):             ['TERM', 'MORE_TERM'],
 
@@ -94,14 +94,14 @@ ll_table = {
     # --- MATH_MODE ---
     # <MATH_MODE> -> <INLINE_MATH>
     # <MATH_MODE> -> <DISPLAY_MATH>
-    ('MATH_MODE', '_DOLLAR'):    ['INLINE_MATH'],
+    ('MATH_MODE', '$'):          ['INLINE_MATH'],
     ('MATH_MODE', '\('):         ['INLINE_MATH'],
     ('MATH_MODE', '\['):         ['DISPLAY_MATH'],
 
     # --- INLINE_MATH ---
     # <INLINE_MATH> -> $ <MATH_INLINE_PROG> $
     # <INLINE_MATH> -> \( <MATH_INLINE_PROG> \)
-    ('INLINE_MATH', '_DOLLAR'):    ['$',  '#ACTION_MATH_MODE_INLINE',  '$'],
+    ('INLINE_MATH', '$'):          ['$',  '#ACTION_MATH_MODE_INLINE',  '$'],
     ('INLINE_MATH', '\('):         ['\(', '#ACTION_MATH_MODE_INLINE',  '\)'],
 
     # --- DISPLAY_MATH ---
@@ -144,7 +144,7 @@ ll_table = {
     ('ITEM', 'texttt'):          ['#ACTION_ITEM_ADD', 'MORE_TERM', 'ITEMIZE'],
     ('ITEM', 'verb'):            ['#ACTION_ITEM_ADD', 'MORE_TERM', 'ITEMIZE'],
 
-    ('ITEM', '_DOLLAR'):         ['#ACTION_ITEM_ADD', 'MORE_TERM', 'ITEMIZE'],
+    ('ITEM', '$'):               ['#ACTION_ITEM_ADD', 'MORE_TERM', 'ITEMIZE'],
     ('ITEM', '\('):              ['#ACTION_ITEM_ADD', 'MORE_TERM', 'ITEMIZE'],
     ('ITEM', '\['):              ['#ACTION_ITEM_ADD', 'MORE_TERM', 'ITEMIZE'],
 
@@ -185,7 +185,7 @@ ll_table = {
     ('TABLE', 'verb'):            ['COMMAND', 'TABLE'],
 
     # <TABLE> -> <INLINE_MATH> <TABLE>
-    ('TABLE', '_DOLLAR'):         ['INLINE_MATH', 'TABLE'],
+    ('TABLE', '$'):               ['INLINE_MATH', 'TABLE'],
     ('TABLE', '\('):              ['INLINE_MATH', 'TABLE'],
 
     # <TABLE> -> <BLOCK> <TABLE>
@@ -239,7 +239,7 @@ ll_table = {
     ('CELL_TERM', 'verb'):             ['COMMAND'],
 
     # <CELL_TERM> -> <INLINE_MATH>
-    ('CELL_TERM', '_DOLLAR'):          ['INLINE_MATH'],
+    ('CELL_TERM', '$'):                ['INLINE_MATH'],
     ('CELL_TERM', '\('):               ['INLINE_MATH'],
 
     # --- CELL_CONTENT ---
@@ -257,7 +257,7 @@ ll_table = {
     ('CELL_CONTENT', 'textit'):         ['CELL_TERM', 'CELL_CONTENT'],
     ('CELL_CONTENT', 'texttt'):         ['CELL_TERM', 'CELL_CONTENT'],
     ('CELL_CONTENT', 'verb'):           ['CELL_TERM', 'CELL_CONTENT'],
-    ('CELL_CONTENT', '_DOLLAR'):        ['CELL_TERM', 'CELL_CONTENT'],
+    ('CELL_CONTENT', '$'):              ['CELL_TERM', 'CELL_CONTENT'],
     ('CELL_CONTENT', '\('):             ['CELL_TERM', 'CELL_CONTENT'],
 
     # <CELL_CONTENT> -> epsilon
@@ -313,7 +313,7 @@ ll_table = {
     ('MULTICOL', 'textit'):         ['CELL_TERM', 'MULTICOL'],
     ('MULTICOL', 'texttt'):         ['CELL_TERM', 'MULTICOL'],
     ('MULTICOL', 'verb'):           ['CELL_TERM', 'MULTICOL'],
-    ('MULTICOL', '_DOLLAR'):        ['CELL_TERM', 'MULTICOL'],
+    ('MULTICOL', '$'):              ['CELL_TERM', 'MULTICOL'],
     ('MULTICOL', '\('):             ['CELL_TERM', 'MULTICOL'],
 
     # <MULTICOL> -> epsilon
@@ -389,7 +389,7 @@ math_ll_table = {
     # <MORE_TERM> -> epsilon
     ('MORE_TERM', '_CLOSE_CURLY'):   ['epsilon'],
     ('MORE_TERM', 'end'):            ['epsilon'],
-    ('MORE_TERM', '_DOLLAR'):        ['epsilon'],
+    ('MORE_TERM', '$'):              ['epsilon'],
     ('MORE_TERM', '\)'):             ['epsilon'],
     ('MORE_TERM', '\]'):             ['epsilon'],
     ('MORE_TERM', 'END'):            ['epsilon'],

@@ -48,7 +48,7 @@ char_type = {
     '_': '_UNDERSCORE',
     '&': '_AMPERSAND',
     '%': '_PERCENTAGE',
-    '$': '_DOLLAR',
+    '$': '_MATH_DELIMITER',  # dollar
 }
 
 # characters that can be escaped with a backslash
@@ -60,7 +60,16 @@ special_chars = [
     '_UNDERSCORE',
     '_AMPERSAND',
     '_PERCENTAGE',
-    '_DOLLAR',
+    '_MATH_DELIMITER',  # dollar
+]
+
+# characters that are math delimiters prefixed
+# with a backslash
+math_delimiters = [
+    '_OPEN_ROUND',
+    '_OPEN_SQUARE',
+    '_CLOSE_ROUND',
+    '_CLOSE_SQUARE',
 ]
 
 # block types and their setup actions
@@ -103,9 +112,9 @@ epsilon_rules = {
 
 # tokens that end math mode
 end_tokens = {
-    ('_DOLLAR', '$'),
-    ('COMMAND', '\)'),
-    ('COMMAND', '\]'),
+    ('_MATH_DELIMITER', '$'),
+    ('_MATH_DELIMITER', '\)'),
+    ('_MATH_DELIMITER', '\]'),
     ('COMMAND', 'end')
 }
 

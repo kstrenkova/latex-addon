@@ -6,7 +6,6 @@
 from .data.characters_db import *
 
 # TODO add support for % = ignoring comments
-# TODO make a MATH_DELIMITER token type for $, \(, \[
 
 
 # class for tokens
@@ -65,10 +64,10 @@ class LexicalAnalyser:
         elif c_type in special_chars:
             self.position += 1
             return Token("_SPECIAL_CHAR", c)
-        elif c_type: # \[ \(
+        elif c_type in math_delimiters:
             self.position += 1
             c = '\\' + c
-            return Token("COMMAND", c)
+            return Token("_MATH_DELIMITER", c)
         elif c in space_sizes:
             self.position += 1
             return Token("_SPACE_COMMAND", c)
