@@ -64,6 +64,7 @@ Expand this section to use custom fonts instead of Blender's default font:
    - **Base**: Choose the font for normal text
    - **Bold**: Choose the font for bold text (e.g., `\textbf{}`)
    - **Italic**: Choose the font for italic text (e.g., `\textit{}`)
+   - **Math**: Choose the font for mathematical text, variables, and equations
 
 All loaded fonts will appear in these dropdown menus for easy reuse.
 
@@ -110,6 +111,7 @@ This add-on supports a selected subset of LaTeX commands for the most common use
   - `\begin{enumerate}...\end{enumerate}` - Numbered lists
   - `\item` - List item
   - `\item[symbol]` - Custom bullet symbol
+- **Comments**: Ignores all text from the `%` symbol until the end of the line
 
 ### Math Mode
 
