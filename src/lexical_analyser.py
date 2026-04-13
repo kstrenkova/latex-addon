@@ -5,8 +5,6 @@
 
 from .data.characters_db import *
 
-# TODO add support for % = ignoring comments
-
 
 # class for tokens
 class Token:
@@ -53,6 +51,15 @@ class LexicalAnalyser:
         # add whitespace only if didn't end with \n
         return last_char != '\n'
 
+    # function ignores comment tokens until the end of the line
+    def state_comment(self):
+        while not self.is_end() and self.get_char() != '\n':
+            self.position += 1
+
+        # consume the new line character
+        if not self.is_end() and self.get_char() == '\n':
+            self.position += 1
+
     # function creates a command token
     def state_command(self):
         c = self.get_char()
@@ -91,6 +98,10 @@ class LexicalAnalyser:
         has_space = self.state_whitespace()
         if has_space and add_whitespace:
             return Token("WHITESPACE", " ")
+
+        # <STATE_COMMENT>
+        if not self.is_end() and self.get_char() == '%':
+            self.state_comment()
 
         if self.is_end():
             return Token("END", "")
