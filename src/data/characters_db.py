@@ -340,6 +340,8 @@ unicode_chars = {
 
     # other symbols
     'backslash': '\\',
+    'cos': 'cos',
+    'sin': 'sin',
     'neg': '\u00ac',
     'hbar': '\u0127',
     'prime': '\u2032',
