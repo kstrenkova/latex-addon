@@ -268,6 +268,7 @@ class MathSyntaxAnalyser:
         # TODO [fix] Improve visual quality of \dfrac command in every scenario
         elif action == '#ACTION_FRAC_INIT':
             self.p.width += MIN_SPACE * self.p.scale  # space before fraction
+            gen_calculate(self.p, self.d.text_scale, self.levels)
             fs = FractionState(self.d.current_coll, self.p.create_copy())
 
             # numerator collection
