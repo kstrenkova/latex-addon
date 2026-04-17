@@ -572,7 +572,9 @@ def gen_bound_for_array(obj_names, axis, ftype):
     if not obj_names:
         return None
 
-    objects = [bpy.data.objects.get(name) for name in obj_names]
+    objects = [bpy.data.objects.get(name) for name in obj_names
+            if bpy.data.objects.get(name) is not None]
+
     return gen_calculate_bound(objects, axis, ftype)
 
 
