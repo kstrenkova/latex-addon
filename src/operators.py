@@ -146,6 +146,10 @@ class WM_OT_AddText(bpy.types.Operator):
         # set cursor icon to loading
         bpy.context.window.cursor_modal_set('WAIT')
 
+        # deselect all objects before running the add-on
+        for obj in context.selected_objects:
+            obj.select_set(False)
+
         try:
             # parse LaTeX text
             if not syntax.parse():
