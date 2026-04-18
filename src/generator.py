@@ -84,6 +84,9 @@ def gen_adjust_new_line(param, base_coll, line_space, init_width=0.0):
     if len(bpy.data.collections[base_coll].all_objects) == 0:
         return
 
+    # filter out NoneType objects in the line
+    param.line.line_objs = [name for name in param.line.line_objs if name in bpy.data.objects]
+
     # multiple new lines in the row
     if len(param.line.line_objs) == 0 and param.line.table_min_y is None:
         param.line.min_y -= line_space * param.scale
