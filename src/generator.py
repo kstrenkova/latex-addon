@@ -102,17 +102,18 @@ def gen_adjust_new_line(param, base_coll, line_space, init_width=0.0):
             obj = bpy.data.objects.get(obj_name)
             obj.location.y -= (param.line.height - param.line.table_min_y) / 2.0
 
-    if param.line.min_y is not None:
-        # calculate overflow
-        max_y = gen_bound_for_array(param.line.line_objs, 'y', 'max') or 0.0
-        lmin_y = param.line.min_y  # lowest point of last row
-        overflow = max_y - lmin_y if (max_y > lmin_y) else 0
+    if param.line.min_y is not None and param.line.line_objs:
+        max_y = gen_bound_for_array(param.line.line_objs, 'y', 'max') # highest point
+
+        # calculate gap between the last lowest point and the current highest point
+        gap = param.line.min_y - max_y
+        space = BASE_SPACE * param.scale
 
         # move objects down
-        if overflow > 0:
+        if gap < space:
             for obj_name in param.line.line_objs:
                 obj = bpy.data.objects.get(obj_name)
-                obj.location.y -= overflow + BASE_SPACE * param.scale
+                obj.location.y -= (space - gap)
 
     # get real and expected lowest point
     real_min_y = gen_bound_for_array(param.line.line_objs, 'y', 'min') or 0.0
