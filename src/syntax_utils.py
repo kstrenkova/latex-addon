@@ -195,6 +195,7 @@ class TableState:
         self.init_params = init_params
         self.table_coll = ''
         self.obj_array = [[]]
+        self.row_baseline = None
         self.align = TableAlignment()
         self.hline = TableHorizontalLines()
         self.multi = TableMultiCell()

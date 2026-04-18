@@ -378,6 +378,9 @@ class SyntaxAnalyser:
 
         # <MULTICOL> actions
         elif action == '#ACTION_TABLE_MULTICOL_ALIGN':
+            # override constraint on normal cells
+            self.cell_con.max_width = None
+
             ts = self.state_stack[-1]
             token = self.lex.get_token()
 
@@ -439,12 +442,18 @@ class SyntaxAnalyser:
             # special info saving for multicolumn/multirow
             save_multi_info(ts)
 
+            # reset cell constraint from the previous row
+            if self.cell_con.max_width is not None and ts.row_baseline is not None:
+                self.p.line.height = ts.row_baseline
+                self.cell_con.reset_cell_constraint()
+
             # set height lower and record the y positions
             start_y = self.p.line.min_y
             gen_adjust_new_line(self.p, self.d.base_coll, self.d.line_height, ts.init_params.width)
 
             # add new array that represents row and the initial cell
             ts.obj_array.append([])
+            ts.row_baseline = self.p.line.height
             action_result = self.execute_action('#ACTION_TABLE_NEW_CELL')
 
             end_y = self.p.line.min_y - (SMALL_SPACE * self.p.scale)
