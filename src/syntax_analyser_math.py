@@ -444,7 +444,8 @@ class MathSyntaxAnalyser:
                     gen_brackets(self.d.context.active_object, self.p, ms.mx_coll, ms.size)
 
                 # center matrix into row
-                gen_matrix_center(ms.mx_coll, ms.size, ms.init_params.height)
+                if not ms.is_nested(self.state_stack):
+                    gen_matrix_center(ms.mx_coll, ms.size, ms.init_params.height)
 
                 # set new width and old height
                 self.p.width = gen_bound(ms.mx_coll, 'x', 'max') + BASE_SPACE * self.d.text_scale

@@ -964,6 +964,28 @@ def gen_multirow_cells_align_y(obj_array, align, cell_span):
                 obj.location.y += move_by
 
 
+# function centers the content of matrix cells vertically within each row
+def gen_matrix_center_y(obj_array, max_col):
+    for row in obj_array:
+        row_min = get_min_row_height(row, max_col, float('inf'))
+        row_max = get_max_row_height(row, max_col, float('-inf'))
+        row_center = (row_max + row_min) / 2.0
+
+        # center each cell in the row
+        for col in range(max_col):
+            if col < len(row):
+                collection = row[col]
+                cell_min, cell_max = gen_bound_both(collection, 'y')
+
+                if cell_min is not None and cell_max is not None:
+                    cell_center = (cell_max + cell_min) / 2.0
+                    offset = row_center - cell_center
+
+                    # move all objects in this cell
+                    for obj in bpy.data.collections[collection].all_objects:
+                        obj.location.y += offset
+
+
 # function centers cells in matrix vertically
 def gen_matrix_align_y(obj_array, param):
     # calculate the max number of columns
@@ -987,6 +1009,9 @@ def gen_matrix_align_y(obj_array, param):
 
         # find min height for the current row
         min_row_height = get_min_row_height(row, max_col, max_row_height)
+
+    # center content vertically
+    gen_matrix_center_y(obj_array, max_col)
 
 
 # function aligns cells for table vertically to center

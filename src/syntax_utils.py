@@ -257,6 +257,10 @@ class MatrixState:
     def get_row_num(self) -> int:
         return len(self.obj_array) - 1
 
+    # returns if the current matrix is nested
+    def is_nested(self, state_stack) -> bool:
+        return sum(1 for item in state_stack if isinstance(item, MatrixState)) > 1
+
 
 # class for matrix dimensions
 class MatrixSize:
