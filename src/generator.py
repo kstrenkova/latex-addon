@@ -1012,7 +1012,6 @@ def gen_table_align_y(obj_array, align, multi):
                 vline.y_pos.append(align.row_y[i])
 
 
-# TODO [fix] vmatrix and Vmatrix have tricky space after left bracket
 # function generates matrix brackets
 def gen_brackets(bracket, param, collection, size):
     # determine left or right bracket
@@ -1022,7 +1021,6 @@ def gen_brackets(bracket, param, collection, size):
     # scale bracket object
     matrix_height = size.max_y - size.min_y
     scale = (matrix_height + 0.5 * param.scale) / bracket.dimensions.y
-    bracket.scale.x = scale / 3.0
     bracket.scale.y = scale
 
     # calculate where the bracket should be vertically
@@ -1037,7 +1035,7 @@ def gen_brackets(bracket, param, collection, size):
         for obj in bpy.data.collections[collection].all_objects:
             # move all objects besides bracket
             if obj.name != bracket.name:
-                obj.location.x += GRID_SPACE * param.scale
+                obj.location.x += (bracket.dimensions.x + GRID_SPACE) * param.scale
 
 
 # function centers matrix

@@ -377,7 +377,7 @@ class MathSyntaxAnalyser:
 
             # saving starting state of the matrix
             ms = self.state_stack[-1]
-            ms.size.min_x = ms.init_params.width
+            ms.size.min_x = ms.init_params.width + SMALL_SPACE * ms.init_params.scale
 
             # matrix body collection
             ms.mx_coll = gen_new_collection("MatrixBodyCollection", ms.parent_coll)
