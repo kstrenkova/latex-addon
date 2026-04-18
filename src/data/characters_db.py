@@ -89,7 +89,9 @@ block_actions = {
 
 # actions that should add whitespaces
 whitespace_add_actions = {
-    '#ACTION_TEXT_GENERATE', '#ACTION_VERB_GENERATE'
+    '#ACTION_TEXT_GENERATE',
+    '#ACTION_VERB_GENERATE',
+    '#ACTION_FONT_BASE'
 }
 
 # context-dependent epsilon productions
