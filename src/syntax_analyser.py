@@ -329,10 +329,9 @@ class SyntaxAnalyser:
 
         elif action == '#ACTION_TABLE_HLINE':
             ts = self.state_stack[-1]
-            self.p.line.height -= SMALL_SPACE * self.p.scale
-            self.p.line.min_y -= SMALL_SPACE * self.p.scale
 
             # save position of the horizontal line
+            self.p.line.min_y -= SMALL_SPACE * self.p.scale
             ts.hline.hline_pos.append(self.p.line.min_y)
             return True
 
@@ -440,13 +439,14 @@ class SyntaxAnalyser:
             # special info saving for multicolumn/multirow
             save_multi_info(ts)
 
+            # set height lower and record the y positions
+            start_y = self.p.line.min_y
+            gen_adjust_new_line(self.p, self.d.base_coll, self.d.line_height, ts.init_params.width)
+
             # add new array that represents row and the initial cell
             ts.obj_array.append([])
             action_result = self.execute_action('#ACTION_TABLE_NEW_CELL')
 
-            # set height lower and record the y positions
-            start_y = self.p.line.min_y
-            gen_adjust_new_line(self.p, self.d.base_coll, self.d.line_height, ts.init_params.width)
             end_y = self.p.line.min_y - (SMALL_SPACE * self.p.scale)
 
             # save row y positions
@@ -482,7 +482,10 @@ class SyntaxAnalyser:
 
         elif action == '#ACTION_TABLE_CREATE':
             ts = self.state_stack.pop()
+
+            # cleanup before table creation
             gen_cleanup_last_row(ts.obj_array)
+            self.cell_con.reset_cell_constraint()
 
             # position table if not empty
             if len(ts.obj_array):

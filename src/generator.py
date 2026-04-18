@@ -132,17 +132,18 @@ def gen_adjust_new_line(param, base_coll, line_space, init_width=0.0):
 
 # function calculates and adjusts the height for new line in one table cell
 def gen_new_line_in_cell(param, cell_constraint, line_space):
-    if cell_constraint.last_min_y is not None:
-        # calculate overflow
-        max_y = gen_bound_for_array(cell_constraint.cell_objects, 'y', 'max')
-        lmin_y = cell_constraint.last_min_y  # lowest point of last row
-        overflow = max_y - lmin_y if (max_y > lmin_y) else 0
+    if cell_constraint.last_min_y is not None and cell_constraint.cell_objects:
+        max_y = gen_bound_for_array(cell_constraint.cell_objects, 'y', 'max') # highest point
+
+        # calculate gap between the last lowest point and the current highest point
+        gap = cell_constraint.last_min_y - max_y
+        space = BASE_SPACE * param.scale
 
         # move objects down
-        if overflow > 0:
+        if gap < space:
             for obj_name in cell_constraint.cell_objects:
                 obj = bpy.data.objects.get(obj_name)
-                obj.location.y -= overflow
+                obj.location.y -= (space - gap)
 
     # get real and expected lowest point
     real_min_y = gen_bound_for_array(cell_constraint.cell_objects, 'y', 'min')
