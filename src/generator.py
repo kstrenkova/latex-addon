@@ -12,6 +12,9 @@ from mathutils import Vector, Matrix  # vertices
 from .syntax_utils import change_font
 from .data.characters_db import *
 
+# ---------------
+# TEXT FUNCTIONS
+# ---------------
 
 # function generates text in given font
 def gen_text(text, font_info, collection, spacing, line, math_mode=None):
@@ -77,6 +80,9 @@ def gen_text_object(param, defaults, text, font_type, levels=None, symbol=None):
     # set object position
     gen_move_position(obj, param)
 
+# ---------------
+# LINE FUNCTIONS
+# ---------------
 
 # function calculates and adjusts the height for new line
 def gen_adjust_new_line(param, base_coll, line_space, init_width=0.0):
@@ -181,6 +187,9 @@ def gen_wrap_obj_in_cell(param, defaults, cell_constraint):
     gen_new_line_in_cell(param, cell_constraint, defaults.line_height)
     return True
 
+# ----------------
+# LINE GENERATION
+# ----------------
 
 # function generates line object
 def gen_line_object(context, param, collection, x_pos, y_pos, line_length, axis='x'):
@@ -216,6 +225,9 @@ def gen_line_object(context, param, collection, x_pos, y_pos, line_length, axis=
     # save line into the current collection
     gen_object_to_collection(line_obj, collection)
 
+# ---------------------
+# COLLECTION FUNCTIONS
+# ---------------------
 
 # function creates new collection
 def gen_new_collection(coll_name, parent_coll):
@@ -266,6 +278,9 @@ def gen_object_to_collection(obj, collection):
     # link object into the correct collection
     bpy.data.collections[collection].objects.link(obj)
 
+# ----------------------
+# SQUARE ROOT FUNCTIONS
+# ----------------------
 
 # function generates square root symbol
 def gen_sqrt_sym(context, collection):
@@ -376,6 +391,9 @@ def gen_sqrt_move(obj, param, sqrt_param):
             elif v.co.y <= threshold_bottom:
                 v.co.y = move_by_bottom + line_size_bottom
 
+# -------------------
+# FRACTION FUNCTIONS
+# -------------------
 
 # function generates fraction line
 def gen_frac_line(context, param, collection, line_length, levels):
@@ -405,6 +423,9 @@ def gen_frac_move(param, collection, mode):
 def is_frac_scaled_down(levels):
     return len(levels.frac_array) > 1 and levels.frac_array[-1] != 'dfrac'
 
+# ----------------
+# SCALE FUNCTIONS
+# ----------------
 
 # helper function to get the fraction level scale
 def get_frac_scale(levels, text_scale, scale_low, scale_nested):
@@ -475,6 +496,9 @@ def gen_calculate(param, text_scale, levels, symbol=None):
     if symbol in unicode_chars_big.values():
         param.height -= SMALL_SPACE * text_scale  # move lower
 
+# --------------------------------
+# SUM FUNCTIONS (RANGE OPERATORS)
+# --------------------------------
 
 # function moves sum symbol according to given parameters
 def gen_move_sum(param, collection, sum_name):
@@ -559,6 +583,9 @@ def gen_center(obj1, obj2, collection):
     for obj in bpy.data.collections[collection].all_objects:
         obj.location.x += move_by
 
+# ----------------------------
+# BOUND CALCULATION FUNCTIONS
+# ----------------------------
 
 # calculate the extreme for set axis and type (min/max)
 def gen_calculate_bound(objects, axis, ftype):
@@ -624,6 +651,126 @@ def gen_bound_both(coll_name, axis):
 
     return min(coords), max(coords)
 
+# -----------------
+# MATRIX FUNCTIONS
+# -----------------
+
+# function aligns cells horizontally for matrix
+def gen_matrix_align_x(obj_array, param):
+    prev_col_width = param.width
+    padding = GRID_SPACE * param.scale
+
+    # calculate the max number of columns
+    max_col = max(len(row) for row in obj_array)
+
+    for col in range(max_col):
+        # find max width for the current column
+        max_col_width = get_max_column_width(obj_array, col, prev_col_width)
+
+        # add extra padding for empty column
+        is_empty_column = (prev_col_width == max_col_width)
+        extra_padding = padding if is_empty_column else 0
+
+        # calculate spacing for the next column
+        prev_col_width = max_col_width + padding + extra_padding
+
+        # move objects in next collumn
+        if (col + 1) < max_col:
+            gen_move_column(obj_array, col + 1, prev_col_width)
+
+        # center column content horizontally
+        gen_column_cells_align_x(obj_array, col, max_col_width)
+
+
+# function centers the content of matrix cells vertically within each row
+def gen_matrix_center_y(obj_array, max_col):
+    for row in obj_array:
+        row_min = get_min_row_height(row, max_col, float('inf'))
+        row_max = get_max_row_height(row, max_col, float('-inf'))
+        row_center = (row_max + row_min) / 2.0
+
+        # center each cell in the row
+        for col in range(max_col):
+            if col < len(row):
+                collection = row[col]
+                cell_min, cell_max = gen_bound_both(collection, 'y')
+
+                if cell_min is not None and cell_max is not None:
+                    cell_center = (cell_max + cell_min) / 2.0
+                    offset = row_center - cell_center
+
+                    # move all objects in this cell
+                    for obj in bpy.data.collections[collection].all_objects:
+                        obj.location.y += offset
+
+
+# function centers cells in matrix vertically
+def gen_matrix_align_y(obj_array, param):
+    # calculate the max number of columns
+    max_col = max(len(row) for row in obj_array)
+    prev_max_height = param.height
+    padding = SMALL_SPACE * param.scale
+
+    # initialize row minimum
+    min_row_height = None
+
+    for row in obj_array:
+        # find max height for the current row
+        max_row_height = get_max_row_height(row, max_col, prev_max_height)
+        prev_max_height = max_row_height
+
+        # check for first iteration
+        if min_row_height is not None:
+            # move row if its highest point cuts into the upper row
+            move_by = max_row_height - min_row_height + 2 * padding
+            gen_move_row(row, max_col, move_by)
+
+        # find min height for the current row
+        min_row_height = get_min_row_height(row, max_col, max_row_height)
+
+    # center content vertically
+    gen_matrix_center_y(obj_array, max_col)
+
+
+# function centers matrix on the baseline
+def gen_matrix_center(collection, size, base_line):
+    # calculate center location
+    center_loc = (size.max_y + size.min_y) / 2.0
+    offset = center_loc + abs(base_line)
+
+    # center matrix into row
+    for obj in bpy.data.collections[collection].all_objects:
+        obj.location.y -= offset
+
+
+# function generates matrix brackets
+def gen_brackets(bracket, param, collection, size):
+    # determine left or right bracket
+    is_left = (size.max_x == -1)
+    x = size.min_x if is_left else size.max_x
+
+    # scale bracket object
+    matrix_height = size.max_y - size.min_y
+    scale = (matrix_height + 0.5 * param.scale) / bracket.dimensions.y
+    bracket.scale.y = scale
+
+    # calculate where the bracket should be vertically
+    min_y = min(Vector(corner).y for corner in bracket.bound_box) * bracket.scale.y
+    offset = size.min_y - (SMALL_SPACE * param.scale) - min_y
+
+    # move bracket object
+    bracket.location = (x, offset, 0)
+
+    # left bracket
+    if is_left:
+        for obj in bpy.data.collections[collection].all_objects:
+            # move all objects besides bracket
+            if obj.name != bracket.name:
+                obj.location.x += (bracket.dimensions.x + GRID_SPACE) * param.scale
+
+# ----------------
+# TABLE FUNCTIONS
+# ----------------
 
 # function returns the max width of the given column
 def get_max_column_width(obj_array, col, max_width, multi=None):
@@ -843,33 +990,6 @@ def gen_last_column_vline(col, align, x_pos):
         x_pos += SMALL_SPACE
 
 
-# function aligns cells horizontally for matrix
-def gen_matrix_align_x(obj_array, param):
-    prev_col_width = param.width
-    padding = GRID_SPACE * param.scale
-
-    # calculate the max number of columns
-    max_col = max(len(row) for row in obj_array)
-
-    for col in range(max_col):
-        # find max width for the current column
-        max_col_width = get_max_column_width(obj_array, col, prev_col_width)
-
-        # add extra padding for empty column
-        is_empty_column = (prev_col_width == max_col_width)
-        extra_padding = padding if is_empty_column else 0
-
-        # calculate spacing for the next column
-        prev_col_width = max_col_width + padding + extra_padding
-
-        # move objects in next collumn
-        if (col + 1) < max_col:
-            gen_move_column(obj_array, col + 1, prev_col_width)
-
-        # center column content horizontally
-        gen_column_cells_align_x(obj_array, col, max_col_width)
-
-
 # function aligns cells horizontally by alignment type
 def gen_table_align_x(obj_array, param, align, multi):
     # initialize parameters
@@ -964,56 +1084,6 @@ def gen_multirow_cells_align_y(obj_array, align, cell_span):
                 obj.location.y += move_by
 
 
-# function centers the content of matrix cells vertically within each row
-def gen_matrix_center_y(obj_array, max_col):
-    for row in obj_array:
-        row_min = get_min_row_height(row, max_col, float('inf'))
-        row_max = get_max_row_height(row, max_col, float('-inf'))
-        row_center = (row_max + row_min) / 2.0
-
-        # center each cell in the row
-        for col in range(max_col):
-            if col < len(row):
-                collection = row[col]
-                cell_min, cell_max = gen_bound_both(collection, 'y')
-
-                if cell_min is not None and cell_max is not None:
-                    cell_center = (cell_max + cell_min) / 2.0
-                    offset = row_center - cell_center
-
-                    # move all objects in this cell
-                    for obj in bpy.data.collections[collection].all_objects:
-                        obj.location.y += offset
-
-
-# function centers cells in matrix vertically
-def gen_matrix_align_y(obj_array, param):
-    # calculate the max number of columns
-    max_col = max(len(row) for row in obj_array)
-    prev_max_height = param.height
-    padding = SMALL_SPACE * param.scale
-
-    # initialize row minimum
-    min_row_height = None
-
-    for row in obj_array:
-        # find max height for the current row
-        max_row_height = get_max_row_height(row, max_col, prev_max_height)
-        prev_max_height = max_row_height
-
-        # check for first iteration
-        if min_row_height is not None:
-            # move row if its highest point cuts into the upper row
-            move_by = max_row_height - min_row_height + 2 * padding
-            gen_move_row(row, max_col, move_by)
-
-        # find min height for the current row
-        min_row_height = get_min_row_height(row, max_col, max_row_height)
-
-    # center content vertically
-    gen_matrix_center_y(obj_array, max_col)
-
-
 # function aligns cells for table vertically to center
 def gen_table_align_y(obj_array, align, multi):
     cell_span = getattr(multi, 'cell_span', {})
@@ -1052,119 +1122,6 @@ def gen_table_align_y(obj_array, align, multi):
         for vline in multi.vline_pos:
             if vline.ID == i:
                 vline.y_pos.append(align.row_y[i])
-
-
-# function generates matrix brackets
-def gen_brackets(bracket, param, collection, size):
-    # determine left or right bracket
-    is_left = (size.max_x == -1)
-    x = size.min_x if is_left else size.max_x
-
-    # scale bracket object
-    matrix_height = size.max_y - size.min_y
-    scale = (matrix_height + 0.5 * param.scale) / bracket.dimensions.y
-    bracket.scale.y = scale
-
-    # calculate where the bracket should be vertically
-    min_y = min(Vector(corner).y for corner in bracket.bound_box) * bracket.scale.y
-    offset = size.min_y - (SMALL_SPACE * param.scale) - min_y
-
-    # move bracket object
-    bracket.location = (x, offset, 0)
-
-    # left bracket
-    if is_left:
-        for obj in bpy.data.collections[collection].all_objects:
-            # move all objects besides bracket
-            if obj.name != bracket.name:
-                obj.location.x += (bracket.dimensions.x + GRID_SPACE) * param.scale
-
-
-# function centers matrix
-def gen_matrix_center(collection, size, base_line):
-    # calculate center location
-    center_loc = (size.max_y + size.min_y) / 2.0
-    offset = center_loc + abs(base_line)
-
-    # center matrix into row
-    for obj in bpy.data.collections[collection].all_objects:
-        obj.location.y -= offset
-
-
-# function gets level of nesting for itemize/enumerate
-def get_nest_level(nest_array, env_type):
-    nest_lvl = 0
-    for item in nest_array:
-        if item == env_type:
-            nest_lvl += 1
-
-    return nest_lvl
-
-
-# function return default bullet point values based on nested level
-def get_bullet_default(level):
-    bullet_types = [
-        '\u2022',
-        '\u2013',
-        '\u2217',
-        '\u00B7'
-    ]
-
-    # calculate index based on level
-    index = min(level, len(bullet_types)) - 1
-    return bullet_types[index]
-
-
-# function returns roman numbers
-def get_roman(num):
-    lookup = [
-        (100, 'c'), (90, 'xc'), (50, 'l'), (40, 'xl'),
-        (10, 'x'), (9, 'ix'), (5, 'v'), (4, 'iv'), (1, 'i'),
-    ]
-
-    item = ''
-    for (value, roman) in lookup:
-        (res, num) = divmod(num, value)
-        item += roman * res
-    return item
-
-
-# function returns default numbering based on nested level
-def get_numbering_default(level, index):
-    if level == 1:
-        item = str(index) + '.'
-
-    elif level == 2:
-        char_code = 97 + ((index - 1) % 26)  # a, b, c, ...
-        item = '(' + chr(char_code) + ')'
-
-    elif level == 3:
-        item = get_roman(index) + '.'
-
-    else:
-        char_code = 65 + ((index - 1) % 26)  # A, B, C, ...
-        item = chr(char_code) + '.'
-
-    return item
-
-
-# function calculates positions around bullet point
-def gen_bullet_point(objects, param, defaults, nest_lvl):
-    if not objects:
-        return
-
-    # calculate spacing based on last object
-    last_obj = objects[-1]
-    bbox = [last_obj.matrix_world @ Vector(corner) for corner in last_obj.bound_box]
-    obj_dimension = bbox[4].x * param.scale
-    nested_space = nest_lvl * defaults.block_space * param.scale
-    param.width = (nested_space - obj_dimension)  # space before bullet point
-
-    # move all objects
-    for obj in objects:
-        gen_move_position(obj, param)
-
-    param.width += BASE_SPACE * param.scale  # space after bullet point
 
 
 # function parses width string and updates target object
@@ -1319,3 +1276,82 @@ def gen_table_lines(context, ts):
         line_length_c = ts.align.column_width[end] - x_pos
 
         gen_line_object(context, ts.init_params, ts.table_coll, x_pos, y_pos, line_length_c)
+
+# ----------------------------
+# ITEMIZE/ENUMERATE FUNCTIONS
+# ----------------------------
+
+# function gets level of nesting for itemize/enumerate
+def get_nest_level(nest_array, env_type):
+    nest_lvl = 0
+    for item in nest_array:
+        if item == env_type:
+            nest_lvl += 1
+
+    return nest_lvl
+
+
+# function return default bullet point values based on nested level
+def get_bullet_default(level):
+    bullet_types = [
+        '\u2022',
+        '\u2013',
+        '\u2217',
+        '\u00B7'
+    ]
+
+    # calculate index based on level
+    index = min(level, len(bullet_types)) - 1
+    return bullet_types[index]
+
+
+# function returns roman numbers
+def get_roman(num):
+    lookup = [
+        (100, 'c'), (90, 'xc'), (50, 'l'), (40, 'xl'),
+        (10, 'x'), (9, 'ix'), (5, 'v'), (4, 'iv'), (1, 'i'),
+    ]
+
+    item = ''
+    for (value, roman) in lookup:
+        (res, num) = divmod(num, value)
+        item += roman * res
+    return item
+
+
+# function returns default numbering based on nested level
+def get_numbering_default(level, index):
+    if level == 1:
+        item = str(index) + '.'
+
+    elif level == 2:
+        char_code = 97 + ((index - 1) % 26)  # a, b, c, ...
+        item = '(' + chr(char_code) + ')'
+
+    elif level == 3:
+        item = get_roman(index) + '.'
+
+    else:
+        char_code = 65 + ((index - 1) % 26)  # A, B, C, ...
+        item = chr(char_code) + '.'
+
+    return item
+
+
+# function calculates positions around bullet point
+def gen_bullet_point(objects, param, defaults, nest_lvl):
+    if not objects:
+        return
+
+    # calculate spacing based on last object
+    last_obj = objects[-1]
+    bbox = [last_obj.matrix_world @ Vector(corner) for corner in last_obj.bound_box]
+    obj_dimension = bbox[4].x * param.scale
+    nested_space = nest_lvl * defaults.block_space * param.scale
+    param.width = (nested_space - obj_dimension)  # space before bullet point
+
+    # move all objects
+    for obj in objects:
+        gen_move_position(obj, param)
+
+    param.width += BASE_SPACE * param.scale  # space after bullet point
