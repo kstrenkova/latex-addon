@@ -33,13 +33,13 @@ class Defaults:
 
 
 class Line:
-    def __init__(self, height, table_objs=[], table_min_y=None):
+    def __init__(self, height, table_objs=None, table_min_y=None):
         self.height = height
-        self.line_objs = table_objs
+        self.line_objs = table_objs if table_objs is not None else []
         self.min_y = None
 
         # table specific parameters
-        self.table_objs = table_objs
+        self.table_objs = table_objs if table_objs is not None else []
         self.table_min_y = table_min_y
 
 
@@ -272,6 +272,7 @@ class MatrixSize:
 
 FONT_CACHE = {}
 
+
 # function returns font info
 def change_font(mode):
     return FONT_CACHE.get(mode) if (mode in FONT_CACHE) else ''
@@ -279,6 +280,9 @@ def change_font(mode):
 
 # function preloads fonts used by the addon
 def preload_fonts(context, user_fonts):
+    # clear stale references
+    FONT_CACHE.clear()
+
     font_mode = {
         'math':     ('STIX Two Math Regular',        'STIXTwoMath-Regular.ttf'),
         'teletype': ('Latin Modern Mono 10 Regular', 'latin-modern-mono.mmono10-regular.otf'),

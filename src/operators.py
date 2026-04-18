@@ -194,6 +194,21 @@ def apply_thickness(obj, thickness):
         mod.offset = 0.0
 
 
+# function removes object and its data blocks
+def cleanup_datablocks(obj):
+    obj_type = obj.type
+    obj_data = obj.data
+    bpy.data.objects.remove(obj, do_unlink=True)
+
+    if obj_data is None:
+        return
+
+    if obj_type in {'FONT', 'CURVE'}:
+        bpy.data.curves.remove(obj_data)
+    elif obj_type == 'MESH':
+        bpy.data.meshes.remove(obj_data)
+
+
 # function generates the final LaTeX text as one object
 def generate_one_object(context, props, all_obj):
     # apply thickness to all objects
@@ -217,8 +232,8 @@ def generate_one_object(context, props, all_obj):
         context.collection.objects.link(new_obj)
         converted_obj.append(new_obj)
 
-        # delete the original object
-        bpy.data.objects.remove(obj, do_unlink=True)
+        # delete the original object and its data blocks
+        cleanup_datablocks(obj)
 
     # join all objects into one
     final_obj = converted_obj[0]
