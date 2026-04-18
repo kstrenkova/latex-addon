@@ -219,8 +219,8 @@ class MathSyntaxAnalyser:
             sqs = SqrtState(self.d.current_coll, self.p.create_copy())
 
             if with_index:
-                sqs.init_params.width -= (SQRT_WIDTH - 0.4) * self.p.scale
-                self.p.width += 0.4 * self.p.scale
+                sqs.init_params.width -= (SQRT_WIDTH - MED_SPACE) * self.p.scale
+                self.p.width += MED_SPACE * self.p.scale
             else:
                 self.p.width += SQRT_WIDTH * self.p.scale
 
@@ -269,6 +269,11 @@ class MathSyntaxAnalyser:
         elif action == '#ACTION_FRAC_INIT':
             self.p.width += MIN_SPACE * self.p.scale  # space before fraction
             gen_calculate(self.p, self.d.text_scale, self.levels)
+
+            # vertical adjustment for fractions in sub/superscripts
+            if is_frac_scaled_down(self.levels) and self.levels.ei_array:
+                self.p.height += (BIG_SPACE if self.levels.ei_array[-1] == 'exp' else -MED_SPACE) * self.p.scale
+
             fs = FractionState(self.d.current_coll, self.p.create_copy())
 
             # numerator collection
@@ -286,6 +291,7 @@ class MathSyntaxAnalyser:
 
             # move numerator objects
             gen_calculate(self.p, self.d.text_scale, self.levels)
+            self.p.height = fs.init_params.height
             gen_frac_move(self.p, fs.ncoll, 'num')
 
             # denominator collection
@@ -304,6 +310,7 @@ class MathSyntaxAnalyser:
 
             # move denominator objects
             gen_calculate(self.p, self.d.text_scale, self.levels)
+            self.p.height = fs.init_params.height
             gen_frac_move(self.p, fs.dcoll, 'den')
 
             # finding longer text width
@@ -318,7 +325,7 @@ class MathSyntaxAnalyser:
             gen_center(fs.nwidth, fs.dwidth, center_coll)
 
             # generate fraction line
-            gen_frac_line(self.d.context, fs.init_params, self.d.current_coll, line_length)
+            gen_frac_line(self.d.context, fs.init_params, self.d.current_coll, line_length, self.levels)
             self.p.line.line_objs.append(self.d.context.active_object.name)
 
             # join numerator and denominator collections

@@ -378,9 +378,10 @@ def gen_sqrt_move(obj, param, sqrt_param):
 
 
 # function generates fraction line
-def gen_frac_line(context, param, collection, line_length):
+def gen_frac_line(context, param, collection, line_length, levels):
     x_pos = param.width
-    y_pos = param.height + BASE_SPACE * param.scale
+    space = BASE_SPACE + (MIN_SPACE if is_frac_scaled_down(levels) else 0)
+    y_pos = param.height + space * param.scale
     line_end = line_length - param.width + MIN_SPACE * param.scale
     gen_line_object(context, param, collection, x_pos, y_pos, line_end)
 
@@ -389,7 +390,7 @@ def gen_frac_line(context, param, collection, line_length):
 def gen_frac_move(param, collection, mode):
     # get highest or lowest point in collection
     y = gen_bound(collection, 'y', 'max') if mode == "den" else gen_bound(collection, 'y', 'min')
-    extra_padding = (MIN_SPACE if mode == "den" else 0.6) * param.scale
+    extra_padding = (MIN_SPACE if mode == "den" else BIG_SPACE) * param.scale
 
     # early return when no objects
     if y is None:
@@ -398,6 +399,11 @@ def gen_frac_move(param, collection, mode):
     # select and move all objects in denominator
     for obj in bpy.data.collections[collection].all_objects:
         obj.location.y += param.height - y + extra_padding
+
+
+# helper function to check if a fraction is nested size
+def is_frac_scaled_down(levels):
+    return len(levels.frac_array) > 1 and levels.frac_array[-1] != 'dfrac'
 
 
 # helper function to get the fraction level scale
@@ -422,11 +428,17 @@ def get_frac_scale(levels, text_scale, scale_low, scale_nested):
 
 # function calculates the scaling and height of text
 def gen_calculate(param, text_scale, levels, symbol=None):
-    # height factors
-    first_exp = 0.75
-    nested_exp = 0.5
-    first_ix = 0.5
-    nested_ix = 0.25
+    # smaller fractions
+    if is_frac_scaled_down(levels):
+        first_exp = 0.5
+        nested_exp = 0.35
+        first_ix = 0.35
+        nested_ix = 0.2
+    else:
+        first_exp = 0.75
+        nested_exp = 0.5
+        first_ix = 0.5
+        nested_ix = 0.25
 
     # scale factors
     scale_low = 0.65 * text_scale
