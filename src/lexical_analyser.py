@@ -100,7 +100,7 @@ class LexicalAnalyser:
             return Token("WHITESPACE", " ")
 
         # <STATE_COMMENT>
-        if not self.is_end() and self.get_char() == '%':
+        while not self.is_end() and self.get_char() == '%':
             self.state_comment()
 
         if self.is_end():
