@@ -1069,8 +1069,13 @@ def gen_multirow_cells_align_y(obj_array, align, cell_span):
             current_row = i - 1
             last_row = current_row + row_span
 
-            # get the y position of first and last row of multirow
-            _, y_first = align.row_y[current_row]
+            # get the y position of first row of multirow
+            if i == 0:
+                y_first, _ = align.row_y[i]
+            else:
+                _, y_first = align.row_y[current_row]
+
+            # get the y position of last row of multirow
             _, y_last = align.row_y[last_row]
 
             # get the height of the content
