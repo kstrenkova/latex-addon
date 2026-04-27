@@ -40,7 +40,7 @@ class TEXT_OT_EditText(bpy.types.Operator):
 class TEXT_OT_SaveAndReturn(bpy.types.Operator):
     """Save edited LaTeX text and return to the 3D view"""
     bl_idname = "text.save_and_return"
-    bl_label = "Save & Return"
+    bl_label = "Save"
 
     def execute(self, context):
         # get the text block
@@ -54,6 +54,25 @@ class TEXT_OT_SaveAndReturn(bpy.types.Operator):
         context.area.type = 'VIEW_3D'
 
         self.report({'INFO'}, "LaTeX text has been updated")
+        return {'FINISHED'}
+
+
+# cancel and return to the 3D view
+class TEXT_OT_CancelAndReturn(bpy.types.Operator):
+    """Cancel edited LaTeX text and return to the 3D view"""
+    bl_idname = "text.cancel_and_return"
+    bl_label = "Cancel"
+
+    def execute(self, context):
+        # discard changes
+        text = bpy.data.texts.get(TMP_TEXT_EDIT)
+        if text:
+            bpy.data.texts.remove(text)
+
+        # return to the 3D view
+        context.area.type = 'VIEW_3D'
+
+        self.report({'INFO'}, "LaTeX text changes discarded")
         return {'FINISHED'}
 
 

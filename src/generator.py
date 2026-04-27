@@ -20,11 +20,11 @@ from .data.characters_db import *
 def gen_text(text, font_info, collection, spacing, line, math_mode=None):
     text_data = bpy.data.curves.new("Text", type='FONT')
     text_data.body = text
+    text_data.space_word = spacing * 1.5
 
     if len(font_info) > 0:
         text_data.font = font_info['font']
         text_data.size = font_info['size']
-        text_data.space_word = spacing * 1.5
 
     # changing size for bigger symbols, e.g. sum, integral
     if text in unicode_chars_big.values() and math_mode == 'display':
@@ -308,7 +308,7 @@ def gen_sqrt_sym(context, collection):
 
     # offset all mesh vertices
     for vert in mesh.vertices:
-          vert.co -= origin_offset
+        vert.co -= origin_offset
 
     # recalculate normals for all faces
     bm = bmesh.new()

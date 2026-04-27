@@ -65,7 +65,7 @@ class OBJECT_PT_ME(bpy.types.Panel):
 
 # text editor helper panel
 class TEXT_PT_LaTeXEditor(bpy.types.Panel):
-    bl_label = "Save LaTeX Text"
+    bl_label = "LaTeX Text Editor"
     bl_idname = "TEXT_PT_LaTeXEditor"
     bl_space_type = 'TEXT_EDITOR'
     bl_region_type = 'UI'
@@ -79,3 +79,4 @@ class TEXT_PT_LaTeXEditor(bpy.types.Panel):
     def draw(self, context):
         layout = self.layout
         layout.operator("text.save_and_return", icon='FILE_TICK')
+        layout.operator("text.cancel_and_return", icon='CANCEL')

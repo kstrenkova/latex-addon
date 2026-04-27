@@ -40,6 +40,7 @@ classes = [
     properties.LATEX_PG_Properties,
     panels.OBJECT_PT_ME,
     panels.TEXT_PT_LaTeXEditor,
+    operators.TEXT_OT_CancelAndReturn,
     operators.TEXT_OT_EditText,
     operators.TEXT_OT_SaveAndReturn,
     operators.WM_OT_LoadFont,
