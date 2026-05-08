@@ -70,7 +70,7 @@ class ItemizeState:
 class ColumnAlignment:
     def __init__(self, type):
         self.type = type
-        self.width = -1
+        self.width = None
         self.unit = ''
 
 
@@ -107,12 +107,12 @@ class TableHorizontalLines:
 class MultiRow():
     def __init__(self):
         self.span = 1
-        self.width = -1
+        self.width = None
         self.unit = ''
 
     def reset_row_span(self):
         self.span = 1
-        self.width = -1
+        self.width = None
         self.unit = ''
 
 
@@ -178,7 +178,7 @@ class TableCellConstraint:
 
         # save width constraint if it's positive
         p_width = columns[col].width
-        if p_width > 0:
+        if p_width is not None and p_width > 0:
             self.max_width = self.init_cell_x + p_width * scale
 
     def reset_cell_constraint(self):

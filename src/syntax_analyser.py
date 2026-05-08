@@ -413,8 +413,8 @@ class SyntaxAnalyser:
                 print("Syntax error:", err)
                 return False
 
-            # add cell constraint
-            if ts.multi.col.align.width > 0:
+            if ts.multi.col.align.width is not None:
+                # add cell constraint
                 self.cell_con.set_init_pos(self.p.width, self.p.line.height)
                 self.cell_con.max_width = self.cell_con.init_cell_x + ts.multi.col.align.width * self.p.scale
             return True
@@ -431,9 +431,10 @@ class SyntaxAnalyser:
                 print("Syntax error:", err)
                 return False
 
-            # add cell constraint
-            self.cell_con.set_init_pos(self.p.width, self.p.line.height)
-            self.cell_con.max_width = self.cell_con.init_cell_x + ts.multi.row.width * self.p.scale
+            if ts.multi.row.width is not None:
+                # add cell constraint
+                self.cell_con.set_init_pos(self.p.width, self.p.line.height)
+                self.cell_con.max_width = self.cell_con.init_cell_x + ts.multi.row.width * self.p.scale
             return True
 
         elif action == '#ACTION_TABLE_NEW_ROW':

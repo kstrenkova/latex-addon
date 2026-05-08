@@ -1134,6 +1134,7 @@ def parse_table_width(target, content, msg, is_multirow=False):
     # multirow special case
     if is_multirow:
         if content == '*':
+            target.width = None
             return ""
     else:
         # check alignment type
