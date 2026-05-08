@@ -325,6 +325,9 @@ class SyntaxAnalyser:
             row = ts.obj_array[ts.get_row_num()]
             row.append(self.d.current_coll)
 
+            # initialize cell constraint for the first cell
+            self.cell_con.set_init_pos(self.p.width, self.p.line.height)
+            self.cell_con.set_column_width(self.p.scale, ts.align.columns, 0)
             return True
 
         elif action == '#ACTION_TABLE_HLINE':
@@ -581,8 +584,14 @@ class SyntaxAnalyser:
                     return False
 
             # add whitespace if one is pending
+            # skip leading whitespace at the start of a line or cell
             if self.d.whitespace:
-                self.p.width += self.d.word_space * self.p.scale
+                # check if it is start of a table cell
+                ts = self.get_context_state(TableState)
+                start = (self.p.width == 0.0) if ts is None else (self.p.width == self.cell_con.init_cell_x)
+
+                if not start:
+                    self.p.width += self.d.word_space * self.p.scale
                 self.d.whitespace = False
 
         # put a new line at the end of the document
