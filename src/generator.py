@@ -899,12 +899,12 @@ def gen_multicolumn_cells_align_x(obj_array, param, align, cell_span):
         last_col = col + col_span
 
         # get current cell
-        if row < len(obj_array) and last_col < len(obj_array[row]):
+        if row < len(obj_array) and last_col < len(align.column_width):
             # get width of the last column without padding
             total_width = align.column_width[last_col] - GRID_SPACE * param.scale
 
             collection = obj_array[row][col]
-            apply_alignment_x(collection, col_align, total_width)
+            apply_alignment_x(collection, col_align.type, total_width)
 
 
 # funtion moves the current column for vertical lines
