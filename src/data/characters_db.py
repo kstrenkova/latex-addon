@@ -344,6 +344,7 @@ unicode_chars = {
 
     # other symbols
     'backslash': '\\',
+    'log': 'log',
     'cos': 'cos',
     'sin': 'sin',
     'neg': '\u00ac',
