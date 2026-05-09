@@ -1353,15 +1353,13 @@ def gen_bullet_point(objects, param, defaults, nest_lvl):
     if not objects:
         return
 
-    # calculate spacing based on last object
-    last_obj = objects[-1]
-    bbox = [last_obj.matrix_world @ Vector(corner) for corner in last_obj.bound_box]
-    obj_dimension = bbox[4].x * param.scale
+    # calculate total bullet width from rightmost edge
+    bullet_width = gen_bound_for_array([obj.name for obj in objects], 'x', 'max') or 0.0
     nested_space = nest_lvl * defaults.block_space * param.scale
-    param.width = (nested_space - obj_dimension)  # space before bullet point
 
-    # move all objects
+    # move all objects to align bullet
+    offset = nested_space - bullet_width - objects[0].location.x
     for obj in objects:
-        gen_move_position(obj, param)
+        obj.location.x += offset
 
-    param.width += BASE_SPACE * param.scale  # space after bullet point
+    param.width = nested_space + BASE_SPACE * param.scale
