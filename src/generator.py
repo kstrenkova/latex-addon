@@ -85,7 +85,7 @@ def gen_text_object(param, defaults, text, font_type, levels=None, symbol=None):
 # ---------------
 
 # function calculates and adjusts the height for new line
-def gen_adjust_new_line(param, base_coll, line_space, init_width=0.0):
+def gen_adjust_new_line(param, base_coll, line_space, init_width=0.0, exclude=None):
     # no objects have been generated yet
     if len(bpy.data.collections[base_coll].all_objects) == 0:
         return
@@ -93,8 +93,12 @@ def gen_adjust_new_line(param, base_coll, line_space, init_width=0.0):
     # filter out NoneType objects in the line
     param.line.line_objs = [name for name in param.line.line_objs if name in bpy.data.objects]
 
+    # objects excluded from bounds calculation but still position them
+    exclude_set = set(exclude or [])
+    line_objs = [name for name in param.line.line_objs if name not in exclude_set]
+
     # multiple new lines in the row
-    if len(param.line.line_objs) == 0 and param.line.table_min_y is None:
+    if len(line_objs) == 0 and param.line.table_min_y is None:
         param.line.min_y -= line_space * param.scale
         param.line.height = param.line.min_y - line_space * param.scale
         param.width = init_width
@@ -125,7 +129,7 @@ def gen_adjust_new_line(param, base_coll, line_space, init_width=0.0):
                 obj.location.y -= (space - gap)
 
     # get real and expected lowest point
-    real_min_y = gen_bound_for_array(param.line.line_objs, 'y', 'min') or 0.0
+    real_min_y = gen_bound_for_array(line_objs, 'y', 'min') or param.line.height
     expected_min_y = param.line.height - (SMALL_SPACE * line_space * param.scale)
 
     # save the lowest point
@@ -1212,7 +1216,7 @@ def save_multi_info(ts):
         return
 
     row = ts.get_row_num()
-    col = len(ts.obj_array[row]) - 1
+    col = ts.get_col_num()
     ts.multi.save_cell_span((row, col))
     ts.multi.row.reset_row_span()
 

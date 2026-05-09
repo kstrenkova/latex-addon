@@ -161,6 +161,14 @@ class SyntaxAnalyser:
             token = self.lex.get_token()
             gen_text_object(self.p, self.d, token.value, self.d.user_font)
 
+            # track multirow objects to exclude from row height calculations
+            ts = self.get_context_state(TableState)
+            if ts and ts.multi.row.span > 1:
+                cell = (ts.get_row_num(), ts.get_col_num())
+                if cell not in ts.multirow_objs:
+                    ts.multirow_objs[cell] = []
+                ts.multirow_objs[cell].append(self.p.line.line_objs[-1])
+
             # wrap objects in cell that has width constraint
             if gen_wrap_obj_in_cell(self.p, self.d, self.cell_con):
                 self.consume_whitespace()
@@ -451,9 +459,29 @@ class SyntaxAnalyser:
                 self.p.line.height = ts.row_baseline
                 self.cell_con.reset_cell_constraint()
 
+            # collect all multirow objects to exclude from height calculation
+            current_row = ts.get_row_num()
+            exclude_objs = []
+            multirow_end_objs = []
+            for (start_row, col), span_info in ts.multi.cell_span.items():
+                if span_info.get('row_span', 1) > 1 and (start_row, col) in ts.multirow_objs:
+                    objs = ts.multirow_objs[(start_row, col)]
+                    last_row = start_row + span_info['row_span'] - 1
+                    if current_row < last_row:
+                        exclude_objs.extend(objs)
+                    elif current_row == last_row:
+                        multirow_end_objs.append(objs)
+
             # set height lower and record the y positions
             start_y = self.p.line.min_y
-            gen_adjust_new_line(self.p, self.d.base_coll, self.d.line_height, ts.init_params.width)
+            gen_adjust_new_line(self.p, self.d.base_coll, self.d.line_height, ts.init_params.width, exclude_objs)
+
+            # adjust height for ending multirow cells
+            for objs in multirow_end_objs:
+                bottom = gen_bound_for_array(objs, 'y', 'min')
+                if bottom and bottom < self.p.line.min_y:
+                    self.p.line.min_y = bottom
+                    self.p.line.height = self.p.line.min_y - self.d.line_height * self.p.scale
 
             # add new array that represents row and the initial cell
             ts.obj_array.append([])
@@ -490,7 +518,7 @@ class SyntaxAnalyser:
 
             # save normal cell constraint
             self.cell_con.set_init_pos(self.p.width, self.p.line.height)
-            self.cell_con.set_column_width(self.p.scale, ts.align.columns, len(row) - 1)
+            self.cell_con.set_column_width(self.p.scale, ts.align.columns, ts.get_col_num())
             return True
 
         elif action == '#ACTION_TABLE_CREATE':

@@ -199,10 +199,16 @@ class TableState:
         self.align = TableAlignment()
         self.hline = TableHorizontalLines()
         self.multi = TableMultiCell()
+        self.multirow_objs = {}
 
     # returns the index of the current row
     def get_row_num(self) -> int:
         return len(self.obj_array) - 1
+
+    # returns the index of the current column
+    def get_col_num(self) -> int:
+        row = self.get_row_num()
+        return len(self.obj_array[row]) - 1
 
 # ------------------
 # MATH MODE CLASSES
