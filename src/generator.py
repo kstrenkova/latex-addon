@@ -659,6 +659,41 @@ def gen_bound_both(coll_name, axis):
 # MATRIX FUNCTIONS
 # -----------------
 
+
+# function returns the max height of the given row
+def get_min_row_height(row, max_col):
+    min_height = None
+
+    for col in range(max_col):
+        if col >= len(row):
+            break
+
+        collection = row[col]
+        cell_bottom = gen_bound(collection, 'y', 'min')
+
+        if cell_bottom is not None:
+            min_height = min(min_height, cell_bottom) if min_height is not None else cell_bottom
+
+    return min_height
+
+
+# function returns the max height of the given row
+def get_max_row_height(row, max_col):
+    max_height = None
+
+    for col in range(max_col):
+        if col >= len(row):
+            break
+
+        collection = row[col]
+        cell_height = gen_bound(collection, 'y', 'max')
+
+        if cell_height is not None:
+            max_height = max(max_height, cell_height) if max_height is not None else cell_height
+
+    return max_height
+
+
 # function aligns cells horizontally for matrix
 def gen_matrix_align_x(obj_array, param):
     prev_col_width = param.width
@@ -687,32 +722,48 @@ def gen_matrix_align_x(obj_array, param):
 
 
 # function centers the content of matrix cells vertically within each row
-def gen_matrix_center_y(obj_array, max_col):
+def gen_matrix_center_y(param, obj_array, max_col):
+    height_threshold = 1.0 * param.scale
+
     for row in obj_array:
-        row_min = get_min_row_height(row, max_col, float('inf'))
-        row_max = get_max_row_height(row, max_col, float('-inf'))
+        row_min = get_min_row_height(row, max_col)
+        row_max = get_max_row_height(row, max_col)
+
+        # skip empty rows
+        if row_min is None or row_max is None:
+            continue
+
+        # check row height against treshold
+        if (row_max - row_min) < height_threshold:
+            continue
+
+        # calculate the center of the row
         row_center = (row_max + row_min) / 2.0
 
         # center each cell in the row
         for col in range(max_col):
-            if col < len(row):
-                collection = row[col]
-                cell_min, cell_max = gen_bound_both(collection, 'y')
+            if col >= len(row):
+                break
 
-                if cell_min is not None and cell_max is not None:
-                    cell_center = (cell_max + cell_min) / 2.0
-                    offset = row_center - cell_center
+            collection = row[col]
+            cell_min, cell_max = gen_bound_both(collection, 'y')
 
-                    # move all objects in this cell
-                    for obj in bpy.data.collections[collection].all_objects:
-                        obj.location.y += offset
+            # skip empty cells
+            if cell_min is None or cell_max is None:
+                continue
+
+            cell_center = (cell_max + cell_min) / 2.0
+            offset = row_center - cell_center
+
+            # move all objects in this cell
+            for obj in bpy.data.collections[collection].all_objects:
+                obj.location.y += offset
 
 
-# function centers cells in matrix vertically
+# function aligns cells in matrix vertically
 def gen_matrix_align_y(obj_array, param):
     # calculate the max number of columns
     max_col = max(len(row) for row in obj_array)
-    prev_max_height = param.height
     padding = SMALL_SPACE * param.scale
 
     # initialize row minimum
@@ -720,8 +771,15 @@ def gen_matrix_align_y(obj_array, param):
 
     for row in obj_array:
         # find max height for the current row
-        max_row_height = get_max_row_height(row, max_col, prev_max_height)
-        prev_max_height = max_row_height
+        max_row_height = get_max_row_height(row, max_col)
+
+        # add padding for empty rows
+        if max_row_height is None:
+            if min_row_height is not None:
+                min_row_height -= 5 * padding
+
+            # skip moving objects
+            continue
 
         # check for first iteration
         if min_row_height is not None:
@@ -730,10 +788,10 @@ def gen_matrix_align_y(obj_array, param):
             gen_move_row(row, max_col, move_by)
 
         # find min height for the current row
-        min_row_height = get_min_row_height(row, max_col, max_row_height)
+        min_row_height = get_min_row_height(row, max_col)
 
     # center content vertically
-    gen_matrix_center_y(obj_array, max_col)
+    gen_matrix_center_y(param, obj_array, max_col)
 
 
 # function centers matrix on the baseline
@@ -803,30 +861,6 @@ def get_max_column_width(obj_array, col, max_width, multi=None):
             max_width = max(max_width, cell['span_width'])
 
     return max_width
-
-
-# function returns the max height of the given row
-def get_min_row_height(row, max_col, min_height):
-      for col in range(max_col):
-          if col < len(row):
-              collection = row[col]
-              cell_bottom = gen_bound(collection, 'y', 'min')
-              if cell_bottom is not None:
-                min_height = min(min_height, cell_bottom)
-
-      return min_height
-
-
-# function returns the max height of the given row
-def get_max_row_height(row, max_col, max_height):
-    for col in range(max_col):
-        if col < len(row):
-            collection = row[col]
-            cell_height = gen_bound(collection, 'y', 'max')
-            if cell_height is not None:
-                max_height = max(max_height, cell_height)
-
-    return max_height
 
 
 # function moves the next column horizontally right
