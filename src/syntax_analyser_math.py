@@ -433,14 +433,14 @@ class MathSyntaxAnalyser:
 
                 if not ms.brackets == 'matrix':
                     # generate left bracket of matrix
-                    gen_text_object(self.p, self.d, bracket_type[0], 'math')
+                    gen_text_object(self.p, self.d, bracket_type[0], 'math-fixed')
                     gen_brackets(self.d.context.active_object, self.p, ms.mx_coll, ms.size)
 
                     # calculate furthest x position
                     ms.size.max_x = gen_bound(ms.mx_coll, 'x', 'max') + SMALL_SPACE * self.p.scale
 
                     # generate right bracket of matrix
-                    gen_text_object(self.p, self.d, bracket_type[1], 'math')
+                    gen_text_object(self.p, self.d, bracket_type[1], 'math-fixed')
                     gen_brackets(self.d.context.active_object, self.p, ms.mx_coll, ms.size)
 
                 # center matrix into row

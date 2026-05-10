@@ -294,9 +294,9 @@ def preload_fonts(context, user_fonts):
     FONT_CACHE.clear()
 
     font_mode = {
-        'math':     ('STIX Two Math Regular',        'STIXTwoMath-Regular.ttf'),
-        'teletype': ('Latin Modern Mono 10 Regular', 'latin-modern-mono.mmono10-regular.otf'),
-        'verb':     ('Latin Modern Mono 10 Regular', 'latin-modern-mono.mmono10-regular.otf'),
+        'math-fixed': ('STIX Two Math Regular',        'STIXTwoMath-Regular.ttf'),
+        'teletype':   ('Latin Modern Mono 10 Regular', 'latin-modern-mono.mmono10-regular.otf'),
+        'verb':       ('Latin Modern Mono 10 Regular', 'latin-modern-mono.mmono10-regular.otf'),
     }
 
     src_dir = os.path.dirname(os.path.dirname(__file__))
