@@ -202,27 +202,44 @@ class MathSyntaxAnalyser:
 
         # <SQRT> actions
         elif action == ('#ACTION_SQRT_INDEX_BEGIN'):
-            self.levels.ei_array.append('exp')
-            self.levels.sqrt = True
-            gen_calculate(self.p, self.d.text_scale, self.levels)
-            return True
-
-        elif action.startswith('#ACTION_SQRT_INIT'):
-            with_index = len(action.removeprefix('#ACTION_SQRT_INIT'))
-
-            if with_index:
-                self.levels.ei_array.pop()
-                self.p.width += MIN_SPACE  # space before index
+            # create space before index
+            self.p.width += MIN_SPACE * self.p.scale
 
             # saving parameters
             gen_calculate(self.p, self.d.text_scale, self.levels)
             sqs = SqrtState(self.d.current_coll, self.p.create_copy())
 
-            if with_index:
-                sqs.init_params.width -= (SQRT_WIDTH - MED_SPACE) * self.p.scale
-                self.p.width += MED_SPACE * self.p.scale
-            else:
-                self.p.width += SQRT_WIDTH * self.p.scale
+            # set index parameters
+            self.levels.ei_array.append('exp')
+            self.levels.sqrt = True
+
+            # square root collection
+            sqs.sqcoll = gen_new_collection("SqrtIndexCollection", sqs.parent_coll)
+            self.d.current_coll = sqs.sqcoll
+
+            self.state_stack.append(sqs)
+            return True
+
+        elif action == ('#ACTION_SQRT_INDEX_END'):
+            sqs = self.state_stack.pop()
+            self.levels.ei_array.pop()
+
+            # move square root index
+            gen_calculate(self.p, self.d.text_scale, self.levels)
+            gen_sqrt_move_index(self.p, sqs.sqcoll)
+
+            # join collection into parent collection
+            gen_join_collections(sqs.sqcoll, sqs.parent_coll)
+            self.d.current_coll = sqs.parent_coll  # set current collection
+            return True
+
+        elif action == '#ACTION_SQRT_INIT':
+            # saving parameters
+            gen_calculate(self.p, self.d.text_scale, self.levels)
+            sqs = SqrtState(self.d.current_coll, self.p.create_copy())
+
+            # increase width to put sqrt symbol there later
+            self.p.width += SQRT_WIDTH * self.p.scale
 
             # square root collection
             sqs.sqcoll = gen_new_collection("SqrtCollection", sqs.parent_coll)

@@ -491,8 +491,10 @@ math_ll_table = {
     # --- SQRT ---
     # <SQRT> -> [ <MORE_TERM> ] { <MORE_TERM> }
     ('SQRT', '_OPEN_SQUARE'): [
-        '[', '#ACTION_SQRT_INDEX_BEGIN',     'MORE_TERM', ']',
-        '{', '#ACTION_SQRT_INIT_WITH_INDEX', 'MORE_TERM', '}',
+        '#ACTION_SQRT_INDEX_BEGIN',
+        '[', 'MORE_TERM', ']',
+        '#ACTION_SQRT_INDEX_END',
+        '{', '#ACTION_SQRT_INIT', 'MORE_TERM', '}',
         '#ACTION_SQRT_CREATE'
     ],
     # <SQRT> -> { <MORE_TERM> }

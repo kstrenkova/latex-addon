@@ -332,6 +332,27 @@ def gen_sqrt_sym(context, collection):
     return sqrt_obj
 
 
+# function moves sqrt index to prevent collision
+def gen_sqrt_move_index(param, collection):
+    # get the minimum of the index
+    min_y = gen_bound(collection, 'y', 'min')
+
+    # skip empty index
+    if min_y is None:
+        return
+
+    sqrt_pos = param.line.height + GRID_SPACE * param.scale
+    gap = sqrt_pos - min_y
+
+    # move all objects in index if collision
+    if gap > 0:
+        for obj in bpy.data.collections[collection].all_objects:
+            obj.location.y += gap
+
+    # set starting position for sqrt symbol
+    param.width -= (SQRT_WIDTH - MED_SPACE) * param.scale
+
+
 # function moves sqrt symbol according to given parameters
 def gen_sqrt_move(obj, param, sqrt_param):
     # position sqrt
